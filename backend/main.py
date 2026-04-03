@@ -46,6 +46,7 @@ async def start_session():
                 room_join=True,
                 can_publish=True,
                 can_subscribe=True,
+                room_admin=True
             )
         )
         .with_room_config(

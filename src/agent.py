@@ -8,169 +8,240 @@ from logging.handlers import RotatingFileHandler
 
 from dotenv import load_dotenv
 
-# Ensure the parent directory 'src' is in the system path for absolute imports
 sys.path.append(str(pathlib.Path(__file__).parent))
 
-from livekit import rtc  # noqa: F401
+from livekit import rtc  # noqa
 from livekit.agents import (
     AutoSubscribe,
     JobContext,
     JobProcess,
-    UserStateChangedEvent,
     WorkerOptions,
     cli,
+    inference
 )
 from livekit.agents.voice import Agent, AgentSession
-from livekit.plugins import groq, sarvam, silero
+from livekit.plugins import google, groq, noise_cancellation, sarvam, silero
 
-# Import tools from reorganized structure
-try:
-    from tools.search_tools import PropertyTools
-except ImportError:
-    # Handle direct script execution vs module run case
-    from .tools.search_tools import PropertyTools
+from tools.search_tools import PropertyTools
+
 
 # =========================
-# SETUP — Console + File Logging
+# SETUP LOGGING
 # =========================
 load_dotenv(".env.local")
 
 BASE_DIR = pathlib.Path(__file__).parent.parent
 LOG_DIR = BASE_DIR / "logs"
 LOG_DIR.mkdir(exist_ok=True)
-LOG_FILE = LOG_DIR / "agent.log"
 
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-_file_handler = RotatingFileHandler(
-    LOG_FILE, maxBytes=5 * 1024 * 1024, backupCount=3, encoding="utf-8"
-)
-_file_handler.setFormatter(
-    logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-)
-logging.getLogger().addHandler(_file_handler)
-
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("voice-agent")
-logger.info(f"=== Agent starting | log: {LOG_FILE} ===")
 
 
 # =========================
-# PREWARM
+# PREWARM (VAD)
 # =========================
 def prewarm(proc: JobProcess):
     proc.userdata["vad"] = silero.VAD.load(
-        activation_threshold=0.35,  # Catch even soft starts
-        deactivation_threshold=0.25,  # Don't cut off natural trailing words
-        min_silence_duration=1.2,  # 1.2s patience for natural breaks
-        prefix_padding_duration=0.8,  # Essential for Bluetooth — catch first 800ms
+        activation_threshold=0.6,
+        deactivation_threshold=0.35,
+        min_silence_duration=0.6,
+        prefix_padding_duration=0.8,
     )
+    proc.userdata["nc"] = noise_cancellation.BVC()
 
 
 # =========================
 # ENTRYPOINT
 # =========================
 async def entrypoint(ctx: JobContext):
-    session_id = datetime.now().strftime("%H%M%S")
-    logger.info(f"=== Session {session_id} starting ===")
+    logger.info("=== Agent starting ===")
 
+    # ===== INIT =====
     stt = sarvam.STT(
         api_key=os.getenv("SARVAM_API_KEY"),
         language="hi-IN",
         model="saaras:v3",
     )
+
     tts = sarvam.TTS(
         api_key=os.getenv("SARVAM_API_KEY"),
         model="bulbul:v3",
         speaker="shubh",
         target_language_code="hi-IN",
     )
-    llm = groq.LLM(model="qwen/qwen3-32b")
+
+    llm = groq.LLM(
+        model="llama-3.3-70b-versatile",
+    )
     property_tools = PropertyTools()
 
-    broker_agent = Agent(
-        instructions=(
-            "Aap ek professional Rajasthan property broker hain. Hamesha Hindi mein baat karein.\n"
-            "CONSTRAINTS:\n"
-            "1. Jab aap search_properties tool call karte hain, toh sirf tool dwara diye gaye result ko natural Hindi mein bole.\n"
-            "2. Kabhi bhi internal process, function names, ya 'searching data' jaisi baatein user se na kahein.\n"
-            "3. Teknikal numbers ya JSON format kabhi mat bole. "
-            "4. Apni baat hamesha polite aur helpful rakhein."
-        ),
+    # =========================
+    # AGENT PROMPT (Rajasthan Property Specialist)
+    # =========================
+    AGENT_INSTRUCTIONS = """
+Aap ek Rajasthan property broker hain (Jaipur, Udaipur, Jodhpur specialist).
+
+👉 User ki requirement (city, budget, type) samajhkar unhe best options batayein.
+
+🧠 Rules:
+    Aap ek Rajasthan property broker hain (Jaipur, Udaipur, Jodhpur specialist).
+
+    👉 User ki requirement (city, budget, type) samajhkar unhe best options batayein.
+
+    🧠 Rules:
+    - Agar user city bole → ALWAYS tool use karein
+    - Kabhi guess na karein
+    - Agar unclear ho:
+      "Kya aap Kota kehna chahte hain?"
+
+    🏠 Response:
+    - Sirf relevant information dein
+    - Simple Hindi use karein
+    - Short aur clear jawab dein
+
+    🛠️ Tool:
+    - Property search ke liye tool MUST use karein
+    - Tool result ko normal Hindi me explain karein
+    - JSON ya technical data na dikhayein
+
+    ❌ Avoid:
+    - Guessing
+    - Long explanation
+    - English-heavy replies
+
+    ✅ Always:
+    - Clear, helpful, human-like jawab
+    """
+
+    # ===== AGENT =====
+    agent = Agent(
+        instructions=AGENT_INSTRUCTIONS,
         stt=stt,
         llm=llm,
         tts=tts,
         vad=ctx.proc.userdata["vad"],
         tools=[property_tools.search_properties],
-        min_endpointing_delay=0.6,
+        min_endpointing_delay=1.0,
     )
 
-    session = AgentSession(
-        user_away_timeout=10,
-    )
+    session = AgentSession()
 
-    # State management
-    _user_had_spoken = False
-    _is_agent_busy = False
-    _goodbye_task: asyncio.Task | None = None
+    # =========================
+    # STATE
+    # =========================
+    inactivity_task: asyncio.Task | None = None
+    _is_closing = False
 
-    @session.on("user_input_transcribed")
-    def on_user_spoke(ev):
-        nonlocal _user_had_spoken, _is_agent_busy
-        if ev.is_final and ev.transcript.strip():
-            _user_had_spoken = True
-            _is_agent_busy = True
-            logger.info(f'[USER SAID] "{ev.transcript}"')
-            print("User said:", ev.transcript)
-
-    @session.on("conversation_item_added")
-    def on_item(ev):
-        nonlocal _is_agent_busy
-        if getattr(ev.item, "role", None) == "assistant":
-            _is_agent_busy = False
-            content = getattr(ev.item, "text_content", None) or getattr(
-                ev.item, "content", None
-            )
-            if content:
-                logger.info(f'[AGENT REPLY] "{content}"')
-
-    @session.on("user_state_changed")
-    def on_user_state_changed(ev: UserStateChangedEvent):
-        nonlocal _goodbye_task
-        if ev.new_state == "away" and _user_had_spoken and not _is_agent_busy:
-            logger.info("[SILENCE] Triggering session end in 10s")
-            _goodbye_task = asyncio.create_task(_end_session())
-        elif _goodbye_task and not _goodbye_task.done():
-            _goodbye_task.cancel()
-            _goodbye_task = None
-            logger.info("[SILENCE] Resumed — goodbye cancelled")
-
-    async def _end_session():
+    # =========================
+    # TIMEOUT FUNCTION
+    # =========================
+    async def inactivity_timeout():
+        nonlocal _is_closing
         try:
+            await asyncio.sleep(20)
+            _is_closing = True
+            logger.info("[TIMEOUT] Closing session")
+
+            # 🔥 Stop further agent processing
+            session.interrupt_all()
+
             speech = session.say(
-                "Aapka dhanyavaad. Rajasthan Property Agent se baat karne ke liye shukriya. Aapka din shubh ho.",
+                "Lagta hai aap abhi busy hain. Dhanyavaad!",
                 allow_interruptions=False,
             )
-            await speech.join()
+            await speech.wait_for_playout()
+
+            await asyncio.sleep(0.5)
+
+            # Remove users
+            for p in ctx.room.remote_participants.values():
+                try:
+                    await ctx.room.remove_participant(p.identity)
+                except:
+                    pass
+
+            # 🔥 FINAL disconnect
             await ctx.room.disconnect()
         except asyncio.CancelledError:
             pass
+    # =========================
+    # USER SPEAK EVENT
+    # =========================
+    @session.on("user_input_transcribed")
+    def on_user_spoke(ev):
+        nonlocal inactivity_task, _is_closing
+        if _is_closing:
+            return
 
+        # Add debug logging for all transcripts
+        if ev.transcript.strip():
+            logger.info(f'[STT] {"Final" if ev.is_final else "Partial"}: "{ev.transcript}"')
+
+        if ev.is_final and ev.transcript.strip():
+            # RESET TIMER
+            if inactivity_task:
+                inactivity_task.cancel()
+            inactivity_task = asyncio.create_task(inactivity_timeout())
+
+    # =========================
+    # AGENT RESPONSE EVENT
+    # =========================
+    @session.on("conversation_item_added")
+    def on_agent_response(ev):
+        nonlocal inactivity_task, _is_closing
+        if _is_closing:
+            return
+
+        if getattr(ev.item, "role", None) == "assistant":
+            # RESET TIMER AFTER RESPONSE
+            if inactivity_task:
+                inactivity_task.cancel()
+            inactivity_task = asyncio.create_task(inactivity_timeout())
+
+    # =========================
+    # TRACK SUBSCRIBED (BVC NC)
+    # =========================
+    @ctx.room.on("track_subscribed")
+    def on_track_subscribed(
+        track: rtc.Track,
+        publication: rtc.TrackPublication,
+        participant: rtc.RemoteParticipant,
+    ):
+        if track.kind == rtc.TrackKind.KIND_AUDIO:
+            logger.info(f"Applying Noise Cancellation to {participant.identity}'s track")
+            options = ctx.proc.userdata["nc"]
+            
+            # Correct LiveKit NC initialization: Filter(id, plugin_path, dependencies)
+            transformer = rtc.AudioFilter(
+                options.id, 
+                noise_cancellation.plugin_path(), 
+                noise_cancellation.dependencies_path()
+            )
+            # Apply the specific model (BVC) options
+            transformer.options(options.options)
+            
+            track.add_transformer(transformer)
+
+    # =========================
+    # CONNECT
+    # =========================
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
-    await session.start(agent=broker_agent, room=ctx.room)
+    await session.start(agent=agent, room=ctx.room)
 
+    # =========================
+    # GREETING
+    # =========================
     session.say(
         "Namaste! Main aapka Rajasthan property broker hoon. "
-        "Jaipur, Jodhpur ya Udaipur, batayein kaun se shehar mein aapke liye property dekhoon?",
+        "Batayein kaun se shehar mein property chahiye?",
         allow_interruptions=True,
     )
 
 
+# =========================
+# RUN
+# =========================
 if __name__ == "__main__":
     cli.run_app(
         WorkerOptions(
