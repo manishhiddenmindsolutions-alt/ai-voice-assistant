@@ -1,0 +1,9 @@
+2026-04-02 17:37:11 [WARNING] livekit.agents: no warmed process available for job, waiting for one to be created
+2026-04-02 17:37:13 [INFO] livekit.plugins.sarvam.log.SpeechStream: Connecting to STT WebSocket
+2026-04-02 17:38:35 [WARNING] livekit.agents: no warmed process available for job, waiting for one to be created
+2026-04-02 17:38:37 [INFO] livekit.plugins.sarvam.log.SpeechStream: Connecting to STT WebSocket
+2026-04-02 17:39:09 [INFO] voice-agent: [USER SAID] "हेलो हेलो।"
+2026-04-02 21:22:11 [WARNING] livekit.agents: no warmed process available for job, waiting for one to be created
+2026-04-02 21:22:11 [INFO] livekit.plugins.sarvam.log.SpeechStream: Connecting to STT WebSocket
+2026-04-02 21:28:38 [WARNING] livekit.agents: no warmed process available for job, waiting for one to be created
+2026-04-02 21:28:39 [INFO] livekit.plugins.sarvam.log.SpeechStream: Connecting to STT WebSocket

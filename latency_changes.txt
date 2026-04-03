@@ -1,0 +1,43 @@
+LATENCY OPTIMIZATION - Voice AI Agent
+======================================
+
+The following changes have been implemented to reduce perceived delay in the voice agent's responses:
+
+1.  AEC Warmup Tuning
+    ------------------
+    - Change: Reduced `aec_warmup_duration` from 3.0s (default) to 1.0s.
+    - Why: The agent previously waited 3 seconds during its initial greeting to calibrate echo cancellation. By reducing this to 1 second, the agent becomes responsive almost immediately after joining the room.
+
+2.  VAD (Voice Activity Detection) Sensitivity
+    -------------------------------------------
+    - Change: Reduced `min_silence_duration` in Silero VAD from 0.3s to 0.25s.
+    - Why: This allows the agent to detect that the user has stopped speaking slightly faster, leading to a quicker "turn-around" time for the AI response.
+
+3.  Job Worker Polling (Note)
+    --------------------------
+    - Current State: Running in local 'dev' mode.
+    - Reality: Local development uses job polling (~1s delay). In production (via webhooks), this delay is eliminated, making the agent join the room instantly.
+
+4.  Audio Auto-Subscription
+    -----------------------
+    - Change: Confirmed `AutoSubscribe.AUDIO_ONLY`.
+    - Why: By ignoring video tracks entirely, the agent reduces bandwidth consumption and CPU load, ensuring faster processing of audio streams.
+
+5.  Model Rationale (Groq + Sarvam)
+    -------------------------------
+    - Current: Groq (LLM) is used for its sub-500ms token generation.
+    - Current: Sarvam (TTS) is used for localized Hindi voice quality.
+    - Note: To further reduce latency, using a smaller LLM model (e.g., Llama-3-8B) is recommended for voice-only tasks. (Currently using Llama-3-70B for higher accuracy).
+
+6. Instant Join (Plugin Pre-heating)
+    ---------------------------------
+    - Change: Moved STT (Sarvam), TTS (Sarvam), and LLM (Groq) initialization from inside the `entrypoint` to the global module scope.
+    - Why: Previously, these plugins were being reconstructed and re-authenticated on every single call, adding overhead. By pre-initializing them, they are "hot" and ready to respond as soon as the first packet arrives.
+
+7. Aggressive VAD
+    ---------------
+    - Change: Reduced `min_silence_duration` to 0.2s.
+    - why: This creates an ultra-snappy feel, perfect for high-speed voice interactions, though it requires a relatively quiet environment for the best experience.
+
+======================================
+Updated: 2026-04-02 01:02 PM

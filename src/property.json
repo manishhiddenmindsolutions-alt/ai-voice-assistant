@@ -1,0 +1,110 @@
+[
+  {
+    "city": "udaipur",
+    "area": "Bhuwana",
+    "avg_price": 2400000,
+    "safety": 8,
+    "growth": 9,
+    "type": "residential",
+    "water": "good"
+  },
+  {
+    "city": "udaipur",
+    "area": "Shobhagpura",
+    "avg_price": 2600000,
+    "safety": 9,
+    "growth": 9,
+    "type": "premium",
+    "water": "good"
+  },
+  {
+    "city": "udaipur",
+    "area": "Hiran Magri",
+    "avg_price": 1500000,
+    "safety": 7,
+    "growth": 7,
+    "type": "residential",
+    "water": "good"
+  },
+  {
+    "city": "udaipur",
+    "area": "Pratap Nagar",
+    "avg_price": 1800000,
+    "safety": 7,
+    "growth": 8,
+    "type": "residential",
+    "water": "moderate"
+  },
+  {
+    "city": "jaipur",
+    "area": "Vaishali Nagar",
+    "avg_price": 3500000,
+    "safety": 9,
+    "growth": 9,
+    "type": "premium",
+    "water": "good"
+  },
+  {
+    "city": "jaipur",
+    "area": "Jagatpura",
+    "avg_price": 2200000,
+    "safety": 7,
+    "growth": 8,
+    "type": "investment",
+    "water": "moderate"
+  },
+  {
+    "city": "jodhpur",
+    "area": "Sardarpura",
+    "avg_price": 3000000,
+    "safety": 8,
+    "growth": 8,
+    "type": "residential",
+    "water": "good"
+  },
+  {
+    "city": "jodhpur",
+    "area": "Basni",
+    "avg_price": 1800000,
+    "safety": 6,
+    "growth": 7,
+    "type": "budget",
+    "water": "moderate"
+  },
+  {
+    "city": "kota",
+    "area": "Talwandi",
+    "avg_price": 2000000,
+    "safety": 7,
+    "growth": 8,
+    "type": "student",
+    "water": "good"
+  },
+  {
+    "city": "kota",
+    "area": "Mahaveer Nagar",
+    "avg_price": 1700000,
+    "safety": 7,
+    "growth": 7,
+    "type": "budget",
+    "water": "moderate"
+  },
+  {
+    "city": "ajmer",
+    "area": "Vaishali Nagar",
+    "avg_price": 2100000,
+    "safety": 7,
+    "growth": 7,
+    "type": "residential",
+    "water": "good"
+  },
+  {
+    "city": "bikaner",
+    "area": "Pawan Puri",
+    "avg_price": 1600000,
+    "safety": 6,
+    "growth": 6,
+    "type": "budget",
+    "water": "moderate"
+  }
+]

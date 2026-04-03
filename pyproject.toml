@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-starter-python"
+version = "1.0.0"
+description = "Simple voice AI assistant built with LiveKit Agents for Python"
+requires-python = ">=3.10, <3.15"
+
+dependencies = [
+    "fastapi>=0.135.3",
+    "livekit>=1.1.3",
+    "livekit-agents[silero,turn-detector]~=1.4",
+    "livekit-plugins-groq",
+    "livekit-plugins-noise-cancellation~=0.2",
+    "livekit-plugins-sarvam",
+    "livekit-plugins-silero>=1.5.1",
+    "livekit-plugins-turn-detector",
+    "numpy>=1.24",
+    "python-dotenv",
+    "sounddevice>=0.4.6",
+    "streamlit>=1.35.0",
+    "uvicorn>=0.42.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-asyncio",
+    "ruff",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "B", "A", "C4", "UP", "SIM", "RUF"]
+ignore = ["E501"]  # Line too long (handled by formatter)
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.uv.sources]
+livekit-agents = { git = "https://github.com/livekit/agents.git", subdirectory = "livekit-agents" }
+livekit-plugins-sarvam = { git = "https://github.com/livekit/agents.git", subdirectory = "livekit-plugins/livekit-plugins-sarvam" }
+livekit-plugins-turn-detector = { git = "https://github.com/livekit/agents.git", subdirectory = "livekit-plugins/livekit-plugins-turn-detector" }
+livekit-plugins-groq = { git = "https://github.com/livekit/agents.git", subdirectory = "livekit-plugins/livekit-plugins-groq" }
