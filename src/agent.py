@@ -90,7 +90,7 @@ async def entrypoint(ctx: JobContext):
         speaker="shubh",
         target_language_code="hi-IN",
     )
-    llm = groq.LLM(model="llama-3.3-70b-versatile")
+    llm = groq.LLM(model="qwen/qwen3-32b")
     property_tools = PropertyTools()
 
     broker_agent = Agent(
