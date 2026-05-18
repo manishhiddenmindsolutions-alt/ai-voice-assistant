@@ -1,0 +1,115 @@
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { Zap, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { authApi } from '../services/api';
+import { useAuthStore } from '../store/useAuthStore';
+import toast from 'react-hot-toast';
+
+const LoginPage = () => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const setAuth = useAuthStore(state => state.setAuth);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    
+    try {
+      const res = await authApi.login({ username: email, password });
+      const token = res.data.access_token;
+      
+      // Step 1: Set token immediately so interceptors can use it
+      setAuth(token, null as any);
+      
+      // Step 2: Fetch full profile
+      const userRes = await authApi.me();
+      
+      // Step 3: Update store with full profile
+      setAuth(token, userRes.data);
+      
+      toast.success('Neural Link Established');
+      navigate('/');
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Handshake failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top,rgba(0,97,255,0.05),transparent)]">
+      <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <div className="flex flex-col items-center mb-10">
+          <div className="w-12 h-12 rounded-xl bg-primary flex items-center justify-center shadow-2xl shadow-primary/20 mb-5 group hover:scale-105 transition-all">
+            <Zap size={24} className="text-white fill-current" />
+          </div>
+          <h1 className="text-lg font-black text-white uppercase tracking-widest">VoiceForge Access</h1>
+          <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest mt-1.5 leading-none opacity-60">Initialize Secure Node Sync</p>
+        </div>
+
+        <div className="bg-zinc-900/40 border border-border rounded-2xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden group">
+          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
+          <form onSubmit={handleLogin} className="space-y-6 relative z-10">
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Forge Identity (Email)</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={16} />
+                <input
+                  type="email"
+                  required
+                  placeholder="operator@neural-forge.ai"
+                  className="w-full h-11 bg-zinc-950 border border-zinc-900 rounded-xl pl-11 pr-4 text-white text-[11px] font-medium placeholder:text-zinc-800 focus:border-primary/40 transition-all outline-none"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Access Cipher (Password)</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={16} />
+                <input
+                  type="password"
+                  required
+                  placeholder="••••••••••••"
+                  className="w-full h-11 bg-zinc-950 border border-zinc-900 rounded-xl pl-11 pr-4 text-white text-[11px] font-medium placeholder:text-zinc-800 focus:border-primary/40 transition-all outline-none"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full h-11 bg-white hover:bg-zinc-200 text-black font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group/btn"
+            >
+              {loading ? (
+                <Loader2 className="animate-spin" size={16} />
+              ) : (
+                <>
+                  Establish Neural Link
+                  <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                </>
+              )}
+            </button>
+          </form>
+        </div>
+
+        <div className="mt-10 text-center">
+          <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+            New Operator?{' '}
+            <Link to="/register" className="text-primary hover:text-blue-400 transition-colors ml-1">
+              Register Node Identity
+            </Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default LoginPage;
