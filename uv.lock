@@ -61,7 +61,7 @@ requires-dist = [
     { name = "fastapi", specifier = ">=0.135.3" },
     { name = "greenlet", specifier = ">=3.0.0" },
     { name = "livekit", specifier = ">=1.1.3" },
-    { name = "livekit-agents", extras = ["google", "silero", "turn-detector"], git = "https://github.com/livekit/agents.git?subdirectory=livekit-agents" },
+    { name = "livekit-agents", extras = ["cerebras", "google", "silero", "turn-detector"], git = "https://github.com/livekit/agents.git?subdirectory=livekit-agents" },
     { name = "livekit-api", specifier = ">=0.7.0" },
     { name = "livekit-plugins-deepgram", specifier = ">=1.5.1" },
     { name = "livekit-plugins-elevenlabs", specifier = ">=1.5.1" },

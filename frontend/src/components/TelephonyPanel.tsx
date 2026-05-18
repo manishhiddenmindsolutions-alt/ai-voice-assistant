@@ -79,20 +79,20 @@ export const TelephonyPanel: React.FC = () => {
   };
 
   return (
-    <div className="p-6 bg-zinc-950 text-white min-h-screen animate-in fade-in duration-500">
-      <div className="flex justify-between items-center mb-8">
+    <div className="animate-in fade-in duration-500 space-y-8">
+      <div className="flex justify-between items-center">
         <div className="flex items-center gap-4 md:gap-5">
           <button onClick={() => navigate('/')} className="btn-back-premium">
             <ArrowLeft size={14} />
             <span>Overview</span>
           </button>
           <div>
-            <h1 className="text-xl font-black uppercase tracking-widest text-white mb-1">
+            <h1 className="text-xl font-black uppercase tracking-widest text-white leading-none mb-1.5">
               Telephony Bridge
             </h1>
             <div className="flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(0,149,255,0.4)]" />
-              <p className="text-zinc-600 text-[9px] font-black uppercase tracking-widest">PSTN Gateway Interface</p>
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(0,149,255,0.4)]" />
+              <p className="text-zinc-600 text-[9px] font-black uppercase tracking-widest leading-none">PSTN Gateway Interface</p>
             </div>
           </div>
         </div>

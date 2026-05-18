@@ -1,5 +1,6 @@
 from datetime import timedelta
-from typing import Any, Annotated
+from typing import Any, Annotated, Optional
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -83,6 +84,37 @@ async def read_user_me(
         "id": current_user.id,
         "email": current_user.email,
         "full_name": current_user.full_name,
+        "avatar_url": current_user.avatar_url,
+        "is_active": current_user.is_active,
+        "created_at": current_user.created_at
+    }
+
+class ProfileUpdate(BaseModel):
+    full_name: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+@router.put("/me", response_model=dict)
+async def update_profile(
+    db: Annotated[AsyncSession, Depends(get_db)],
+    current_user: Annotated[UserORM, Depends(get_current_user)],
+    profile_data: ProfileUpdate
+) -> Any:
+    """
+    Update current user profile details in the registry.
+    """
+    if profile_data.full_name is not None:
+        current_user.full_name = profile_data.full_name
+    if profile_data.avatar_url is not None:
+        current_user.avatar_url = profile_data.avatar_url
+    
+    await db.commit()
+    await db.refresh(current_user)
+    
+    return {
+        "id": current_user.id,
+        "email": current_user.email,
+        "full_name": current_user.full_name,
+        "avatar_url": current_user.avatar_url,
         "is_active": current_user.is_active,
         "created_at": current_user.created_at
     }

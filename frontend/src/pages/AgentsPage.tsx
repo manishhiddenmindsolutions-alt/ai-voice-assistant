@@ -120,7 +120,7 @@ const AgentsPage = () => {
                 <div className="flex items-center gap-3 w-full md:w-auto">
                     <button
                         onClick={() => fetchAgents(true)}
-                        className={`flex-1 md:w-10 md:h-10 h-10 flex items-center justify-center rounded-lg border border-border bg-zinc-950/50 text-zinc-500 hover:text-white transition-all backdrop-blur-sm ${isRefreshing ? 'animate-spin text-primary border-primary/40' : ''}`}
+                        className={`flex-1 md:w-10 md:h-10 h-10 flex items-center justify-center rounded-xl border border-white/5 bg-zinc-950/50 text-zinc-500 hover:text-white transition-all backdrop-blur-sm ${isRefreshing ? 'animate-spin text-primary border-primary/40' : ''}`}
                         title="Sync Registry"
                     >
                         <RefreshCw size={16} />
@@ -153,11 +153,11 @@ const AgentsPage = () => {
                     )}
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <button className="flex-1 md:w-auto h-10 px-5 border border-border rounded-lg bg-zinc-950/50 text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-white hover:border-zinc-700 transition-all flex items-center justify-center gap-3 backdrop-blur-sm">
+                    <button className="flex-1 md:w-auto h-10 px-5 border border-white/5 rounded-xl bg-zinc-950/50 text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-white hover:border-zinc-700 transition-all flex items-center justify-center gap-3 backdrop-blur-sm">
                         <Filter size={14} />
                         Filter Ops
                     </button>
-                    <div className="flex-1 md:w-auto h-10 px-4 border border-border rounded-lg bg-zinc-950/20 flex items-center justify-center gap-3">
+                    <div className="flex-1 md:w-auto h-10 px-4 border border-white/5 rounded-xl bg-zinc-950/20 flex items-center justify-center gap-3">
                         <Users size={14} className="text-zinc-700" />
                         <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest leading-none whitespace-nowrap">{agents.length} Nodes</span>
                     </div>

@@ -36,6 +36,7 @@ export const authApi = {
     });
   },
   me: () => api.get('/auth/me'),
+  updateProfile: (data: { full_name?: string; avatar_url?: string }) => api.put('/auth/me', data),
 };
 
 export const agentApi = {

@@ -24,6 +24,10 @@ const LLM_MODELS = {
     { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 (8B)' },
     { id: 'mixtral-8x7b-32768', name: 'Mixtral (Reasoning)' }
   ],
+  cerebras: [
+    { id: 'llama-3.3-70b', name: 'Llama 3.3 (70B) - Cerebras Speed' },
+    { id: 'llama3.1-8b', name: 'Llama 3.1 (8B) - Cerebras Speed' }
+  ],
   openai: [
     { id: 'gpt-4o', name: 'GPT-4o (Flagship)' },
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
@@ -242,7 +246,7 @@ const CreateAgentPage = () => {
                       <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Assistant Name</label>
                       <input value={formData.agentName} onChange={e => setFormData({ ...formData, agentName: e.target.value })} className="input-vapi w-full h-11 text-[11px] font-black" placeholder="e.g. Identity Node-01" />
                     </div>
-                    <ConfigGroup label="Intelligence Provider" value={formData.llm.provider} options={['groq', 'openai']} onChange={(p: string) => setFormData({ ...formData, llm: { ...formData.llm, provider: p, model: LLM_MODELS[p as keyof typeof LLM_MODELS][0].id } })} />
+                    <ConfigGroup label="Intelligence Provider" value={formData.llm.provider} options={['groq', 'cerebras', 'openai']} onChange={(p: string) => setFormData({ ...formData, llm: { ...formData.llm, provider: p, model: LLM_MODELS[p as keyof typeof LLM_MODELS][0].id } })} />
                   </div>
                   
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

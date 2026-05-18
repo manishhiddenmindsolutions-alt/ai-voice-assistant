@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAgentStore } from '../store/useAgentStore';
+import { useAuthStore } from '../store/useAuthStore';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,6 +24,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { setEditingAgent } = useAgentStore();
+  const user = useAuthStore(state => state.user);
+
+  const initials = user?.full_name
+    ? user.full_name.split(' ').map(n => n[0]).join('').toUpperCase()
+    : user?.email.substring(0, 2).toUpperCase();
 
   const handleNewAgent = () => {
     setEditingAgent(null);
@@ -134,14 +140,28 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </button>
 
-          <div className="p-4 bg-zinc-950/50 border border-white/5 rounded-[1.5rem] flex items-center gap-4 group cursor-pointer hover:border-zinc-700 transition-all">
-            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center font-black text-xs text-zinc-500 group-hover:text-white transition-colors">MS</div>
+          <div 
+            onClick={() => {
+              navigate('/profile');
+              onClose();
+            }}
+            className="p-4 bg-zinc-950/50 border border-white/5 hover:border-primary/40 rounded-[1.5rem] flex items-center gap-4 group cursor-pointer transition-all hover:bg-zinc-900/40"
+          >
+            <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center overflow-hidden font-black text-xs text-zinc-500 group-hover:text-primary group-hover:border-primary/20 transition-all">
+              {user?.avatar_url ? (
+                <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
+            </div>
             <div className="text-left overflow-hidden">
-              <p className="text-[11px] font-black text-white uppercase tracking-[0.2em] truncate">Manish Sen</p>
-              <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                Pro Foundry
+              <p className="text-[11px] font-black text-white uppercase tracking-[0.2em] truncate group-hover:text-primary transition-colors">
+                {user?.full_name || 'Operator'}
               </p>
+              <span className="text-[10px] text-emerald-500 font-black uppercase tracking-widest mt-0.5 flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Pro Foundry
+              </span>
             </div>
           </div>
         </div>

@@ -196,15 +196,31 @@ def create_components(config: Dict[str, Any]):
         stt = groq.STT()
 
 
-    # 2. LLM (Groq Llama)
+    # 2. LLM (Groq, Cerebras, or OpenAI)
+    llm_provider = config.get("llm", {}).get("provider", "groq")
     try:
-        agent_llm = groq.LLM(
-            api_key=config.get("llm", {}).get("apiKey") or os.getenv("GROQ_API_KEY"),
-            model=config.get("llm", {}).get("model", "llama-3.3-70b-versatile"),
-            temperature=config.get("llm", {}).get("temperature", 0.7)
-        )
+        logger.info(f"⚡ [INIT] LLM Provider: {llm_provider}")
+        if llm_provider == "cerebras":
+            agent_llm = openai.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("CEREBRAS_API_KEY"),
+                base_url="https://api.cerebras.ai/v1",
+                model=config.get("llm", {}).get("model", "llama-3.3-70b"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
+        elif llm_provider == "openai":
+            agent_llm = openai.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("OPENAI_API_KEY"),
+                model=config.get("llm", {}).get("model", "gpt-4o-mini"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
+        else:
+            agent_llm = groq.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("GROQ_API_KEY"),
+                model=config.get("llm", {}).get("model", "llama-3.3-70b-versatile"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
     except Exception as e:
-        logger.error(f"LLM Initialization failed: {e}")
+        logger.error(f"❌ [INIT] LLM Initialization failed for {llm_provider}: {e}")
         agent_llm = groq.LLM()
 
     # 3. TTS (Sarvam Bulbul)

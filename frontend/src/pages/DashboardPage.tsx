@@ -78,7 +78,7 @@ const DashboardPage = () => {
         </div>
         <button 
           onClick={() => navigate('/agents/create')}
-          className="h-10 px-6 rounded-md bg-primary text-primary-foreground font-semibold text-sm hover:bg-primary/90 shadow-[0_0_15px_rgba(0,112,243,0.3)] transition-all flex items-center gap-2 w-full md:w-auto justify-center"
+          className="btn-vapi w-full md:w-auto shadow-[0_0_15px_rgba(0,112,243,0.3)]"
         >
           <Plus size={16} strokeWidth={2.5} />
           Initialize Node
@@ -220,9 +220,9 @@ const DashboardPage = () => {
 };
 
 const StatCard = ({ label, value, trend, icon, trendUp, glowClass = 'glow-card-primary' }: any) => (
-  <div className={`p-5 bg-surface-container/40 border border-border rounded-2xl space-y-4 transition-all duration-300 group shadow-sm ${glowClass}`}>
+  <div className={`card-vapi !p-5 space-y-4 transition-all duration-300 group hover:scale-[1.02] cursor-pointer ${glowClass}`}>
     <div className="flex items-center justify-between">
-      <div className="w-8 h-8 rounded-md bg-surface border border-border flex items-center justify-center text-muted group-hover:text-primary transition-colors">
+      <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center text-muted group-hover:text-primary transition-colors">
         {icon}
       </div>
       <span className={`text-[11px] font-mono font-medium ${trendUp ? 'text-emerald-500' : 'text-primary'}`}>
