@@ -20,6 +20,9 @@ class NativeToolHandler:
         try:
             from dateutil import parser as date_parser
             start = date_parser.parse(start_time)
+            if start.tzinfo is None:
+                local_tz = datetime.datetime.now().astimezone().tzinfo
+                start = start.replace(tzinfo=local_tz)
             end = start + datetime.timedelta(minutes=duration_mins)
             logger.info(f"Scheduling event '{summary}' for {start_time}. End: {end}")   
             
@@ -52,7 +55,21 @@ class NativeToolHandler:
     async def append_to_sheet(integration_token: str, spreadsheet_id: str, range_name: str, values: List[Any]):
         """Appends a row to a Google Sheet."""
         try:
-            payload = {"values": [values]}
+            flat_values = []
+            if isinstance(values, dict):
+                flat_values = list(values.values())
+            elif isinstance(values, list):
+                for item in values:
+                    if isinstance(item, dict):
+                        flat_values.extend(list(item.values()))
+                    elif isinstance(item, list):
+                        flat_values.extend(item)
+                    else:
+                        flat_values.append(item)
+            else:
+                flat_values = [values]
+
+            payload = {"values": [flat_values]}
             url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{range_name}:append?valueInputOption=RAW"
             
             async with aiohttp.ClientSession() as session:
@@ -272,7 +289,13 @@ def create_components(config: Dict[str, Any]):
             tool = llm.function_tool(create_calendar_cmd(calendar_id, token, name), name=name, description=desc)
             
         elif tool_type == "SHEETS":
-            sheet_id = t_cfg.get("config", {}).get("spreadsheetId")
+            raw_sheet_id = t_cfg.get("config", {}).get("spreadsheetId")
+            sheet_id = raw_sheet_id
+            if raw_sheet_id:
+                import re
+                match = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", raw_sheet_id)
+                if match:
+                    sheet_id = match.group(1)
             sheet_range = t_cfg.get("config", {}).get("range", "Sheet1!A1")
             token = t_cfg.get("apiKey")
 

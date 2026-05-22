@@ -4,6 +4,19 @@ import os
 import pathlib
 import subprocess
 import sys
+
+# Ensure stdout and stderr use UTF-8 encoding on Windows to prevent UnicodeEncodeError with emojis
+if sys.stdout and sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+if sys.stderr and sys.stderr.encoding != 'utf-8':
+    try:
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # pyrefly: ignore [missing-import]

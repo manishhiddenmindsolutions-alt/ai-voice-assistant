@@ -537,12 +537,21 @@ export const ToolManager: React.FC = () => {
                             )}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-[8px] font-black text-zinc-600 uppercase tracking-widest ml-1">Spreadsheet ID</label>
+                                    <label className="text-[8px] font-black text-zinc-600 uppercase tracking-widest ml-1">Spreadsheet URL or ID</label>
                                     <input 
-                                        className="input-vapi w-full h-11"
-                                        placeholder="1abcde..."
+                                        className="input-vapi w-full h-11 text-[10px]"
+                                        placeholder="Paste Sheet URL or ID"
                                         value={newTool.config?.spreadsheetId || ''}
-                                        onChange={e => setNewTool({...newTool, config: {...newTool.config, spreadsheetId: e.target.value}})}
+                                        onChange={e => {
+                                            const val = e.target.value;
+                                            let finalId = val;
+                                            const match = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                                            if (match && match[1]) {
+                                                finalId = match[1];
+                                                toast.success('Extracted ID from URL!', { id: 'sheet-id-toast' });
+                                            }
+                                            setNewTool({...newTool, config: {...newTool.config, spreadsheetId: finalId}});
+                                        }}
                                     />
                                 </div>
                                 <div className="space-y-1.5">
