@@ -14,7 +14,7 @@ import {
   Command,
   Monitor
 } from 'lucide-react';
-import { agentApi, sessionApi, toolApi } from '../services/api';
+import api, { agentApi, sessionApi, toolApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -32,6 +32,12 @@ const LLM_MODELS = {
     { id: 'gpt-4o', name: 'GPT-4o (Flagship)' },
     { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Legacy' }
+  ],
+  openrouter: [
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 (70B)' },
+    { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (V3)' },
+    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+    { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro' }
   ]
 };
 
@@ -56,21 +62,21 @@ const BLUEPRINTS = [
     icon: "🏘️",
     prompt: "You are a high-performing real estate closer. Your tone is professional, persuasive, and knowledgeable. Focus on lead qualification and property value points.",
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8 },
-    llm: { provider: 'groq', model: 'llama-3.3-70b-versatile' }
+    llm: { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' }
   },
   {
     name: "Concierge AI",
     icon: "🤵",
     prompt: "You are an elegant concierge. You assist with scheduling, recommendations, and local knowledge. Your tone is refined, helpful, and sophisticated.",
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8 },
-    llm: { provider: 'openai', model: 'gpt-4o-mini' }
+    llm: { provider: 'openrouter', model: 'openai/gpt-4o-mini' }
   },
   {
     name: "Technical Support",
     icon: "⚙️",
     prompt: "You are a technical support engineer. You are patient, analytical, and structured. Use step-by-step reasoning to resolve issues.",
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8 },
-    llm: { provider: 'groq', model: 'mixtral-8x7b-32768' }
+    llm: { provider: 'openrouter', model: 'google/gemini-2.5-flash' }
   }
 ];
 
@@ -86,13 +92,15 @@ const CreateAgentPage = () => {
     description: '',
     prompt: '',
     status: 'draft',
-    language: 'hi-IN',
-    stt: { provider: 'sarvam', model: 'saaras:v3', language: 'hi-IN' },
-    llm: { provider: 'groq', model: 'llama-3.3-70b-versatile', temperature: 0.7 },
-    tts: { provider: 'sarvam', model: 'bulbul:v3', voice: 'neha', pace: 1.0 },
+    language: 'en-US',
+    stt: { provider: 'groq', model: 'whisper-large-v3', language: 'en-US' },
+    llm: { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct', temperature: 0.7 },
+    tts: { provider: 'openai', model: 'tts-1', voice: 'alloy', pace: 1.0 },
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8, padding_duration: 0.1 },
     tools: []
   });
+
+  const [connectedProviders, setConnectedProviders] = useState<any[]>([]);
 
   useEffect(() => {
     if (editingAgent) setFormData(editingAgent);
@@ -107,7 +115,17 @@ const CreateAgentPage = () => {
       }
     };
     
+    const fetchProviders = async () => {
+      try {
+        const res = await api.get('/providers/');
+        setConnectedProviders(res.data || []);
+      } catch (err) {
+        console.error("Failed to load connected providers", err);
+      }
+    };
+
     fetchTools();
+    fetchProviders();
     setIsLoading(false);
   }, [editingAgent]);
 
@@ -181,6 +199,21 @@ const CreateAgentPage = () => {
     </div>
   );
 
+  // Dynamic Cascade Mappings (Locked to OpenRouter)
+  const openrouterConn = connectedProviders.find(p => p.provider === 'openrouter');
+  const dynamicModels = openrouterConn?.models.map((m: any) => ({ id: m.model_id, name: m.name })) || [
+    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 (70B)' },
+    { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
+    { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
+    { id: 'openai/gpt-4o', name: 'GPT-4o (Flagship)' },
+    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
+    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+    { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (V3)' }
+  ];
+
+  const activeTtsProviderData = connectedProviders.find(p => p.provider === formData.tts.provider);
+  const dynamicVoices = activeTtsProviderData?.models.map((m: any) => ({ id: m.model_id, name: m.name })) || TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES] || [];
+
   if (isLoading) return <div className="h-full flex items-center justify-center font-bold text-primary animate-pulse">Establishing Forge...</div>;
 
   return (
@@ -241,18 +274,39 @@ const CreateAgentPage = () => {
                 </div>
 
                 <div className="card-vapi space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
                     <div className="space-y-1.5">
                       <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Assistant Name</label>
                       <input value={formData.agentName} onChange={e => setFormData({ ...formData, agentName: e.target.value })} className="input-vapi w-full h-11 text-[11px] font-black" placeholder="e.g. Identity Node-01" />
                     </div>
-                    <ConfigGroup label="Intelligence Provider" value={formData.llm.provider} options={['groq', 'cerebras', 'openai']} onChange={(p: string) => setFormData({ ...formData, llm: { ...formData.llm, provider: p, model: LLM_MODELS[p as keyof typeof LLM_MODELS][0].id } })} />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ConfigGroup label="Core Inference Model" value={formData.llm.model} options={LLM_MODELS[formData.llm.provider as keyof typeof LLM_MODELS].map(m => m.id)} labels={LLM_MODELS[formData.llm.provider as keyof typeof LLM_MODELS].map(m => m.name)} onChange={(m: string) => setFormData({ ...formData, llm: { ...formData.llm, model: m } })} />
+
+                    <ConfigGroup 
+                      label="Core Inference Model" 
+                      value={formData.llm.model} 
+                      options={dynamicModels.map((m: any) => m.id)} 
+                      labels={dynamicModels.map((m: any) => m.name)} 
+                      onChange={(m: string) => setFormData({ ...formData, llm: { ...formData.llm, model: m } })} 
+                    />
+
                     <SensitivitySlider label="Creativity (Temp)" value={formData.llm.temperature} min={0} max={2.0} step={0.1} onChange={(v: number) => setFormData({...formData, llm: {...formData.llm, temperature: v}})} sub="Standard: 0.7" />
                   </div>
+
+                  {!connectedProviders.some(p => p.provider === 'openrouter') && (
+                    <div className="p-5 bg-zinc-950/40 border border-dashed border-white/5 rounded-3xl space-y-3 mt-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                        <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">🔐 OpenRouter Credentials Required</span>
+                      </div>
+                      <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest leading-relaxed">Provide your custom API key below, or configure it globally in the Providers Connection Center.</p>
+                      <input 
+                        type="password"
+                        value={formData.llm.apiKey || ''} 
+                        onChange={e => setFormData({ ...formData, llm: { ...formData.llm, apiKey: e.target.value } })} 
+                        className="input-vapi w-full h-11 text-[11px] font-semibold" 
+                        placeholder="Paste OpenRouter API Key..." 
+                      />
+                    </div>
+                  )}
 
                   <div className="space-y-1.5">
                     <div className="flex justify-between items-center px-1">
@@ -268,13 +322,51 @@ const CreateAgentPage = () => {
             {step === 2 && (
               <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <ProPanel label="STT (The Ear)" icon={<Monitor size={12} />}>
-                      <ConfigGroup label="Signal Provider" value={formData.stt.provider} options={['sarvam', 'deepgram']} onChange={(p: string) => setFormData({ ...formData, stt: { ...formData.stt, provider: p } })} />
+                    <ProPanel label="STT (The Ear)" icon={<Monitor size={12} />}>
+                      <ConfigGroup label="Signal Provider" value={formData.stt.provider} options={['groq', 'sarvam', 'deepgram']} labels={['Groq Whisper', 'Sarvam STT', 'Deepgram Nova-2']} onChange={(p: string) => setFormData({ ...formData, stt: { ...formData.stt, provider: p } })} />
                       <ConfigGroup label="Primary Language" value={formData.language} options={['hi-IN', 'en-US', 'bn-IN']} onChange={(l: string) => setFormData({ ...formData, language: l, stt: { ...formData.stt, language: l } })} />
+                      <div className="space-y-1.5 mt-4">
+                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">STT API Auth</label>
+                        {connectedProviders.some(p => p.provider === formData.stt.provider) ? (
+                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2 h-11">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">🔐 Active Global Connection</span>
+                          </div>
+                        ) : (
+                          <input 
+                            type="password"
+                            value={formData.stt.apiKey || ''} 
+                            onChange={e => setFormData({ ...formData, stt: { ...formData.stt, apiKey: e.target.value } })} 
+                            className="input-vapi w-full h-11 text-[11px] font-semibold animate-in fade-in duration-300" 
+                            placeholder="Provide Custom API Key..." 
+                          />
+                        )}
+                      </div>
                     </ProPanel>
                     <ProPanel label="TTS (The Voice)" icon={<Volume2 size={12} />}>
-                      <ConfigGroup label="Vocal Engine" value={formData.tts.provider} options={['sarvam', 'openai']} onChange={(p: string) => setFormData({ ...formData, tts: { ...formData.tts, provider: p, voice: TTS_VOICES[p as keyof typeof TTS_VOICES][0].id } })} />
-                      <ConfigGroup label="Neural ID" value={formData.tts.voice} options={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.id)} labels={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.name)} onChange={(v: string) => setFormData({ ...formData, tts: { ...formData.tts, voice: v } })} />
+                      <ConfigGroup label="Vocal Engine" value={formData.tts.provider} options={['sarvam', 'openai', 'elevenlabs', 'cartesia']} labels={['Sarvam AI', 'OpenAI TTS', 'ElevenLabs', 'Cartesia']} onChange={(p: string) => {
+                        const pData = connectedProviders.find(conn => conn.provider === p);
+                        const initialVoice = pData?.models?.[0]?.model_id || TTS_VOICES[p as keyof typeof TTS_VOICES]?.[0]?.id || '';
+                        setFormData({ ...formData, tts: { ...formData.tts, provider: p, voice: initialVoice } });
+                      }} />
+                      <ConfigGroup label="Neural ID" value={formData.tts.voice} options={dynamicVoices.map(v => v.id)} labels={dynamicVoices.map(v => v.name)} onChange={(v: string) => setFormData({ ...formData, tts: { ...formData.tts, voice: v } })} />
+                      <div className="space-y-1.5 mt-4">
+                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">TTS API Auth</label>
+                        {connectedProviders.some(p => p.provider === formData.tts.provider) ? (
+                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2 h-11">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">🔐 Active Global Connection</span>
+                          </div>
+                        ) : (
+                          <input 
+                            type="password"
+                            value={formData.tts.apiKey || ''} 
+                            onChange={e => setFormData({ ...formData, tts: { ...formData.tts, apiKey: e.target.value } })} 
+                            className="input-vapi w-full h-11 text-[11px] font-semibold animate-in fade-in duration-300" 
+                            placeholder="Provide Custom API Key..." 
+                          />
+                        )}
+                      </div>
                     </ProPanel>
                 </div>
                 <div className="card-vapi !p-6">

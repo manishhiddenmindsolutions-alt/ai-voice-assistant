@@ -9,6 +9,16 @@ from typing import Dict, Any, List, Optional, Annotated
 from livekit.agents import llm
 from livekit.plugins import sarvam, groq, openai, deepgram, silero
 
+try:
+    from livekit.plugins import elevenlabs
+except ImportError:
+    elevenlabs = None
+
+try:
+    from livekit.plugins import cartesia
+except ImportError:
+    cartesia = None
+
 logger = logging.getLogger("agent-factory")
 
 class NativeToolHandler:
@@ -191,7 +201,7 @@ def create_vad(config: Dict[str, Any], prewarmed_vad=None):
 def create_components(config: Dict[str, Any]):
     """Creates all AI components (STT, TTS, LLM) from configuration."""
     
-    # 1. STT (Groq or Sarvam)
+    # 1. STT (Groq, Sarvam, or Deepgram)
     stt_lang = config.get("language") or "en"
     stt_provider = config.get("stt", {}).get("provider", "groq")
     try:
@@ -200,6 +210,11 @@ def create_components(config: Dict[str, Any]):
             stt = sarvam.STT(
                 api_key=config.get("stt", {}).get("apiKey") or os.getenv("SARVAM_API_KEY"),
                 model="saaras:v3",
+                language=stt_lang
+            )
+        elif stt_provider == "deepgram":
+            stt = deepgram.STT(
+                api_key=config.get("stt", {}).get("apiKey") or os.getenv("DEEPGRAM_API_KEY"),
                 language=stt_lang
             )
         else:
@@ -230,6 +245,44 @@ def create_components(config: Dict[str, Any]):
                 model=config.get("llm", {}).get("model", "gpt-4o-mini"),
                 temperature=config.get("llm", {}).get("temperature", 0.7)
             )
+        elif llm_provider == "openrouter":
+            agent_llm = openai.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+                model=config.get("llm", {}).get("model", "meta-llama/llama-3.3-70b-instruct"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
+        elif llm_provider == "gemini":
+            agent_llm = openai.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"),
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                model=config.get("llm", {}).get("model", "gemini-2.5-flash"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
+        elif llm_provider in ["together_ai", "together"]:
+            agent_llm = openai.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("TOGETHER_API_KEY") or os.getenv("TOGETHER_AI_KEY"),
+                base_url="https://api.together.xyz/v1",
+                model=config.get("llm", {}).get("model", "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
+        elif llm_provider == "deepseek":
+            agent_llm = openai.LLM(
+                api_key=config.get("llm", {}).get("apiKey") or os.getenv("DEEPSEEK_API_KEY"),
+                base_url="https://api.deepseek.com/v1",
+                model=config.get("llm", {}).get("model", "deepseek-chat"),
+                temperature=config.get("llm", {}).get("temperature", 0.7)
+            )
+        elif llm_provider == "anthropic":
+            try:
+                from livekit.plugins import anthropic
+                agent_llm = anthropic.LLM(
+                    api_key=config.get("llm", {}).get("apiKey") or os.getenv("ANTHROPIC_API_KEY"),
+                    model=config.get("llm", {}).get("model", "claude-3-5-sonnet-latest")
+                )
+            except Exception as err:
+                logger.error(f"Failed to load Anthropic plugin: {err}")
+                agent_llm = groq.LLM()
         else:
             agent_llm = groq.LLM(
                 api_key=config.get("llm", {}).get("apiKey") or os.getenv("GROQ_API_KEY"),
@@ -240,17 +293,38 @@ def create_components(config: Dict[str, Any]):
         logger.error(f"❌ [INIT] LLM Initialization failed for {llm_provider}: {e}")
         agent_llm = groq.LLM()
 
-    # 3. TTS (Sarvam Bulbul)
+    # 3. TTS (Sarvam Bulbul or OpenAI TTS)
+    tts_provider = config.get("tts", {}).get("provider", "sarvam")
     try:
-        agent_tts = sarvam.TTS(
-            api_key=config.get("tts", {}).get("apiKey") or os.getenv("SARVAM_API_KEY"),
-            target_language_code=stt_lang, # Use the agent's configured language
-            speaker=config.get("tts", {}).get("voice", "shubh"),
-            model="bulbul:v3",
-        )
+        logger.info(f"⚡ [INIT] TTS Provider: {tts_provider}")
+        if tts_provider == "openai":
+            agent_tts = openai.TTS(
+                api_key=config.get("tts", {}).get("apiKey") or os.getenv("OPENAI_API_KEY"),
+                model=config.get("tts", {}).get("model", "tts-1"),
+                voice=config.get("tts", {}).get("voice", "alloy")
+            )
+        elif tts_provider == "elevenlabs" and elevenlabs is not None:
+            agent_tts = elevenlabs.TTS(
+                api_key=config.get("tts", {}).get("apiKey") or os.getenv("ELEVENLABS_API_KEY"),
+                model=config.get("tts", {}).get("model", "eleven_monolingual_v1"),
+                voice_id=config.get("tts", {}).get("voice", "21m00Tcm4TlvDq8ikWAM")
+            )
+        elif tts_provider == "cartesia" and cartesia is not None:
+            agent_tts = cartesia.TTS(
+                api_key=config.get("tts", {}).get("apiKey") or os.getenv("CARTESIA_API_KEY"),
+                model=config.get("tts", {}).get("model", "sonic-english"),
+                voice=config.get("tts", {}).get("voice", "pf_rachel")
+            )
+        else:
+            agent_tts = sarvam.TTS(
+                api_key=config.get("tts", {}).get("apiKey") or os.getenv("SARVAM_API_KEY"),
+                target_language_code=stt_lang, # Use the agent's configured language
+                speaker=config.get("tts", {}).get("voice", "shubh"),
+                model="bulbul:v3",
+            )
     except Exception as e:
-        logger.error(f"TTS Initialization failed: {e}")
-        agent_tts = sarvam.TTS(target_language_code="hi-IN")
+        logger.error(f"TTS Initialization failed: {e}. Falling back to stable OpenAI TTS.")
+        agent_tts = openai.TTS(model="tts-1", voice="alloy")
 
     # 4. TOOLS (CRITICAL: Neural Forge Fulfillment)
     agent_tools = []

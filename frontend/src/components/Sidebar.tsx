@@ -23,7 +23,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { setEditingAgent } = useAgentStore();
+  const { agents, setEditingAgent } = useAgentStore();
   const user = useAuthStore(state => state.user);
 
   const initials = user?.full_name
@@ -49,7 +49,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Config',
       items: [
-        { id: 'keys', path: '/keys', icon: Key, label: 'API Keys' },
+        { id: 'providers', path: '/providers', icon: Key, label: 'Providers' },
         { id: 'webhooks', path: '/tools', icon: Package, label: 'Webhooks' },
         { id: 'integrations', path: '/integrations', icon: Share2, label: 'Integrations' },
         { id: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
@@ -117,7 +117,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                   <item.icon size={18} className={`${isActive(item.path) ? 'text-primary' : 'text-zinc-700 group-hover:text-zinc-400'} transition-colors`} />
                   <span className="font-bold text-[13px] tracking-wide uppercase">{item.label}</span>
                   {item.id === 'agents' && (
-                     <span className="ml-auto text-[10px] font-black bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-lg text-zinc-600">3</span>
+                     <span className="ml-auto text-[10px] font-black bg-zinc-900 border border-zinc-800 px-2.5 py-1 rounded-lg text-zinc-600">{agents.length}</span>
                   )}
                 </NavLink>
               ))}

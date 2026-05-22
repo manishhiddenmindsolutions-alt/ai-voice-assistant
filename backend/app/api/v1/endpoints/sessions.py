@@ -1,16 +1,24 @@
 from typing import Optional
 import uuid
+# pyrefly: ignore [missing-import]
 from app.db.session import get_db
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from app.models.orm import AgentORM, ToolORM, IntegrationORM
+# pyrefly: ignore [missing-import]
+from app.models.orm import AgentORM, ToolORM, IntegrationORM, UserORM, ProviderConnectionORM
+# pyrefly: ignore [missing-import]
 from app.models.agent import AgentConfig
+# pyrefly: ignore [missing-import]
 from app.services.livekit_service import livekit_service
+# pyrefly: ignore [missing-import]
 from app.core.config import settings
 from fastapi import APIRouter, HTTPException, Depends
+# pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
+# pyrefly: ignore [missing-import]
 from app.core.security import vault
+# pyrefly: ignore [missing-import]
 from app.models.orm import UserORM
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
@@ -67,6 +75,7 @@ async def start_session(
                                 final_token = "GENERATION_ERROR"
                         else:
                             # OAuth flow: Use GoogleManager to verify/refresh token
+                            # pyrefly: ignore [missing-import]
                             from app.core.integrations.google_utils import GoogleManager
                             final_token = await GoogleManager.refresh_token(db, integration)
                 
@@ -101,8 +110,69 @@ async def start_session(
             metadata.setdefault("llm", {})["model"] = db_agent.llm_model
             metadata.setdefault("tts", {})["voice"] = db_agent.voice_id
             
-            # --- DECRYPT AGENT SECRETS ---
-            # If agent has custom model keys (LLM/TTS/STT), decrypt and merge into metadata
+            # --- DECRYPT SECRETS (BYOK DYNAMIC INFRASTRUCTURE RESOLVER) ---
+            # Resolve LLM Key
+            llm_provider = (metadata.get("llm", {}).get("provider") or "groq").lower()
+            stmt_llm = select(ProviderConnectionORM).where(
+                ProviderConnectionORM.user_id == db_agent.user_id,
+                ProviderConnectionORM.provider == llm_provider
+            )
+            res_llm = await db.execute(stmt_llm)
+            conn_llm = res_llm.scalar_one_or_none()
+            if conn_llm and conn_llm.api_key:
+                metadata.setdefault("llm", {})["apiKey"] = vault.decrypt(conn_llm.api_key)
+
+            # Resolve STT Key
+            stt_provider = (metadata.get("stt", {}).get("provider") or "groq").lower()
+            stmt_stt = select(ProviderConnectionORM).where(
+                ProviderConnectionORM.user_id == db_agent.user_id,
+                ProviderConnectionORM.provider == stt_provider
+            )
+            res_stt = await db.execute(stmt_stt)
+            conn_stt = res_stt.scalar_one_or_none()
+            if conn_stt and conn_stt.api_key:
+                metadata.setdefault("stt", {})["apiKey"] = vault.decrypt(conn_stt.api_key)
+
+            # Resolve TTS Key
+            tts_provider = (metadata.get("tts", {}).get("provider") or "sarvam").lower()
+            stmt_tts = select(ProviderConnectionORM).where(
+                ProviderConnectionORM.user_id == db_agent.user_id,
+                ProviderConnectionORM.provider == tts_provider
+            )
+            res_tts = await db.execute(stmt_tts)
+            conn_tts = res_tts.scalar_one_or_none()
+            if conn_tts and conn_tts.api_key:
+                metadata.setdefault("tts", {})["apiKey"] = vault.decrypt(conn_tts.api_key)
+
+            # --- FALLBACK MECHANISM FOR LEGACY FLAT KEYS ---
+            result_user = await db.execute(select(UserORM).where(UserORM.id == db_agent.user_id))
+            db_user = result_user.scalar_one_or_none()
+            if db_user and db_user.secrets:
+                # LLM key fallback
+                if "apiKey" not in metadata.get("llm", {}):
+                    llm_prov_key = f"{llm_provider}_key"
+                    if llm_prov_key in db_user.secrets:
+                        metadata.setdefault("llm", {})["apiKey"] = vault.decrypt(db_user.secrets[llm_prov_key])
+                    elif "llm_key" in db_user.secrets:
+                        metadata.setdefault("llm", {})["apiKey"] = vault.decrypt(db_user.secrets["llm_key"])
+                
+                # STT key fallback
+                if "apiKey" not in metadata.get("stt", {}):
+                    stt_prov_key = f"{stt_provider}_key"
+                    if stt_prov_key in db_user.secrets:
+                        metadata.setdefault("stt", {})["apiKey"] = vault.decrypt(db_user.secrets[stt_prov_key])
+                    elif "stt_key" in db_user.secrets:
+                        metadata.setdefault("stt", {})["apiKey"] = vault.decrypt(db_user.secrets["stt_key"])
+
+                # TTS key fallback
+                if "apiKey" not in metadata.get("tts", {}):
+                    tts_prov_key = f"{tts_provider}_key"
+                    if tts_prov_key in db_user.secrets:
+                        metadata.setdefault("tts", {})["apiKey"] = vault.decrypt(db_user.secrets[tts_prov_key])
+                    elif "tts_key" in db_user.secrets:
+                        metadata.setdefault("tts", {})["apiKey"] = vault.decrypt(db_user.secrets["tts_key"])
+            
+            # 2. Override with agent-specific keys if configured
             if db_agent.secrets:
                 if "llm_key" in db_agent.secrets:
                     metadata.setdefault("llm", {})["apiKey"] = vault.decrypt(db_agent.secrets["llm_key"])
@@ -110,6 +180,20 @@ async def start_session(
                     metadata.setdefault("stt", {})["apiKey"] = vault.decrypt(db_agent.secrets["stt_key"])
                 if "tts_key" in db_agent.secrets:
                     metadata.setdefault("tts", {})["apiKey"] = vault.decrypt(db_agent.secrets["tts_key"])
+
+            # 3. Dynamic Ultimate Fallback to backend .env.local system environment keys
+            if "apiKey" not in metadata.get("llm", {}):
+                env_val = os.getenv(f"{llm_provider.upper()}_API_KEY") or os.getenv("OPENROUTER_API_KEY")
+                if env_val:
+                    metadata.setdefault("llm", {})["apiKey"] = env_val
+            if "apiKey" not in metadata.get("stt", {}):
+                env_val = os.getenv(f"{stt_provider.upper()}_API_KEY")
+                if env_val:
+                    metadata.setdefault("stt", {})["apiKey"] = env_val
+            if "apiKey" not in metadata.get("tts", {}):
+                env_val = os.getenv("OPENAI_API_KEY") if tts_provider == "openai" else os.getenv(f"{tts_provider.upper()}_API_KEY")
+                if env_val:
+                    metadata.setdefault("tts", {})["apiKey"] = env_val
 
     # Standardizing dispatch to 'voice-forge-agent-v5' for reliability
     agent_dispatch_name = "voice-forge-agent-v5"

@@ -13,6 +13,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { ProfilePage } from './pages/ProfilePage';
+import ProvidersPage from './pages/ProvidersPage';
 import Sidebar from './components/Sidebar';
 import { useAuthStore } from './store/useAuthStore';
 import { Navigate, useNavigate } from 'react-router-dom';
@@ -110,7 +111,7 @@ const AppLayout = () => {
             <Route path="/numbers" element={<TelephonyPage />} />
             <Route path="/logs" element={<ComingSoonPage title="Call Logs" />} />
             <Route path="/analytics" element={<ComingSoonPage title="Analytics" />} />
-            <Route path="/keys" element={<ComingSoonPage title="API Keys" />} />
+            <Route path="/providers" element={<ProvidersPage />} />
             <Route path="/tools" element={<ToolsPage />} />
             <Route path="/integrations" element={<IntegrationsPage />} />
             <Route path="/profile" element={<ProfilePage />} />

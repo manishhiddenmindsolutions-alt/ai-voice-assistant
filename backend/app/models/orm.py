@@ -27,6 +27,8 @@ class UserORM(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
+    secrets: Mapped[dict] = mapped_column(JSONB, default=dict) # Encrypted global model keys (LLM/TTS/STT)
+    
     # Relationships
     agents: Mapped[list["AgentORM"]] = relationship(back_populates="user")
     tools: Mapped[list["ToolORM"]] = relationship(back_populates="user")
@@ -176,4 +178,36 @@ class UsageORM(Base):
     duration_seconds: Mapped[float] = mapped_column(Float, default=0.0)
     tokens_used: Mapped[int] = mapped_column(default=0)
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class ProviderConnectionORM(Base):
+    __tablename__ = "provider_connections"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    provider: Mapped[str] = mapped_column(String, index=True) # openai, openrouter, anthropic, groq, gemini, together_ai, deepseek, elevenlabs, cartesia, assemblyai
+    api_key: Mapped[str] = mapped_column(Text) # Encrypted
+    status: Mapped[str] = mapped_column(String, default="connected")
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    models: Mapped[list["ProviderModelORM"]] = relationship(back_populates="connection", cascade="all, delete-orphan")
+
+
+class ProviderModelORM(Base):
+    __tablename__ = "provider_models"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    provider_connection_id: Mapped[str] = mapped_column(String, ForeignKey("provider_connections.id", ondelete="CASCADE"), index=True)
+    model_id: Mapped[str] = mapped_column(String, index=True) # API model id (gpt-4o, etc.)
+    name: Mapped[str] = mapped_column(String) # friendly name
+    context_window: Mapped[int] = mapped_column(default=0)
+    capabilities: Mapped[dict] = mapped_column(JSONB, default=dict) # supports_vision, supports_audio, etc.
+    
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    connection: Mapped["ProviderConnectionORM"] = relationship(back_populates="models")
 
