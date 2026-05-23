@@ -151,24 +151,24 @@ export const KeysPage: React.FC = () => {
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-4xl mx-auto">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-zinc-800 pb-4">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/')} className="btn-back-premium">
             <ArrowLeft size={14} />
             <span>Overview</span>
           </button>
           <div className="space-y-1">
-            <h1 className="text-xl md:text-2xl font-heading font-black text-white uppercase tracking-wider leading-tight">BYOK Provider Keys</h1>
+            <h1 className="text-xl md:text-2xl font-bold text-zinc-100 uppercase tracking-wider leading-tight">BYOK Provider Keys</h1>
             <div className="flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-primary animate-pulse" />
-              <p className="text-zinc-600 text-[8px] font-black uppercase tracking-[0.2em] leading-none">Bring Your Own Key Dashboard</p>
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(0,149,255,0.4)] animate-pulse" />
+              <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider leading-none">Bring Your Own Key Dashboard</p>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-center md:justify-end gap-3 px-4 py-2 bg-zinc-950 border border-zinc-900 rounded-xl w-full md:w-auto">
+        <div className="flex items-center justify-center md:justify-end gap-3 px-4 h-10 bg-zinc-900/10 border border-zinc-800 rounded-xl w-full md:w-auto">
           <ShieldCheck size={14} className="text-emerald-500 glow-accent" />
-          <p className="text-[9px] font-black text-white uppercase tracking-widest leading-none">AES-256 GCM Secure Vault</p>
+          <p className="text-xs font-bold text-zinc-100 uppercase tracking-wider leading-none">AES-256 GCM Secure Vault</p>
         </div>
       </div>
 
@@ -180,14 +180,14 @@ export const KeysPage: React.FC = () => {
               <Key size={18} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-xs font-black text-white uppercase tracking-wider">Neural Vault Security</h3>
-              <p className="text-[10px] text-zinc-500 leading-relaxed font-medium">
+              <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">Neural Vault Security</h3>
+              <p className="text-xs text-zinc-500 leading-relaxed font-semibold">
                 Your keys are immediately encrypted at rest using high-grade symmetric wrappers. The dashboard decrypts key hashes only in memory during call execution, and <span className="text-primary font-bold">never</span> exposes the raw API key back to any UI.
               </p>
             </div>
-            <div className="p-3.5 bg-zinc-900/60 border border-zinc-800 rounded-xl flex items-start gap-2.5">
+            <div className="p-3.5 bg-zinc-900/10 border border-zinc-800 rounded-xl flex items-start gap-2.5">
               <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-              <p className="text-[9px] text-zinc-500 leading-normal font-medium">
+              <p className="text-xs text-zinc-500 leading-normal font-semibold">
                 Leave key fields empty to keep your existing configured keys or default back to system keys.
               </p>
             </div>
@@ -199,24 +199,24 @@ export const KeysPage: React.FC = () => {
           {providers.map((p) => {
             const hasKey = !!maskedKeys[p.keyName];
             return (
-              <div key={p.id} className="card-vapi !p-6 space-y-4 hover:border-zinc-800 transition-colors duration-300">
-                <div className="flex items-center justify-between border-b border-zinc-900 pb-3">
+              <div key={p.id} className="card-vapi !p-6 space-y-4 hover:border-zinc-700 transition-colors duration-300">
+                <div className="flex items-center justify-between border-b border-zinc-800 pb-3">
                   <div className="space-y-0.5">
                     <span className="text-[8px] font-black text-primary uppercase tracking-[0.2em]">{p.tag}</span>
-                    <h3 className="text-xs font-black text-white uppercase tracking-widest">{p.name}</h3>
+                    <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">{p.name}</h3>
                   </div>
                   {hasKey && (
-                    <div className="flex items-center gap-1.5 text-[8px] font-black text-emerald-500 uppercase tracking-widest bg-emerald-500/5 px-2.5 py-1 rounded-full border border-emerald-500/10">
+                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-emerald-500 uppercase tracking-wider bg-emerald-500/5 px-2.5 py-1 rounded-lg border border-emerald-500/10">
                       <CheckCircle size={10} />
                       <span>Key Loaded ({maskedKeys[p.keyName]})</span>
                     </div>
                   )}
                 </div>
 
-                <p className="text-[10px] text-zinc-500 leading-relaxed font-semibold">{p.desc}</p>
+                <p className="text-xs text-zinc-500 leading-relaxed font-semibold">{p.desc}</p>
 
                 <div className="space-y-1.5 relative mt-2">
-                  <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">API Key Config</label>
+                  <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1">API Key Config</label>
                   <div className="relative">
                     <input 
                       type={p.show ? 'text' : 'password'}
@@ -228,7 +228,7 @@ export const KeysPage: React.FC = () => {
                     <button 
                       type="button"
                       onClick={() => p.setShow(!p.show)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-200"
                     >
                       {p.show ? <EyeOff size={14} /> : <Eye size={14} />}
                     </button>
@@ -242,7 +242,7 @@ export const KeysPage: React.FC = () => {
           <button 
             type="submit"
             disabled={saving}
-            className="w-full h-12 bg-primary hover:bg-primary/95 text-[10px] font-black text-white uppercase tracking-[0.2em] rounded-xl flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(0,102,255,0.25)] border border-primary/20 transition-all duration-300 disabled:opacity-55"
+            className="w-full h-12 bg-primary hover:bg-primary/95 text-xs font-bold text-white dark:text-zinc-955 uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(0,102,255,0.25)] border border-primary/20 transition-all duration-300 disabled:opacity-55"
           >
             <Save size={14} />
             <span>{saving ? 'Synchronizing BYOK Profile...' : 'Save Keys Configuration'}</span>

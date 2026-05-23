@@ -39,7 +39,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onLaunch, onDelete }) => {
       <div className="flex gap-2 items-center-mt-2 pt-4 border-t border-border/50">
         <button 
           onClick={() => onLaunch(agent.id)}
-          className="flex-1 bg-primary hover:bg-primary-hover text-white text-sm font-bold py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
+          className="flex-1 bg-primary hover:bg-primary-hover text-white dark:text-zinc-950 text-sm font-bold py-2 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg shadow-primary/20"
         >
           <Play size={16} fill="currentColor" />
           Launch

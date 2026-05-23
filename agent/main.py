@@ -67,19 +67,32 @@ def prewarm(proc: JobProcess):
     )
 
 class VoiceForgeAgent(Agent):
+    def __init__(self, *args, on_farewell_detected=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.on_farewell_detected = on_farewell_detected
+
     async def on_user_turn_completed(self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage) -> None:
         from livekit.agents.llm.tool_context import StopResponse
         transcript = new_message.text_content.strip()
         # Filter out anything that contains no alphanumeric characters (to handle empty/noise turns)
         clean_transcript = "".join(c for c in transcript if c.isalnum())
         if not clean_transcript:
-            logger.info("--- [FORGE DEBUG] Ignoring empty/silent user turn to prevent preemptive tool execution. ---")
+            logger.info("--- [HMS DEBUG] Ignoring empty/silent user turn to prevent preemptive tool execution. ---")
+            raise StopResponse()
+        
+        # Check if the user said farewell or thanks
+        user_text = transcript.lower()
+        farewell_keywords = ["bye", "goodbye", "thank you", "thank u", "thanks", "dhanyawad", "shukriya", "alvida", "exit", "close call"]
+        if any(keyword in user_text for keyword in farewell_keywords):
+            logger.info("--- [HMS DEBUG] User farewell detected. Invoking farewell handler callback. ---")
+            if self.on_farewell_detected:
+                self.on_farewell_detected()
             raise StopResponse()
         
         await super().on_user_turn_completed(turn_ctx, new_message)
 
 async def entrypoint(ctx: JobContext):
-    """Main entry point for the VoiceForge Agent."""
+    """Main entry point for the HMS Voice Agent."""
     logger.info(f"--- [START] Job {ctx.job.id} for room {ctx.room.name} ---")
 
     await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
@@ -98,18 +111,36 @@ async def entrypoint(ctx: JobContext):
     if ctx.job.metadata:
         try:
             config = json.loads(ctx.job.metadata)
-        except:
-            logger.warning("Failed to parse metadata.")
+            logger.info(f"--- [HMS DEBUG] Parsed Config: {json.dumps({k: ('***' if k == 'apiKey' else v) for k, v in config.items()})} ---")
+        except Exception as e:
+            logger.warning(f"Failed to parse metadata: {e}")
+
 
     # Initialize components
     data = create_components(config)
     prewarmed_vad = ctx.proc.userdata.get("vad")
     vad = create_vad(config, prewarmed_vad) 
 
+    def handle_farewell():
+        async def ask_and_disconnect():
+            await asyncio.sleep(0.2)
+            stt_lang = config.get("language") or "en"
+            if stt_lang == "hi-IN":
+                msg = "Should we close the communication? Kya hum call cut krde?"
+            else:
+                msg = "Should we close the communication?"
+            logger.info(f"--- [HMS SESSION TERMINATION] Saying: {msg} ---")
+            await session.say(msg, allow_interruptions=False)
+            await asyncio.sleep(4.5)
+            logger.info("--- [HMS SESSION TERMINATION] Disconnecting room session now. ---")
+            await ctx.disconnect()
+        asyncio.create_task(ask_and_disconnect())
+
     # Initialize Agent and Session
     agent = VoiceForgeAgent(
         instructions=data.get("instructions", "You are a helpful assistant."),
-        tools=data.get("tools", [])
+        tools=data.get("tools", []),
+        on_farewell_detected=handle_farewell
     )
 
     session = AgentSession(
@@ -130,7 +161,7 @@ async def entrypoint(ctx: JobContext):
         logger.info(f"Agent: {msg.content}")
         asyncio.create_task(log_transcript(ctx.room.name, "agent", msg.content))
         
-        # Smart Session Auto-Termination: Check if the agent is bidding farewell
+        # Smart Session Auto-Termination: Check if the agent is bidding farewell (fallback)
         content_lower = (msg.content or "").lower()
         farewells = [
             "bye", "goodbye", "thank you", "thank u", "thanks", "take care", 
@@ -138,11 +169,11 @@ async def entrypoint(ctx: JobContext):
             "dhanyawad", "shukriya", "alvida", "phir milenge"
         ]
         if any(f in content_lower for f in farewells):
-            logger.info("--- [SESSION TERMINATION] Farewell phrase detected. Scheduling auto-disconnect. ---")
+            logger.info("--- [HMS FALLBACK SESSION TERMINATION] Farewell phrase detected. Scheduling auto-disconnect. ---")
             async def disconnect_later():
                 # Allow 5 seconds for the TTS audio stream to play back fully to the user
                 await asyncio.sleep(5)
-                logger.info("--- [SESSION TERMINATION] Disconnecting room session now. ---")
+                logger.info("--- [HMS FALLBACK SESSION TERMINATION] Disconnecting room session now. ---")
                 await ctx.disconnect()
             asyncio.create_task(disconnect_later())
 
@@ -152,7 +183,7 @@ async def entrypoint(ctx: JobContext):
     
     # Greet the user immediately
     logger.info("Agent session started. Sending greeting...")
-    await session.say("Hello! How can I help you today?", allow_interruptions=True)
+    await session.say("Hello me apki kese help kr skta hu?", allow_interruptions=True)
 
     # Keep alive while connected
     while ctx.room.connection_state == rtc.ConnectionState.CONN_CONNECTED:

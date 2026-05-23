@@ -7,7 +7,6 @@ import {
   Info,
   Zap,
   ArrowLeft,
-  Shield,
   Code,
   Activity,
   Sparkles,
@@ -34,10 +33,9 @@ const LLM_MODELS = {
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Legacy' }
   ],
   openrouter: [
-    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 (70B)' },
-    { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (V3)' },
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
-    { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro' }
+    { id: 'openrouter/anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+    { id: 'openrouter/google/gemini-pro', name: 'Gemini Pro' },
+    { id: 'openrouter/mistralai/mistral-medium', name: 'Mistral Medium' }
   ]
 };
 
@@ -62,23 +60,30 @@ const BLUEPRINTS = [
     icon: "🏘️",
     prompt: "You are a high-performing real estate closer. Your tone is professional, persuasive, and knowledgeable. Focus on lead qualification and property value points.",
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8 },
-    llm: { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct' }
+    llm: { provider: 'groq', model: 'llama-3.3-70b-versatile' }
   },
   {
     name: "Concierge AI",
     icon: "🤵",
     prompt: "You are an elegant concierge. You assist with scheduling, recommendations, and local knowledge. Your tone is refined, helpful, and sophisticated.",
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8 },
-    llm: { provider: 'openrouter', model: 'openai/gpt-4o-mini' }
+    llm: { provider: 'openai', model: 'gpt-4o-mini' }
   },
   {
     name: "Technical Support",
     icon: "⚙️",
     prompt: "You are a technical support engineer. You are patient, analytical, and structured. Use step-by-step reasoning to resolve issues.",
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8 },
-    llm: { provider: 'openrouter', model: 'google/gemini-2.5-flash' }
+    llm: { provider: 'groq', model: 'mixtral-8x7b-32768' }
   }
 ];
+
+const PreviewStat = ({ label, value }: { label: string; value: string | number }) => (
+  <div className="flex justify-between items-center py-2.5 border-b border-zinc-800/40 last:border-none">
+    <span className="text-sm text-zinc-500">{label}</span>
+    <span className="text-sm font-semibold text-zinc-200 truncate max-w-[180px]">{value}</span>
+  </div>
+);
 
 const CreateAgentPage = () => {
   const { editingAgent, setAgents, agents, setActiveSession } = useAgentStore();
@@ -87,24 +92,77 @@ const CreateAgentPage = () => {
   const [availableTools, setAvailableTools] = useState<any[]>([]);
   const navigate = useNavigate();
 
+  // Dynamic Provider Model state variables
+  const [dynamicModels, setDynamicModels] = useState<any>(LLM_MODELS);
+  const [availableProviders, setAvailableProviders] = useState<string[]>(['groq', 'cerebras', 'openai', 'openrouter']);
+  const [providerLabels, setProviderLabels] = useState<string[]>(['Groq Inference', 'Cerebras Speed', 'OpenAI Premium', 'OpenRouter Global']);
+
   const [formData, setFormData] = useState<any>(editingAgent || {
     agentName: '',
     description: '',
     prompt: '',
     status: 'draft',
-    language: 'en-US',
-    stt: { provider: 'groq', model: 'whisper-large-v3', language: 'en-US' },
-    llm: { provider: 'openrouter', model: 'meta-llama/llama-3.3-70b-instruct', temperature: 0.7 },
-    tts: { provider: 'openai', model: 'tts-1', voice: 'alloy', pace: 1.0 },
+    language: 'hi-IN',
+    stt: { provider: 'sarvam', model: 'saaras:v3', language: 'hi-IN' },
+    llm: { provider: 'groq', model: 'llama-3.3-70b-versatile', temperature: 0.7 },
+    tts: { provider: 'sarvam', model: 'bulbul:v3', voice: 'neha', pace: 1.0 },
     vad: { activation_threshold: 0.5, min_speech_duration: 0.3, min_silence_duration: 0.8, padding_duration: 0.1 },
     tools: []
   });
 
-  const [connectedProviders, setConnectedProviders] = useState<any[]>([]);
-
   useEffect(() => {
     if (editingAgent) setFormData(editingAgent);
     
+    // Fetch dynamic provider models
+    const fetchDynamicProviders = async () => {
+      try {
+        const res = await api.get('/providers/');
+        const connections = res.data || [];
+        if (connections.length > 0) {
+          const mergedModels = { ...LLM_MODELS };
+          const pList = ['groq', 'cerebras', 'openai', 'openrouter'];
+          const pLabels = ['Groq Inference', 'Cerebras Speed', 'OpenAI Premium', 'OpenRouter Global'];
+          
+          const labelMapping: Record<string, string> = {
+            groq: 'Groq Inference',
+            cerebras: 'Cerebras Speed',
+            openai: 'OpenAI Premium',
+            openrouter: 'OpenRouter Global',
+            anthropic: 'Anthropic Claude',
+            gemini: 'Google Gemini',
+            deepseek: 'DeepSeek AI',
+            together_ai: 'Together AI',
+            sarvam: 'Sarvam AI',
+            deepgram: 'Deepgram Cloud',
+            elevenlabs: 'ElevenLabs Voices',
+            cartesia: 'Cartesia Sonic',
+            assemblyai: 'AssemblyAI'
+          };
+
+          connections.forEach((conn: any) => {
+            const pName = conn.provider.toLowerCase();
+            if (conn.models && conn.models.length > 0) {
+              const parsed = conn.models.map((m: any) => ({
+                id: m.model_id,
+                name: m.name || m.model_id
+              }));
+              mergedModels[pName as keyof typeof LLM_MODELS] = parsed;
+            }
+            if (!pList.includes(pName)) {
+              pList.push(pName);
+              pLabels.push(labelMapping[pName] || conn.provider.toUpperCase());
+            }
+          });
+
+          setDynamicModels(mergedModels);
+          setAvailableProviders(pList);
+          setProviderLabels(pLabels);
+        }
+      } catch (err) {
+        console.error("Failed to load dynamic provider model registries", err);
+      }
+    };
+
     // Fetch available tools for selection
     const fetchTools = async () => {
       try {
@@ -115,18 +173,9 @@ const CreateAgentPage = () => {
       }
     };
     
-    const fetchProviders = async () => {
-      try {
-        const res = await api.get('/providers/');
-        setConnectedProviders(res.data || []);
-      } catch (err) {
-        console.error("Failed to load connected providers", err);
-      }
-    };
-
-    fetchTools();
-    fetchProviders();
-    setIsLoading(false);
+    Promise.all([fetchDynamicProviders(), fetchTools()]).finally(() => {
+      setIsLoading(false);
+    });
   }, [editingAgent]);
 
   const applyBlueprint = (bp: any) => {
@@ -179,69 +228,73 @@ const CreateAgentPage = () => {
   };
 
   const renderStepIndicator = () => (
-    <div className="flex items-center justify-between max-w-[500px] mx-auto mb-10 overflow-x-auto pb-4 px-2 no-scrollbar gap-6 md:gap-2">
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-10">
       {[
-        { id: 1, label: 'Identity', icon: <Brain size={12} /> },
-        { id: 2, label: 'Vocal', icon: <Mic size={12} /> },
-        { id: 3, label: 'Tools', icon: <Command size={12} /> },
-        { id: 4, label: 'Pro-VAD', icon: <Activity size={12} /> }
+        { id: 1, label: 'Identity', icon: <Brain size={14} /> },
+        { id: 2, label: 'Vocal', icon: <Mic size={14} /> },
+        { id: 3, label: 'Tools', icon: <Command size={14} /> },
+        { id: 4, label: 'Pro-VAD', icon: <Activity size={14} /> }
       ].map((s) => (
-        <div key={s.id} className="flex items-center gap-2 shrink-0">
-          <div className={`step-indicator !w-6 !h-6 !text-[9px] ${step === s.id ? 'step-active' : step > s.id ? 'step-completed' : 'step-inactive'}`}>
+        <button
+          key={s.id}
+          type="button"
+          onClick={() => {
+            if (s.id === 1 || formData.agentName.trim()) {
+              setStep(s.id);
+            } else {
+              toast.error("Assistant name required to navigate");
+            }
+          }}
+          className={`p-3 rounded-xl border transition flex items-center gap-3 justify-center ${
+            step === s.id
+              ? 'bg-zinc-900 border-zinc-700 text-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.01)]'
+              : step > s.id
+                ? 'bg-zinc-900/20 border-zinc-800 text-emerald-400'
+                : 'bg-zinc-950/20 border-zinc-850 text-zinc-500 hover:border-zinc-800'
+          }`}
+        >
+          <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold ${
+            step === s.id ? 'bg-zinc-100 text-zinc-950' : step > s.id ? 'bg-emerald-500/10' : 'bg-zinc-900'
+          }`}>
             {step > s.id ? '✓' : s.id}
           </div>
-          <span className={`text-[8px] font-black uppercase tracking-widest ${step === s.id ? 'text-white' : 'text-zinc-600'} whitespace-nowrap`}>
-            {s.label}
-          </span>
-          {s.id < 4 && <div className="hidden sm:block w-8 h-px bg-white/5 ml-1" />}
-        </div>
+          <span className="text-sm font-semibold tracking-wide">{s.label}</span>
+        </button>
       ))}
     </div>
   );
 
-  // Dynamic Cascade Mappings (Locked to OpenRouter)
-  const openrouterConn = connectedProviders.find(p => p.provider === 'openrouter');
-  const dynamicModels = openrouterConn?.models.map((m: any) => ({ id: m.model_id, name: m.name })) || [
-    { id: 'meta-llama/llama-3.3-70b-instruct', name: 'Llama 3.3 (70B)' },
-    { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-    { id: 'google/gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-    { id: 'openai/gpt-4o', name: 'GPT-4o (Flagship)' },
-    { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini' },
-    { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
-    { id: 'deepseek/deepseek-chat', name: 'DeepSeek Chat (V3)' }
-  ];
+  if (isLoading) return <div className="h-full flex items-center justify-center text-lg font-medium text-zinc-400 animate-pulse">Establishing Forge...</div>;
 
-  const activeTtsProviderData = connectedProviders.find(p => p.provider === formData.tts.provider);
-  const dynamicVoices = activeTtsProviderData?.models.map((m: any) => ({ id: m.model_id, name: m.name })) || TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES] || [];
-
-  if (isLoading) return <div className="h-full flex items-center justify-center font-bold text-primary animate-pulse">Establishing Forge...</div>;
+  const currentProvider = (formData.llm?.provider || 'groq') as keyof typeof LLM_MODELS;
+  const currentModels = dynamicModels[currentProvider] || LLM_MODELS.groq;
 
   return (
-    <div className="animate-in fade-in slide-in-from-right-8 duration-500 h-full flex flex-col space-y-10 pb-24">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
       
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 shrink-0 mb-2">
-        <div className="flex items-center gap-4 md:gap-5">
-          <button onClick={() => navigate('/agents')} className="btn-back-premium">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+        <div>
+          <button
+            onClick={() => navigate('/agents')}
+            className="h-9 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2 mb-5"
+          >
             <ArrowLeft size={14} />
-            <span>Registry</span>
+            Back
           </button>
-          <div>
-            <h1 className="text-xl font-black text-white tracking-tight uppercase leading-none">
-              {editingAgent ? 'Neural Configuration' : 'Forge Assistant'}
-            </h1>
-            <div className="flex items-center gap-2 mt-1.5">
-               <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
-               <span className="text-zinc-600 text-[9px] font-bold uppercase tracking-widest">Protocol Phase: Stage {step}</span>
-            </div>
-          </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+            {editingAgent ? 'Configure Assistant' : 'Register Assistant'}
+          </h1>
+          <p className="text-sm text-zinc-500 mt-2">
+            Configure and launch your AI voice assistant connection node.
+          </p>
         </div>
-        <div className="flex items-center gap-3 w-full md:w-auto">
-          <button onClick={() => handleSave(false)} className="flex-1 md:w-auto btn-outline !h-9 !px-5 text-[10px]">
+        <div className="flex items-center gap-3">
+          <button onClick={() => handleSave(false)} className="h-11 px-5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2">
             Save Draft
           </button>
-          <button onClick={() => handleSave(true)} className="flex-[1.5] md:w-auto btn-vapi h-9 px-6 text-[10px]">
-            <Zap size={14} fill="white" strokeWidth={0} />
+          <button onClick={() => handleSave(true)} className="h-11 px-5 rounded-xl bg-primary text-zinc-950 text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10">
+            <Zap size={15} fill="currentColor" strokeWidth={0} />
             Initialize Link
           </button>
         </div>
@@ -249,282 +302,327 @@ const CreateAgentPage = () => {
 
       {renderStepIndicator()}
 
-      {/* MAIN FORGE CONTENT */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-10 flex-1 min-h-0 overflow-visible">
+      {/* MAIN CONTENT GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
         
-        <div className="xl:col-span-8 flex flex-col">
-          
-          <div className="flex-1">
-            {step === 1 && (
-              <div className="space-y-10 animate-in slide-in-from-right-4 duration-500">
-                <div className="space-y-4">
-                   <div className="flex items-center gap-2 px-1">
-                    <Sparkles size={14} className="text-primary" />
-                    <span className="text-[10px] font-extrabold text-zinc-500 uppercase tracking-[0.25em]">Neural Blueprints</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {BLUEPRINTS.map(bp => (
-                      <button key={bp.name} onClick={() => applyBlueprint(bp)} className="p-5 bg-zinc-900/40 border border-white/5 rounded-2xl text-left hover:border-primary/40 transition-all group hover:bg-zinc-900 relative overflow-hidden glow-card-primary">
-                        <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">{bp.icon}</div>
-                        <h4 className="text-xs font-black text-white uppercase tracking-wide mb-1 leading-none">{bp.name}</h4>
-                        <p className="text-[9px] text-zinc-600 font-medium line-clamp-2 italic leading-relaxed opacity-70">"{bp.prompt}"</p>
-                      </button>
-                    ))}
-                  </div>
+        {/* FORM PANEL */}
+        <div className="space-y-8">
+          {step === 1 && (
+            <div className="space-y-8 animate-in fade-in duration-300">
+              {/* BLUEPRINTS */}
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 px-1">
+                  <Sparkles size={14} className="text-zinc-500" />
+                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Neural Blueprints</span>
                 </div>
-
-                <div className="card-vapi space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                    <div className="space-y-1.5">
-                      <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">Assistant Name</label>
-                      <input value={formData.agentName} onChange={e => setFormData({ ...formData, agentName: e.target.value })} className="input-vapi w-full h-11 text-[11px] font-black" placeholder="e.g. Identity Node-01" />
-                    </div>
-
-                    <ConfigGroup 
-                      label="Core Inference Model" 
-                      value={formData.llm.model} 
-                      options={dynamicModels.map((m: any) => m.id)} 
-                      labels={dynamicModels.map((m: any) => m.name)} 
-                      onChange={(m: string) => setFormData({ ...formData, llm: { ...formData.llm, model: m } })} 
-                    />
-
-                    <SensitivitySlider label="Creativity (Temp)" value={formData.llm.temperature} min={0} max={2.0} step={0.1} onChange={(v: number) => setFormData({...formData, llm: {...formData.llm, temperature: v}})} sub="Standard: 0.7" />
-                  </div>
-
-                  {!connectedProviders.some(p => p.provider === 'openrouter') && (
-                    <div className="p-5 bg-zinc-950/40 border border-dashed border-white/5 rounded-3xl space-y-3 mt-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                        <span className="text-[9px] font-black text-amber-500 uppercase tracking-widest">🔐 OpenRouter Credentials Required</span>
-                      </div>
-                      <p className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest leading-relaxed">Provide your custom API key below, or configure it globally in the Providers Connection Center.</p>
-                      <input 
-                        type="password"
-                        value={formData.llm.apiKey || ''} 
-                        onChange={e => setFormData({ ...formData, llm: { ...formData.llm, apiKey: e.target.value } })} 
-                        className="input-vapi w-full h-11 text-[11px] font-semibold" 
-                        placeholder="Paste OpenRouter API Key..." 
-                      />
-                    </div>
-                  )}
-
-                  <div className="space-y-1.5">
-                    <div className="flex justify-between items-center px-1">
-                      <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none">Behavioral Directives</label>
-                      <span className="text-[8px] font-black text-primary/60 px-2 py-0.5 bg-primary/10 rounded-md border border-primary/20">System Lock</span>
-                    </div>
-                    <textarea value={formData.prompt} onChange={e => setFormData({ ...formData, prompt: e.target.value })} className="input-vapi w-full !py-4 h-56 resize-none text-[13px] leading-relaxed" placeholder="Detailed constraints and identity knowledge..." />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {BLUEPRINTS.map(bp => (
+                    <button
+                      key={bp.name}
+                      onClick={() => applyBlueprint(bp)}
+                      className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 text-left"
+                    >
+                      <div className="text-3xl mb-4">{bp.icon}</div>
+                      <h3 className="text-base font-semibold text-zinc-100 mb-2">{bp.name}</h3>
+                      <p className="text-sm text-zinc-400 leading-relaxed italic line-clamp-3">"{bp.prompt}"</p>
+                    </button>
+                  ))}
                 </div>
               </div>
-            )}
 
-            {step === 2 && (
-              <div className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+              {/* IDENTITY FORM */}
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ProPanel label="STT (The Ear)" icon={<Monitor size={12} />}>
-                      <ConfigGroup label="Signal Provider" value={formData.stt.provider} options={['groq', 'sarvam', 'deepgram']} labels={['Groq Whisper', 'Sarvam STT', 'Deepgram Nova-2']} onChange={(p: string) => setFormData({ ...formData, stt: { ...formData.stt, provider: p } })} />
-                      <ConfigGroup label="Primary Language" value={formData.language} options={['hi-IN', 'en-US', 'bn-IN']} onChange={(l: string) => setFormData({ ...formData, language: l, stt: { ...formData.stt, language: l } })} />
-                      <div className="space-y-1.5 mt-4">
-                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">STT API Auth</label>
-                        {connectedProviders.some(p => p.provider === formData.stt.provider) ? (
-                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2 h-11">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">🔐 Active Global Connection</span>
-                          </div>
-                        ) : (
-                          <input 
-                            type="password"
-                            value={formData.stt.apiKey || ''} 
-                            onChange={e => setFormData({ ...formData, stt: { ...formData.stt, apiKey: e.target.value } })} 
-                            className="input-vapi w-full h-11 text-[11px] font-semibold animate-in fade-in duration-300" 
-                            placeholder="Provide Custom API Key..." 
-                          />
-                        )}
-                      </div>
-                    </ProPanel>
-                    <ProPanel label="TTS (The Voice)" icon={<Volume2 size={12} />}>
-                      <ConfigGroup label="Vocal Engine" value={formData.tts.provider} options={['sarvam', 'openai', 'elevenlabs', 'cartesia']} labels={['Sarvam AI', 'OpenAI TTS', 'ElevenLabs', 'Cartesia']} onChange={(p: string) => {
-                        const pData = connectedProviders.find(conn => conn.provider === p);
-                        const initialVoice = pData?.models?.[0]?.model_id || TTS_VOICES[p as keyof typeof TTS_VOICES]?.[0]?.id || '';
-                        setFormData({ ...formData, tts: { ...formData.tts, provider: p, voice: initialVoice } });
-                      }} />
-                      <ConfigGroup label="Neural ID" value={formData.tts.voice} options={dynamicVoices.map(v => v.id)} labels={dynamicVoices.map(v => v.name)} onChange={(v: string) => setFormData({ ...formData, tts: { ...formData.tts, voice: v } })} />
-                      <div className="space-y-1.5 mt-4">
-                        <label className="text-[9px] font-black text-zinc-600 uppercase tracking-widest ml-1">TTS API Auth</label>
-                        {connectedProviders.some(p => p.provider === formData.tts.provider) ? (
-                          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl flex items-center gap-2 h-11">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                            <span className="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">🔐 Active Global Connection</span>
-                          </div>
-                        ) : (
-                          <input 
-                            type="password"
-                            value={formData.tts.apiKey || ''} 
-                            onChange={e => setFormData({ ...formData, tts: { ...formData.tts, apiKey: e.target.value } })} 
-                            className="input-vapi w-full h-11 text-[11px] font-semibold animate-in fade-in duration-300" 
-                            placeholder="Provide Custom API Key..." 
-                          />
-                        )}
-                      </div>
-                    </ProPanel>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-zinc-300">Assistant Name</label>
+                    <input 
+                      value={formData.agentName} 
+                      onChange={e => setFormData({ ...formData, agentName: e.target.value })} 
+                      className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition" 
+                      placeholder="e.g. Identity Node-01" 
+                    />
+                  </div>
+                  <ConfigGroup 
+                    label="Intelligence Provider" 
+                    value={formData.llm.provider} 
+                    options={availableProviders} 
+                    labels={providerLabels}
+                    onChange={(p: string) => {
+                      const defaultModel = dynamicModels[p as keyof typeof dynamicModels]?.[0]?.id || '';
+                      setFormData({ 
+                        ...formData, 
+                        llm: { ...formData.llm, provider: p, model: defaultModel } 
+                      });
+                    }} 
+                  />
                 </div>
-                <div className="card-vapi !p-6">
-                   <SensitivitySlider 
-                     label="Speech Pace (Speed)" 
-                     value={formData.tts.pace || 1.0} 
-                     min={0.5} 
-                     max={2.0} 
-                     step={0.1} 
-                     onChange={(v: number) => setFormData({...formData, tts: {...formData.tts, pace: v}})} 
-                     sub="Standard: 1.0x" 
-                   />
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <ConfigGroup 
+                    label="Core Inference Model" 
+                    value={formData.llm.model} 
+                    options={currentModels.map((m: any) => m.id)} 
+                    labels={currentModels.map((m: any) => m.name)} 
+                    onChange={(m: string) => setFormData({ ...formData, llm: { ...formData.llm, model: m } })} 
+                  />
+                  <SensitivitySlider 
+                    label="Creativity (Temperature)" 
+                    value={formData.llm.temperature} 
+                    min={0} 
+                    max={2.0} 
+                    step={0.1} 
+                    onChange={(v: number) => setFormData({...formData, llm: {...formData.llm, temperature: v}})} 
+                    sub="Higher values yield creative, diverse responses." 
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-zinc-300">Behavioral Directives</label>
+                  <textarea 
+                    value={formData.prompt} 
+                    onChange={e => setFormData({ ...formData, prompt: e.target.value })} 
+                    className="w-full !py-4 h-48 resize-none rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition leading-relaxed" 
+                    placeholder="Enter detailed directives, constraints, persona rules, and background domain knowledge..." 
+                  />
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {step === 3 && (
-              <div className="card-vapi space-y-8 animate-in slide-in-from-right-4 duration-500">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <h3 className="text-sm font-black text-white uppercase tracking-wider">Neural Registry Linking</h3>
-                      <p className="text-[10px] text-zinc-500 mt-1 uppercase font-bold tracking-widest">Connect external intelligence nodes.</p>
-                    </div>
-                    <button onClick={() => navigate('/tools')} className="btn-outline !py-2 text-[9px]">Marketplace</button>
-                  </div>
-
-                  {availableTools.length === 0 ? (
-                    <div className="p-20 text-center border border-dashed border-white/5 rounded-[2.5rem] bg-zinc-950/20">
-                      <Command size={48} className="mx-auto text-zinc-800 mb-6" />
-                      <p className="text-xs text-zinc-600 font-bold uppercase tracking-widest italic">Registry Empty</p>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {availableTools.map(tool => {
-                        const isSelected = (formData.tools || []).includes(tool.id);
-                        return (
-                          <button 
-                            key={tool.id}
-                            onClick={() => {
-                              const current = formData.tools || [];
-                              const next = isSelected 
-                                ? current.filter((id: string) => id !== tool.id)
-                                : [...current, tool.id];
-                              setFormData({ ...formData, tools: next });
-                            }}
-                            className={`p-4 rounded-xl border text-left transition-all duration-300 group relative ${
-                              isSelected 
-                                ? 'bg-primary/5 border-primary/40 shadow-2xl shadow-primary/10' 
-                                : 'bg-zinc-950/50 border-white/5 hover:border-white/10 hover:bg-zinc-900'
-                            }`}
-                          >
-                            <div className="flex justify-between items-center mb-3">
-                              <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${isSelected ? 'bg-primary text-white shadow-lg shadow-primary/20' : 'bg-zinc-800 text-zinc-600'}`}>
-                                <Code size={16} />
-                              </div>
-                              {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
-                            </div>
-                            <h4 className="text-[11px] font-black text-white uppercase tracking-widest mb-0.5 leading-none">{tool.name}</h4>
-                            <p className="text-[9px] text-zinc-600 line-clamp-1 font-medium italic">{tool.description || 'Forge module.'}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
+          {step === 2 && (
+            <div className="space-y-6 animate-in fade-in duration-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ProPanel label="STT (The Ear)" icon={<Monitor size={14} />}>
+                  <ConfigGroup 
+                    label="Signal Provider" 
+                    value={formData.stt.provider} 
+                    options={['sarvam', 'deepgram']} 
+                    labels={['Sarvam Voice', 'Deepgram Premium']}
+                    onChange={(p: string) => setFormData({ ...formData, stt: { ...formData.stt, provider: p } })} 
+                  />
+                  <ConfigGroup 
+                    label="Primary Language" 
+                    value={formData.language} 
+                    options={['hi-IN', 'en-US', 'bn-IN']} 
+                    labels={['Hindi (India)', 'English (US)', 'Bengali (India)']}
+                    onChange={(l: string) => setFormData({ ...formData, language: l, stt: { ...formData.stt, language: l } })} 
+                  />
+                </ProPanel>
+                <ProPanel label="TTS (The Voice)" icon={<Volume2 size={14} />}>
+                  <ConfigGroup 
+                    label="Vocal Engine" 
+                    value={formData.tts.provider} 
+                    options={['sarvam', 'openai']} 
+                    labels={['Sarvam Indic Voice', 'OpenAI Premium Voice']}
+                    onChange={(p: string) => {
+                      const defaultVoice = TTS_VOICES[p as keyof typeof TTS_VOICES]?.[0]?.id || '';
+                      setFormData({ 
+                        ...formData, 
+                        tts: { ...formData.tts, provider: p, voice: defaultVoice } 
+                      });
+                    }} 
+                  />
+                  <ConfigGroup 
+                    label="Neural ID" 
+                    value={formData.tts.voice} 
+                    options={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.id)} 
+                    labels={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.name)} 
+                    onChange={(v: string) => setFormData({ ...formData, tts: { ...formData.tts, voice: v } })} 
+                  />
+                </ProPanel>
               </div>
-            )}
-
-            {step === 4 && (
-              <div className="card-vapi space-y-12 animate-in slide-in-from-right-4 duration-500">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-black text-white uppercase tracking-[0.3em]">Audio Signal Processing</h3>
-                    <div className="text-[10px] font-black text-amber-500 px-4 py-1.5 bg-amber-500/10 rounded-full border border-amber-500/20">PRO CONTROLS</div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-10">
-                    <SensitivitySlider label="Activation Logic" value={formData.vad.activation_threshold} min={0.1} max={0.9} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, activation_threshold: v}})} sub="Standard: 0.5" />
-                    <SensitivitySlider label="Speech Resilience" value={formData.vad.min_speech_duration} min={0.05} max={1.0} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, min_speech_duration: v}})} sub="Standard: 0.3s" />
-                    <SensitivitySlider label="Silence Tolerance" value={formData.vad.min_silence_duration} min={0.1} max={3.0} step={0.1} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, min_silence_duration: v}})} sub="Standard: 0.8s" />
-                    <SensitivitySlider label="Signal Padding" value={formData.vad.padding_duration} min={0.05} max={1.0} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, padding_duration: v}})} sub="Standard: 0.1s" />
-                  </div>
-
-                  <div className="p-6 bg-zinc-950 border border-white/5 rounded-[2rem] flex gap-5">
-                    <div className="w-10 h-10 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-500 shrink-0">
-                       <Info size={18} />
-                    </div>
-                    <p className="text-[11px] text-zinc-500 leading-relaxed font-bold uppercase tracking-widest italic pt-1">VAD protocols directly impact neural latency. Increased values improve stability but add delay.</p>
-                  </div>
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300">
+                <SensitivitySlider 
+                  label="Speech Pace (Speed)" 
+                  value={formData.tts.pace || 1.0} 
+                  min={0.5} 
+                  max={2.0} 
+                  step={0.1} 
+                  onChange={(v: number) => setFormData({...formData, tts: {...formData.tts, pace: v}})} 
+                  sub="Ratio of generated voice synthesis feedback speed (Standard: 1.0x)." 
+                />
               </div>
-            )}
-          </div>
+            </div>
+          )}
 
-          {/* WIZARD FOOTER */}
-          <div className="mt-8 flex justify-between items-center py-4 border-t border-white/5 sticky bottom-0 bg-background/50 backdrop-blur-xl">
-             {step === 1 ? (
-               <button 
-                 onClick={() => navigate('/agents')}
-                 className="btn-outline !h-10 !px-6 text-[10px] hover:border-red-500/20 hover:text-red-500 transition-colors"
-               >
-                 Cancel
-               </button>
-             ) : (
-               <button 
-                 onClick={() => setStep(s => Math.max(1, s - 1))}
-                 className="btn-outline !h-10 !px-6 text-[10px]"
-               >
-                 Back Protocol
-               </button>
-             )}
-             <button 
-               onClick={() => {
-                 if (step === 1 && !formData.agentName.trim()) return toast.error("Assistant name required");
-                 if (step < 4) setStep(s => s + 1);
-                 else handleSave(true);
-               }}
-               className="btn-vapi !px-10 h-10 text-[10px]"
-             >
-               {step < 4 ? 'Next Stage' : 'Forge & Launch'}
-             </button>
+          {step === 3 && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 space-y-6 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <h3 className="text-lg font-semibold text-zinc-100">Neural Registry Linking</h3>
+                  <p className="text-sm text-zinc-500 mt-1">Connect operational tools to execute platform triggers.</p>
+                </div>
+                <button onClick={() => navigate('/tools')} className="h-9 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-305 hover:bg-zinc-800 transition">Marketplace</button>
+              </div>
+
+              {availableTools.length === 0 ? (
+                <div className="p-16 text-center border border-dashed border-zinc-800 rounded-xl bg-zinc-950/40">
+                  <Command size={40} className="mx-auto text-zinc-700 mb-4" />
+                  <p className="text-sm text-zinc-550 italic font-medium">No tools available in current registry.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {availableTools.map(tool => {
+                    const isSelected = (formData.tools || []).includes(tool.id);
+                    return (
+                      <button 
+                        key={tool.id}
+                        onClick={() => {
+                          const current = formData.tools || [];
+                          const next = isSelected 
+                            ? current.filter((id: string) => id !== tool.id)
+                            : [...current, tool.id];
+                          setFormData({ ...formData, tools: next });
+                        }}
+                        className={`p-5 rounded-2xl border text-left transition-all duration-300 group relative ${
+                          isSelected 
+                            ? 'bg-primary/5 border-primary/45 shadow-[0_0_15px_rgba(124,58,237,0.03)]' 
+                            : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800 hover:bg-zinc-900/20'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
+                            isSelected ? 'bg-primary text-zinc-950 shadow shadow-primary/10' : 'bg-zinc-900 text-zinc-500'
+                          }`}>
+                            <Code size={16} />
+                          </div>
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
+                        </div>
+                        <h4 className="text-sm font-semibold text-zinc-100">{tool.name}</h4>
+                        <p className="text-xs text-zinc-550 line-clamp-1 italic mt-1">{tool.description || 'Custom module link.'}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 space-y-8 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-lg font-semibold text-zinc-100">Audio Signal Processing</h3>
+                <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">Advanced Audio</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+                <SensitivitySlider label="Activation Threshold" value={formData.vad.activation_threshold} min={0.1} max={0.9} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, activation_threshold: v}})} sub="VAD threshold detection floor." />
+                <SensitivitySlider label="Speech Resilience" value={formData.vad.min_speech_duration} min={0.05} max={1.0} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, min_speech_duration: v}})} sub="Minimum sound duration floor." />
+                <SensitivitySlider label="Silence Tolerance" value={formData.vad.min_silence_duration} min={0.1} max={3.0} step={0.1} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, min_silence_duration: v}})} sub="Delay buffer before speaker changes." />
+                <SensitivitySlider label="Signal Padding" value={formData.vad.padding_duration} min={0.05} max={1.0} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, padding_duration: v}})} sub="Padding border boundaries." />
+              </div>
+
+              <div className="p-5 bg-zinc-950/40 border border-zinc-800 rounded-xl flex gap-4">
+                <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
+                  <Info size={16} />
+                </div>
+                <p className="text-xs text-zinc-550 leading-relaxed pt-0.5">
+                  Voice Activity Detection controls latency and sensitivity thresholds. Correct settings ensure stable, real-time responses with zero disruption.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* BOTTOM STEP CONTROLS */}
+          <div className="mt-8 flex justify-between items-center py-5 border-t border-zinc-900/60 sticky bottom-0 bg-background/50 backdrop-blur-xl z-10">
+            {step === 1 ? (
+              <button 
+                type="button"
+                onClick={() => navigate('/agents')}
+                className="h-10 px-5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-200 hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+              >
+                Cancel
+              </button>
+            ) : (
+              <button 
+                type="button"
+                onClick={() => setStep(s => Math.max(1, s - 1))}
+                className="h-10 px-5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-200 hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+              >
+                Previous Stage
+              </button>
+            )}
+            <button 
+              type="button"
+              onClick={() => {
+                if (step === 1 && !formData.agentName.trim()) return toast.error("Assistant name required");
+                if (step < 4) setStep(s => s + 1);
+                else handleSave(true);
+              }}
+              className="h-11 px-6 rounded-xl bg-primary text-zinc-950 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+            >
+              {step < 4 ? 'Next Stage' : 'Forge & Launch'}
+            </button>
           </div>
         </div>
 
-        {/* PERSISTENT PREVIEW */}
-        <div className="xl:col-span-4">
-          <div className="card-vapi bg-zinc-900 border-white/5 !p-8 sticky top-24 shadow-2xl space-y-8">
-            <div className="flex flex-col items-center text-center space-y-5">
-              <div className="w-24 h-24 rounded-2xl bg-zinc-800 flex items-center justify-center text-5xl shadow-inner border border-white/5 transition-transform duration-500 hover:rotate-6">
-                 {BLUEPRINTS.find(b => b.name === formData.agentName)?.icon || '🤖'}
+        {/* SIDEBAR PREVIEW (MATCHES PROFILE CARD STYLE EXACTLY) */}
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 sticky top-24">
+            
+            <div className="flex flex-col items-center text-center">
+              {/* AVATAR BOX WITH STATUS DOT */}
+              <div className="relative mb-5">
+                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center text-5xl">
+                  {BLUEPRINTS.find(b => b.name === formData.agentName)?.icon || '🤖'}
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-emerald-500 border-2 border-zinc-950 animate-pulse" />
               </div>
-              <div className="space-y-1">
-                <h3 className="text-xl font-black text-white uppercase tracking-tighter">{formData.agentName || 'Identity Void'}</h3>
-                <span className="text-[9px] font-black text-primary px-3 py-1 bg-primary/10 border border-primary/20 rounded-md inline-block tracking-widest uppercase mb-1">Link Protocol Ready</span>
+
+              {/* NAME */}
+              <h2 className="text-xl font-semibold text-zinc-100 truncate max-w-[280px]">
+                {formData.agentName || 'Unnamed Assistant'}
+              </h2>
+
+              {/* BADGE */}
+              <div className="mt-4 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+                Link Protocol Ready
               </div>
             </div>
 
-            <div className="space-y-6 pt-2">
-              <StatItem label="Intelligence" value={formData.llm.model.substring(0, 15)} progress={90} color="bg-primary" />
-              <StatItem label="Vocal" value={formData.tts.voice} progress={75} color="bg-primary" />
-              <StatItem label="Behavior" value={`${formData.llm.temperature} Temp`} progress={formData.llm.temperature * 50} color="bg-primary" />
-            </div>
-
-            <div className="divider h-px bg-white/5" />
-
-            <div className="space-y-5">
-               <FeatureIcon icon={<Shield size={16} className="text-emerald-500" />} label="Isolated Neural Hub" />
-               <FeatureIcon icon={<Activity size={16} className="text-primary" />} label="Real-time VAD Pipeline" />
-               <FeatureIcon icon={<Command size={16} className="text-indigo-500" />} label="Autonomous Tool Logic" />
+            {/* PREVIEW STATS */}
+            <div className="mt-8 space-y-1">
+              <PreviewStat 
+                label="Intelligence" 
+                value={dynamicModels[currentProvider]?.find((m: any) => m.id === formData.llm.model)?.name || formData.llm.model} 
+              />
+              <PreviewStat 
+                label="Provider" 
+                value={formData.llm.provider.toUpperCase()} 
+              />
+              <PreviewStat 
+                label="Voice Identity" 
+                value={formData.tts.voice} 
+              />
+              <PreviewStat 
+                label="Language" 
+                value={formData.language.split('-')[0].toUpperCase()} 
+              />
+              <PreviewStat 
+                label="Pace Speed" 
+                value={`${formData.tts.pace || 1.0}x`} 
+              />
+              <PreviewStat 
+                label="VAD Sensitivity" 
+                value={formData.vad.activation_threshold} 
+              />
             </div>
           </div>
         </div>
+
       </div>
     </div>
   );
 };
 
 const ConfigGroup = ({ label, value, options, labels, onChange }: any) => (
-  <div className="space-y-2.5">
-    <label className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">{label}</label>
-    <select value={value} onChange={e => onChange(e.target.value)} className="input-vapi w-full !bg-zinc-950 text-xs font-semibold h-11">
+  <div className="space-y-2">
+    <label className="text-sm font-medium text-zinc-300">{label}</label>
+    <select 
+      value={value} 
+      onChange={e => onChange(e.target.value)} 
+      className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition"
+    >
       {options.map((o: any, i: number) => (
         <option key={o} value={o}>{labels ? labels[i] : o}</option>
       ))}
@@ -533,9 +631,9 @@ const ConfigGroup = ({ label, value, options, labels, onChange }: any) => (
 );
 
 const ProPanel = ({ label, icon, children }: any) => (
-  <div className="bg-zinc-900/40 p-6 rounded-2xl border border-white/5 space-y-6">
-    <div className="flex items-center gap-2.5 mb-1 font-black text-white text-[11px] uppercase tracking-widest leading-none">
-      <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/15">{icon}</div>
+  <div className="bg-zinc-950/40 p-6 rounded-2xl border border-zinc-800 space-y-6 flex-1">
+    <div className="flex items-center gap-3 mb-1 font-semibold text-zinc-150 text-base uppercase tracking-wider leading-none">
+      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/15">{icon}</div>
       {label}
     </div>
     {children}
@@ -543,31 +641,21 @@ const ProPanel = ({ label, icon, children }: any) => (
 );
 
 const SensitivitySlider = ({ label, value, min, max, step, onChange, sub }: any) => (
-  <div className="space-y-4">
+  <div className="space-y-3">
     <div className="flex justify-between items-end px-1">
-      <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{label}</span>
-      <span className="text-sm font-bold text-white">{value}</span>
+      <span className="text-sm font-medium text-zinc-300">{label}</span>
+      <span className="text-sm font-semibold text-zinc-100">{value}</span>
     </div>
-    <input type="range" min={min} max={max} step={step} value={value} onChange={e => onChange(parseFloat(e.target.value))} className="w-full h-1 bg-white/5 rounded-full appearance-none accent-primary cursor-pointer" />
-    <span className="text-[9px] font-bold text-zinc-700 uppercase tracking-tighter ml-1">{sub}</span>
-  </div>
-);
-
-const StatItem = ({ label, value, progress, color }: any) => (
-  <div className="space-y-2">
-    <div className="flex items-center justify-between text-[10px] font-bold">
-      <span className="text-zinc-500 uppercase tracking-widest">{label}</span>
-      <span className="text-white">{value}</span>
-    </div>
-    <div className="h-1 bg-white/5 rounded-full overflow-hidden">
-      <div className={`h-full ${color} rounded-full transition-all duration-1000`} style={{ width: `${progress}%` }} />
-    </div>
-  </div>
-);
-
-const FeatureIcon = ({ icon, label }: any) => (
-  <div className="flex items-center gap-3 text-[10px] font-bold text-zinc-500 uppercase tracking-[0.15em] italic">
-    {icon} <span>{label}</span>
+    <input 
+      type="range" 
+      min={min} 
+      max={max} 
+      step={step} 
+      value={value} 
+      onChange={e => onChange(parseFloat(e.target.value))} 
+      className="w-full h-1 bg-zinc-800 rounded-full appearance-none accent-primary cursor-pointer" 
+    />
+    <p className="text-xs text-zinc-550 mt-1">{sub}</p>
   </div>
 );
 

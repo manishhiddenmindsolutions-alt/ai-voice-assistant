@@ -199,6 +199,28 @@ async def fetch_provider_models_api(provider: str, api_key: str) -> List[dict]:
         except Exception as e:
             logger.warning(f"Error fetching Cartesia voices: {e}")
 
+    # 8. SARVAM
+    elif provider == "sarvam":
+        if api_key and len(api_key.strip()) > 5:
+            models = [
+                {"model_id": "saaras:v3", "name": "saaras:v3 (Indic Speech-to-Text)", "context_window": 0, "capabilities": {"type": "stt"}},
+                {"model_id": "bulbul:v3", "name": "bulbul:v3 (Indic Text-to-Speech)", "context_window": 0, "capabilities": {"type": "tts"}}
+            ]
+
+    # 9. DEEPGRAM
+    elif provider == "deepgram":
+        try:
+            headers = {"Authorization": f"Token {api_key}"}
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://api.deepgram.com/v1/projects", headers=headers, timeout=5) as resp:
+                    if resp.status == 200:
+                        models = [
+                            {"model_id": "nova-2", "name": "Nova-2 (Speech-to-Text)", "context_window": 0, "capabilities": {"type": "stt"}},
+                            {"model_id": "aura", "name": "Aura (Text-to-Speech)", "context_window": 0, "capabilities": {"type": "tts"}}
+                        ]
+        except Exception as e:
+            logger.warning(f"Error checking Deepgram: {e}")
+
     # Rich Static Fallbacks / Constants
     if not models:
         if provider == "openai":
@@ -232,6 +254,16 @@ async def fetch_provider_models_api(provider: str, api_key: str) -> List[dict]:
         elif provider == "assemblyai":
             models = [
                 {"model_id": "assemblyai-stt", "name": "AssemblyAI Speech-to-Text", "context_window": 0, "capabilities": {"type": "stt"}}
+            ]
+        elif provider == "sarvam":
+            models = [
+                {"model_id": "saaras:v3", "name": "saaras:v3 (Indic Speech-to-Text)", "context_window": 0, "capabilities": {"type": "stt"}},
+                {"model_id": "bulbul:v3", "name": "bulbul:v3 (Indic Text-to-Speech)", "context_window": 0, "capabilities": {"type": "tts"}}
+            ]
+        elif provider == "deepgram":
+            models = [
+                {"model_id": "nova-2", "name": "Nova-2 (Speech-to-Text)", "context_window": 0, "capabilities": {"type": "stt"}},
+                {"model_id": "aura", "name": "Aura (Text-to-Speech)", "context_window": 0, "capabilities": {"type": "tts"}}
             ]
             
     return models
@@ -288,7 +320,7 @@ async def connect_provider(
     test_models = await fetch_provider_models_api(provider_name, api_key_plain)
     if not test_models:
         # If no models were fetched and it isn't a static fallback provider, raise error
-        if provider_name in ["openai", "openrouter", "groq", "deepseek", "gemini", "together_ai", "elevenlabs", "cartesia"]:
+        if provider_name in ["openai", "openrouter", "groq", "deepseek", "gemini", "together_ai", "elevenlabs", "cartesia", "sarvam", "deepgram"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Failed to verify API key for {provider_name}. Please double check your credentials."

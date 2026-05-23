@@ -13,6 +13,7 @@ import { Mic, MicOff, PhoneOff, Activity } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import '@livekit/components-styles';
+import { useThemeStore } from '../store/useThemeStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -38,8 +39,21 @@ type Cfg = (typeof STATE_CONFIG)[keyof typeof STATE_CONFIG];
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
 const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: VoiceSessionProps) => {
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+
   const handleDisconnected = () => {
-    toast('Session ended', { style: { background: '#111', color: '#fff', border: '1px solid #222' } });
+    toast('Session ended', {
+      style: {
+        background: isLight ? '#ffffff' : '#111111',
+        color: isLight ? '#09090b' : '#ffffff',
+        border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid #222222',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em'
+      }
+    });
     onDisconnect();
   };
   const handleError = (error: Error) => {
@@ -51,8 +65,9 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
       display: 'flex', alignItems: 'flex-end',
-      background: 'rgba(0,0,0,0.88)',
+      background: isLight ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.88)',
       backdropFilter: 'blur(28px)',
+      transition: 'background 0.5s'
     }}>
       <AnimatePresence>
         <motion.div
@@ -64,11 +79,12 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
           style={{
             width: '100%',
             height: '100dvh',
-            background: '#080808',
+            background: isLight ? '#ffffff' : '#080808',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             position: 'relative',
+            transition: 'background 0.5s'
           }}
         >
           <LiveKitRoom
@@ -89,6 +105,8 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
 // ─── Inner ────────────────────────────────────────────────────────────────────
 
 const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => void; agentName: string }) => {
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
   const [duration, setDuration] = useState(0);
   const { state, audioTrack } = useVoiceAssistant();
   const { localParticipant } = useLocalParticipant();
@@ -111,7 +129,15 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
     const next = !localParticipant.isMicrophoneEnabled;
     await localParticipant.setMicrophoneEnabled(next);
     toast(next ? '🎙 Microphone on' : '🔇 Microphone off', {
-      style: { background: '#111', color: '#fff', border: '1px solid #222' },
+      style: {
+        background: isLight ? '#ffffff' : '#111111',
+        color: isLight ? '#09090b' : '#ffffff',
+        border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid #222222',
+        fontSize: '11px',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em'
+      },
     });
   };
 
@@ -121,13 +147,14 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
     <>
       <RoomAudioRenderer />
 
-      {/* ── HEADER — flex-shrink:0 guarantees it never gets squashed ─────── */}
+      {/* ── HEADER ── */}
       <header style={{
         flexShrink: 0,
         zIndex: 10,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
         padding: '22px 28px',
-        borderBottom: '1px solid rgba(255,255,255,0.05)',
+        borderBottom: isLight ? '1px solid rgba(9,9,11,0.06)' : '1px solid rgba(255,255,255,0.05)',
+        transition: 'border-color 0.5s'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <motion.div
@@ -142,7 +169,9 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
           <span style={{
             fontFamily: 'ui-monospace,"Cascadia Code",monospace',
             fontSize: 11, letterSpacing: '0.18em',
-            color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase',
+            color: isLight ? 'rgba(9,9,11,0.6)' : 'rgba(255,255,255,0.4)',
+            textTransform: 'uppercase',
+            transition: 'color 0.5s'
           }}>
             {agentName}
           </span>
@@ -151,17 +180,18 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
         <span style={{
           fontFamily: 'ui-monospace,"Cascadia Code",monospace',
           fontSize: 12, letterSpacing: '0.1em',
-          color: 'rgba(255,255,255,0.2)',
+          color: isLight ? 'rgba(9,9,11,0.7)' : 'rgba(255,255,255,0.2)',
           padding: '4px 12px',
-          background: 'rgba(255,255,255,0.03)',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: isLight ? 'rgba(9,9,11,0.03)' : 'rgba(255,255,255,0.03)',
+          border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid rgba(255,255,255,0.06)',
           borderRadius: 8,
+          transition: 'all 0.5s'
         }}>
           {fmt(duration)}
         </span>
       </header>
 
-      {/* ── MAIN — flex:1 + overflowY:auto = scrollable, never clips footer ─ */}
+      {/* ── MAIN ── */}
       <main style={{
         flex: 1,
         overflowY: 'auto', overflowX: 'hidden',
@@ -223,29 +253,27 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
             }
           </div>
 
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.04)' }} />
+          <div style={{ height: 1, background: isLight ? 'rgba(9,9,11,0.06)' : 'rgba(255,255,255,0.04)', transition: 'background 0.5s' }} />
 
           {/* Local mic */}
           <div style={{ height: 16, width: '100%', opacity: 0.15 }}>
             {localMicTrack && (
-              <BarVisualizer trackRef={localMicTrack} style={{ width: '100%', height: '100%', color: '#fff' }} />
+              <BarVisualizer trackRef={localMicTrack} style={{ width: '100%', height: '100%', color: isLight ? '#09090b' : '#fff', transition: 'color 0.5s' }} />
             )}
           </div>
         </div>
       </main>
 
-      {/* ── FOOTER — flex-shrink:0 = ALWAYS visible no matter what ──────────
-           This single property is the most critical fix. Without it the footer
-           can be pushed out of the visible area when the main area is tall.
-      ─────────────────────────────────────────────────────────────────────── */}
+      {/* ── FOOTER ── */}
       <footer style={{
         flexShrink: 0,
         zIndex: 10,
         display: 'flex', justifyContent: 'center', alignItems: 'center',
         gap: 10,
         padding: '20px 28px 36px',
-        borderTop: '1px solid rgba(255,255,255,0.05)',
-        background: 'rgba(8,8,8,0.97)',
+        borderTop: isLight ? '1px solid rgba(9,9,11,0.06)' : '1px solid rgba(255,255,255,0.05)',
+        background: isLight ? 'rgba(255,255,255,0.96)' : 'rgba(8,8,8,0.97)',
+        transition: 'all 0.5s'
       }}>
 
         {/* Mic */}
@@ -255,11 +283,17 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
           aria-label={isMuted ? 'Unmute microphone' : 'Mute microphone'}
           style={{
             width: 58, height: 58, borderRadius: 18, flexShrink: 0,
-            border: isMuted ? '1px solid rgba(239,68,68,0.55)' : '1px solid rgba(255,255,255,0.1)',
-            background: isMuted ? 'rgba(239,68,68,0.12)' : 'rgba(255,255,255,0.05)',
-            color: isMuted ? '#F87171' : 'rgba(255,255,255,0.55)',
+            border: isMuted 
+              ? '1px solid rgba(239,68,68,0.45)' 
+              : isLight ? '1px solid rgba(9,9,11,0.1)' : '1px solid rgba(255,255,255,0.1)',
+            background: isMuted 
+              ? 'rgba(239,68,68,0.08)' 
+              : isLight ? 'rgba(9,9,11,0.03)' : 'rgba(255,255,255,0.05)',
+            color: isMuted 
+              ? '#EF4444' 
+              : isLight ? 'rgba(9,9,11,0.65)' : 'rgba(255,255,255,0.55)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s',
+            cursor: 'pointer', transition: 'all 0.3s',
           }}
         >
           {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
@@ -272,13 +306,13 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
           aria-label="End call"
           style={{
             width: 80, height: 58, borderRadius: 18, flexShrink: 0,
-            background: '#DC2626',
-            border: '1px solid rgba(239,68,68,0.5)',
+            background: '#EF4444',
+            border: '1px solid rgba(239,68,68,0.3)',
             color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: '0 4px 28px rgba(220,38,38,0.28)',
-            transition: 'all 0.2s',
+            boxShadow: '0 4px 28px rgba(239,68,68,0.22)',
+            transition: 'all 0.3s',
           }}
         >
           <PhoneOff size={22} strokeWidth={2.5} />
@@ -290,11 +324,11 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
           aria-label="Signal quality"
           style={{
             width: 58, height: 58, borderRadius: 18, flexShrink: 0,
-            border: '1px solid rgba(255,255,255,0.07)',
-            background: 'rgba(255,255,255,0.03)',
-            color: 'rgba(255,255,255,0.22)',
+            border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid rgba(255,255,255,0.07)',
+            background: isLight ? 'rgba(9,9,11,0.03)' : 'rgba(255,255,255,0.03)',
+            color: isLight ? 'rgba(9,9,11,0.45)' : 'rgba(255,255,255,0.22)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.2s',
+            cursor: 'pointer', transition: 'all 0.3s',
           }}
         >
           <Activity size={18} />
@@ -307,6 +341,8 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
 // ─── Orb ──────────────────────────────────────────────────────────────────────
 
 const OrbDisplay = ({ state, cfg }: { state: string; cfg: Cfg }) => {
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
   const isSpeaking = state === 'speaking';
   const isThinking = state === 'thinking';
   const isListening = state === 'listening';
@@ -362,11 +398,15 @@ const OrbDisplay = ({ state, cfg }: { state: string; cfg: Cfg }) => {
         transition={{ duration: isSpeaking ? 0.9 : 2.4, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           width: '100%', height: '100%', borderRadius: '50%',
-          background: `radial-gradient(circle at 35% 32%, ${cfg.color}1A 0%, #0F0F0F 62%)`,
-          border: '1px solid rgba(255,255,255,0.07)',
-          boxShadow: `inset 0 1px 0 rgba(255,255,255,0.05), 0 0 56px ${cfg.glow}`,
+          background: isLight 
+            ? `radial-gradient(circle at 35% 32%, ${cfg.color}26 0%, #FAFAFA 62%)` 
+            : `radial-gradient(circle at 35% 32%, ${cfg.color}1A 0%, #0F0F0F 62%)`,
+          border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid rgba(255,255,255,0.07)',
+          boxShadow: isLight 
+            ? `inset 0 1px 0 rgba(255,255,255,0.8), 0 0 56px ${cfg.glow}` 
+            : `inset 0 1px 0 rgba(255,255,255,0.05), 0 0 56px ${cfg.glow}`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'background 0.9s, box-shadow 0.9s',
+          transition: 'all 0.9s',
         }}
       >
         {/* Inner light source */}
@@ -387,23 +427,31 @@ const OrbDisplay = ({ state, cfg }: { state: string; cfg: Cfg }) => {
 
 // ─── Idle Bars (shown when no agent audio track) ───────────────────────────────
 
-const IdleBars = () => (
-  <div style={{
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    gap: 4, height: '100%', opacity: 0.1,
-  }}>
-    {[14, 22, 10, 30, 18, 26, 12, 20, 16, 24, 8, 18].map((h, i) => (
-      <motion.div
-        key={i}
-        animate={{ scaleY: [0.35, 1, 0.35] }}
-        transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.08, ease: 'easeInOut' }}
-        style={{
-          width: 3, height: h, borderRadius: 2,
-          background: '#ffffff', transformOrigin: 'bottom',
-        }}
-      />
-    ))}
-  </div>
-);
+const IdleBars = () => {
+  const { theme } = useThemeStore();
+  const isLight = theme === 'light';
+
+  return (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      gap: 4, height: '100%', opacity: isLight ? 0.35 : 0.1,
+      transition: 'opacity 0.5s'
+    }}>
+      {[14, 22, 10, 30, 18, 26, 12, 20, 16, 24, 8, 18].map((h, i) => (
+        <motion.div
+          key={i}
+          animate={{ scaleY: [0.35, 1, 0.35] }}
+          transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.08, ease: 'easeInOut' }}
+          style={{
+            width: 3, height: h, borderRadius: 2,
+            background: isLight ? '#09090b' : '#ffffff',
+            transformOrigin: 'bottom',
+            transition: 'background 0.5s'
+          }}
+        />
+      ))}
+    </div>
+  );
+};
 
 export default VoiceSession;

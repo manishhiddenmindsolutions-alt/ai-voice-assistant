@@ -12,17 +12,17 @@ const ComingSoonPage = ({ title }: { title: string }) => {
       {/* FLOATING SPHERE WITH ROTATING BORDER */}
       <div className="relative group">
         <div className="absolute -inset-1 bg-gradient-to-r from-primary to-purple-600 rounded-2xl blur opacity-30 group-hover:opacity-65 transition duration-1000 group-hover:duration-200 animate-tilt"></div>
-        <div className="relative w-20 h-20 rounded-2xl bg-zinc-950 border border-white/10 flex items-center justify-center text-primary shadow-2xl animate-neural-float">
+        <div className="relative w-20 h-20 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-primary shadow-2xl animate-neural-float duration-500">
           <Construction size={36} strokeWidth={1.5} className="text-primary" />
         </div>
       </div>
       
-      <div className="space-y-3 relative z-10">
-        <h1 className="text-2xl md:text-3xl font-heading font-black text-white uppercase tracking-[0.2em]">{title}</h1>
-        <p className="text-zinc-500 max-w-sm mx-auto font-bold text-[10px] leading-relaxed uppercase tracking-[0.15em] opacity-80">
+      <div className="space-y-3.5 relative z-10">
+        <h1 className="text-2xl md:text-3xl font-heading font-black text-zinc-100 uppercase tracking-widest leading-tight">{title}</h1>
+        <p className="text-zinc-500 max-w-sm mx-auto font-bold text-xs leading-relaxed uppercase tracking-wider opacity-85">
           Neural Blueprint Pending
         </p>
-        <p className="text-zinc-600 max-w-md mx-auto font-medium text-[12px] leading-relaxed italic">
+        <p className="text-zinc-600 max-w-md mx-auto font-medium text-sm leading-relaxed italic">
           "We're fine-tuning this cybernetic operator module. Link established but awaiting final signal dispatch."
         </p>
       </div>
@@ -42,4 +42,3 @@ const ComingSoonPage = ({ title }: { title: string }) => {
 };
 
 export default ComingSoonPage;
-

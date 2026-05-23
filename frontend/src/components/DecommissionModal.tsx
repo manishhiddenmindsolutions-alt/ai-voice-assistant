@@ -28,7 +28,7 @@ export const DecommissionModal: React.FC<DecommissionModalProps> = ({
         <div className="absolute -top-32 -right-32 w-64 h-64 bg-red-500/5 blur-[100px] rounded-full" />
         
         <div className="absolute top-0 right-0 p-8">
-          <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors">
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-200 transition-colors">
             <X size={24} />
           </button>
         </div>
@@ -40,9 +40,9 @@ export const DecommissionModal: React.FC<DecommissionModalProps> = ({
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-3xl font-heading font-bold text-white tracking-tight uppercase tracking-[0.3em] ml-2">{title}</h2>
+            <h2 className="text-3xl font-heading font-bold text-zinc-100 tracking-tight uppercase tracking-[0.3em] ml-2">{title}</h2>
             <p className="text-zinc-500 text-sm font-medium leading-relaxed max-w-sm">
-              Confirming this action will <span className="text-red-400 font-bold uppercase tracking-widest">permanently sever</span> the neural connection to <span className="text-white font-black bg-white/5 px-2 py-1 rounded">"{itemName}"</span>.
+              Confirming this action will <span className="text-red-400 font-bold uppercase tracking-widest">permanently sever</span> the neural connection to <span className="text-zinc-100 font-bold bg-zinc-900 border border-zinc-850 px-2 py-1 rounded">"{itemName}"</span>.
             </p>
           </div>
 
@@ -58,7 +58,7 @@ export const DecommissionModal: React.FC<DecommissionModalProps> = ({
             </button>
             <button 
               onClick={onClose}
-              className="w-full h-14 rounded-[1.25rem] border border-white/5 bg-white/5 hover:bg-white/10 text-zinc-500 hover:text-white text-[11px] font-black uppercase tracking-[0.2em] transition-all"
+              className="w-full h-14 rounded-[1.25rem] border border-zinc-800 bg-zinc-900/10 hover:bg-zinc-900/30 text-zinc-500 hover:text-zinc-100 text-[11px] font-bold uppercase tracking-[0.2em] transition-all"
             >
               Abort Signal
             </button>

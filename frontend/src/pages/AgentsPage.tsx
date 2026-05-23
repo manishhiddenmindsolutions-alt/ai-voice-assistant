@@ -71,7 +71,7 @@ const AgentsPage = () => {
 
             const res = await sessionApi.start(payload);
             setActiveSession({ ...res.data, agentName: agent.agentName });
-            toast.success('Assistant Live', { id: toastId });
+            toast.success('Session live', { id: toastId });
         } catch (err) {
             console.error('Launch failed:', err);
             toast.error('Failed to start session', { id: toastId });
@@ -91,7 +91,7 @@ const AgentsPage = () => {
         const toastId = toast.loading(`Decommissioning ${name}...`);
         try {
             await agentApi.delete(id);
-            toast.success(`${name} Decommissioned`, { id: toastId });
+            toast.success(`${name} decommissioned`, { id: toastId });
             setDecommissioningItem(null);
             fetchAgents(true);
         } catch (err) {
@@ -107,154 +107,173 @@ const AgentsPage = () => {
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
+        <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+
             {/* HEADER */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-                <div className="space-y-1">
-                    <h1 className="text-xl md:text-2xl font-heading font-black text-white uppercase tracking-wider leading-tight">Assistant Registry</h1>
-                    <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)]" />
-                        <p className="text-zinc-600 text-[9px] font-black uppercase tracking-widest opacity-80">Neural Forge Sync Active • Region US-EAST</p>
-                    </div>
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+                <div>
+                    <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+                        Assistants Registry
+                    </h1>
+                    <p className="text-sm text-zinc-500 mt-2">
+                        Deploy, monitor and orchestrate your autonomous AI voice agents.
+                    </p>
                 </div>
-                <div className="flex items-center gap-3 w-full md:w-auto">
+
+                <div className="flex items-center gap-3">
                     <button
                         onClick={() => fetchAgents(true)}
-                        className={`flex-1 md:w-10 md:h-10 h-10 flex items-center justify-center rounded-xl border border-white/5 bg-zinc-950/50 text-zinc-500 hover:text-white transition-all backdrop-blur-sm ${isRefreshing ? 'animate-spin text-primary border-primary/40' : ''}`}
+                        className={`w-11 h-11 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all ${isRefreshing ? 'animate-spin' : ''}`}
                         title="Sync Registry"
                     >
                         <RefreshCw size={16} />
                     </button>
+
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="flex-[4] md:w-auto btn-vapi h-10 !px-6 shadow-[0_0_20px_rgba(0,97,255,0.1)]"
+                        className="h-11 px-5 rounded-xl bg-primary text-zinc-950 text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
                     >
-                        <Plus size={16} strokeWidth={3} />
-                        Register Node
+                        <Plus size={16} />
+                        Register Assistant
                     </button>
                 </div>
             </div>
 
             {/* FILTERS BAR */}
-            <div className="flex flex-col md:flex-row items-center gap-4 mb-10">
-                <div className="relative flex-1 w-full group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700 group-focus-within:text-primary transition-colors" size={16} />
+            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                <div className="relative flex-1 w-full max-w-md group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
                     <input
                         type="text"
-                        placeholder="SEARCH NEURAL REGISTRY..."
+                        placeholder="Search HMS registry..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="input-vapi w-full pl-11 pr-5 py-2.5 h-10 text-[10px] uppercase tracking-widest border-border bg-zinc-950/30 md:max-w-md"
+                        className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950/40 pl-11 pr-10 text-sm outline-none focus:border-primary transition"
                     />
                     {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-white transition-colors">
+                        <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-355">
                             <X size={14} />
                         </button>
                     )}
                 </div>
+
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <button className="flex-1 md:w-auto h-10 px-5 border border-white/5 rounded-xl bg-zinc-950/50 text-[9px] font-black uppercase tracking-widest text-zinc-600 hover:text-white hover:border-zinc-700 transition-all flex items-center justify-center gap-3 backdrop-blur-sm">
+                    <button className="h-11 px-4 border border-zinc-800 rounded-xl bg-zinc-900/30 text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition flex items-center gap-2">
                         <Filter size={14} />
-                        Filter Ops
+                        Filter Operations
                     </button>
-                    <div className="flex-1 md:w-auto h-10 px-4 border border-white/5 rounded-xl bg-zinc-950/20 flex items-center justify-center gap-3">
-                        <Users size={14} className="text-zinc-700" />
-                        <span className="text-[9px] font-black text-zinc-700 uppercase tracking-widest leading-none whitespace-nowrap">{agents.length} Nodes</span>
+                    <div className="h-11 px-4 border border-zinc-850 rounded-xl bg-zinc-950/20 flex items-center gap-2 text-zinc-550 text-xs font-semibold uppercase tracking-wider">
+                        <Users size={14} className="text-zinc-500" />
+                        <span>{agents.length} Nodes</span>
                     </div>
                 </div>
             </div>
 
             {/* ASSISTANTS GRID */}
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {[1, 2, 3, 4, 5, 6].map(i => <div key={i} className="h-64 skeleton-vapi" />)}
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="h-64 rounded-2xl border border-zinc-850 bg-zinc-900/20 animate-pulse" />
+                    ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredAgents.map((agent) => (
-                        <div
-                            key={agent.id}
-                            className="card-vapi !p-6 rounded-2xl flex flex-col relative overflow-hidden glow-card-primary group/card animate-in fade-in slide-in-from-bottom-4 duration-300"
-                        >
-                            {/* Cyber Grid Backdrop */}
-                            <div className="absolute inset-0 bg-cyber-grid opacity-[0.03] group-hover/card:opacity-[0.06] transition-opacity pointer-events-none -z-10" />
-                            <div className="flex items-start justify-between mb-6 relative z-10">
-                                <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-border flex items-center justify-center text-xl shadow-inner">
-                                    {(agent.agentName || '').includes('Property') ? '🏘️' : '🤖'}
-                                </div>
-                                <div className="flex flex-col items-end gap-1.5">
-                                    <div className="px-2 py-0.5 bg-emerald-500/5 border border-emerald-500/20 rounded-md flex items-center gap-1.5">
-                                        <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
-                                        <span className="text-[8px] font-black text-emerald-500 uppercase tracking-widest">Active</span>
-                                    </div>
-                                    <div className="flex items-center gap-1">
-                                        <button 
-                                            onClick={(e) => handleEdit(agent, e as any)}
-                                            className="p-1.5 text-zinc-700 hover:text-white transition-all bg-zinc-950 rounded-md border border-border hover:border-zinc-600"
-                                            title="Edit"
-                                        >
-                                            <Edit2 size={12} />
-                                        </button>
-                                        <button 
-                                            onClick={(e) => handleDelete(agent.id, agent.agentName, e as any)}
-                                            className="p-1.5 text-zinc-700 hover:text-red-500 transition-all bg-zinc-950 rounded-md border border-border hover:border-red-500/30"
-                                            title="Delete"
-                                        >
-                                            <Trash2 size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredAgents.map((agent) => {
+                        const isRealEstate = (agent.agentName || '').includes('Real Estate') || (agent.prompt || '').toLowerCase().includes('closer');
+                        const isConcierge = (agent.agentName || '').includes('Concierge');
+                        const isTechSupport = (agent.agentName || '').includes('Technical');
 
-                            <div 
-                                onClick={(e) => handleEdit(agent, e as any)}
-                                className="flex-1 space-y-3 relative z-10 cursor-pointer"
+                        return (
+                            <div
+                                key={agent.id}
+                                className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 hover:border-primary/30 hover:bg-zinc-900/60 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between min-h-[290px] group cursor-pointer relative overflow-hidden"
                             >
-                                <div className="space-y-0.5">
-                                    <h3 className="text-base font-black text-white uppercase tracking-wide group-hover:text-primary transition-colors line-clamp-1">{agent.agentName || 'Unnamed Node'}</h3>
-                                    <div className="flex items-center gap-1.5 opacity-40">
-                                        <span className="text-[7px] font-black text-zinc-500 uppercase tracking-widest bg-zinc-950 px-1 py-0.5 rounded border border-white/5">NODE</span>
-                                        <span className="text-[9px] text-zinc-600 font-mono tracking-tighter truncate max-w-[100px]">{agent.id}</span>
+                                <div>
+                                    {/* CARD TOP */}
+                                    <div className="flex items-start justify-between mb-5">
+                                        <div className="flex items-center gap-4">
+                                            {/* GRADIENT ICON CONTAINER */}
+                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/60 flex items-center justify-center text-2xl border border-zinc-700/50 shadow-inner group-hover:scale-105 group-hover:border-primary/20 transition-all duration-300">
+                                                {isRealEstate ? '🏘️' : isConcierge ? '🤵' : isTechSupport ? '⚙️' : '🤖'}
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-base font-semibold text-zinc-105 line-clamp-1 leading-tight group-hover:text-primary transition-colors duration-300">
+                                                    {agent.agentName || 'Unnamed Node'}
+                                                </h3>
+                                                <div className="flex items-center gap-2 mt-1.5">
+                                                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-450 text-[10px] font-semibold uppercase tracking-wider scale-90">
+                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                                        <span>Active</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* TOP CONTROL OVERLAYS */}
+                                        <div className="flex items-center gap-2">
+                                            <button 
+                                                onClick={(e) => handleEdit(agent, e)}
+                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-all shadow"
+                                                title="Configure"
+                                            >
+                                                <Edit2 size={13} />
+                                            </button>
+                                            <button 
+                                                onClick={(e) => handleDelete(agent.id, agent.agentName, e)}
+                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-905 flex items-center justify-center text-zinc-455 hover:text-red-400 hover:border-red-500/20 transition-all shadow"
+                                                title="Decommission"
+                                            >
+                                                <Trash2 size={13} />
+                                            </button>
+                                        </div>
                                     </div>
+
+                                    {/* PROMPT DESCRIPTION */}
+                                    <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 min-h-[60px] italic pt-1">
+                                        "{agent.prompt || 'Autonomous voice assistant configured and ready for live operation.'}"
+                                    </p>
                                 </div>
 
-                                <p className="text-[11px] text-zinc-600 font-medium line-clamp-2 min-h-[2rem] leading-relaxed italic opacity-80">
-                                    {agent.prompt || 'Autonomous forge agent ready for deployment.'}
-                                </p>
+                                {/* FOOTER & LAUNCH ACTIONS */}
+                                <div className="mt-5 pt-4 border-t border-zinc-900/60 flex items-center justify-between">
+                                    <div className="flex gap-2">
+                                        <Badge 
+                                            label={agent.language.toUpperCase()} 
+                                            icon={<Globe size={12} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
+                                        />
+                                        <Badge 
+                                            label={agent.llm?.model ? agent.llm.model.split('/').pop()?.substring(0, 12) || agent.llm.model.substring(0, 12) : 'llama-3.3'} 
+                                            icon={<Cpu size={12} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
+                                        />
+                                    </div>
 
-                                <div className="flex flex-wrap gap-1.5 pt-1">
-                                    <Badge label={agent.language} icon={<Globe size={9} className="text-zinc-700" />} />
-                                    <Badge label={agent.llm?.model || 'llama-3.3'} icon={<Cpu size={9} className="text-zinc-700" />} />
+                                    <button
+                                        onClick={(e) => handleLaunch(agent, e)}
+                                        className="h-9 px-4 rounded-xl bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-300 hover:text-zinc-100 transition-all flex items-center gap-2 shadow group/btn"
+                                    >
+                                        <Play size={10} fill="currentColor" strokeWidth={0} className="text-emerald-500 group-hover/btn:scale-110 group-hover/btn:text-emerald-450 transition-transform" />
+                                        <span>Launch</span>
+                                    </button>
                                 </div>
                             </div>
+                        );
+                    })}
 
-                            <div className="mt-6 pt-5 border-t border-zinc-900 flex items-center justify-between relative z-10">
-                                <div className="flex flex-col">
-                                    <span className="text-[7px] font-black text-zinc-800 uppercase tracking-widest">Protocol</span>
-                                    <span className="text-[8px] font-black text-zinc-500 uppercase mt-0.5 tracking-wider">FORGE V.1</span>
-                                </div>
-                                <button
-                                    onClick={(e) => handleLaunch(agent, e as any)}
-                                    className="btn-vapi !px-4 !h-8 text-[8px] !rounded-md"
-                                >
-                                    <Play size={10} fill="currentColor" strokeWidth={0} />
-                                    Launch Node
-                                </button>
-                            </div>
-                        </div>
-                    ))}
-
+                    {/* ADD NEW CARD OVERHAUL */}
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="bg-zinc-950/20 border border-dashed border-zinc-900 rounded-xl p-6 flex flex-col items-center justify-center gap-4 hover:border-zinc-700 hover:bg-zinc-900/10 group transition-all duration-300 min-h-[280px]"
+                        className="rounded-2xl border-2 border-dashed border-zinc-850 bg-zinc-900/10 p-6 flex flex-col items-center justify-center min-h-[290px] hover:border-primary/45 hover:bg-zinc-900/20 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(124,58,237,0.02)] transition-all duration-300 group"
                     >
-                        <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-900 flex items-center justify-center text-zinc-800 group-hover:text-white group-hover:border-zinc-700 transition-all duration-300">
+                        <div className="w-14 h-14 rounded-2xl bg-zinc-950 flex items-center justify-center text-zinc-500 group-hover:text-zinc-200 transition-all border border-zinc-800 mb-5 group-hover:scale-105 group-hover:border-primary/20">
                             <Plus size={20} />
                         </div>
-                        <div className="text-center space-y-0.5">
-                            <h4 className="text-[9px] font-black text-white uppercase tracking-widest">Initialize Node</h4>
-                            <p className="text-[8px] text-zinc-800 font-bold uppercase tracking-widest opacity-50">Deploy to Forge</p>
-                        </div>
+                        <h3 className="text-base font-semibold text-zinc-200 group-hover:text-primary transition-colors">
+                            Register Assistant
+                        </h3>
+                        <p className="text-sm text-zinc-500 mt-2 text-center max-w-[220px] leading-relaxed">
+                            Initialize a new connection node for your voice assistant.
+                        </p>
                     </button>
                 </div>
             )}
@@ -277,7 +296,7 @@ interface BadgeProps {
 }
 
 const Badge = ({ label, icon }: BadgeProps) => (
-    <div className="flex items-center gap-2 px-2 py-1 bg-zinc-950 border border-white/5 rounded-md text-[9px] font-black text-zinc-600 uppercase tracking-widest leading-none">
+    <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800/80 rounded-lg text-[10px] font-mono text-zinc-400 leading-none">
         {icon}
         <span>{label}</span>
     </div>

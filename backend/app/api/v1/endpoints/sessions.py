@@ -22,7 +22,7 @@ from app.core.security import vault
 from app.models.orm import UserORM
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
-
+import os
 router = APIRouter()
 
 @router.post("/start")
@@ -34,6 +34,10 @@ async def start_session(
     room_name = f"room_{uuid.uuid4().hex[:8]}"
     identity = f"user_{uuid.uuid4().hex[:6]}"
     
+    print(f"\n⚡⚡⚡ [SESSION START DIAGNOSTIC] ⚡⚡⚡")
+    print(f"Current user email: {getattr(current_user, 'email', None)}, user_id: {getattr(current_user, 'id', None)}")
+    print(f"Request config: {config}")
+
     if not settings.LIVEKIT_API_KEY or not settings.LIVEKIT_API_SECRET:
         raise HTTPException(status_code=500, detail="LiveKit credentials are not configured")
 
@@ -48,8 +52,10 @@ async def start_session(
         db_agent = result.scalar_one_or_none()
         
         if db_agent:
+            print(f"FOUND db_agent in DB: {db_agent.agent_name}, user_id: {db_agent.user_id}")
             # Refresh to load tools relationship
             tools_data = []
+
             for t in db_agent.tools:
                 # DECRYPT TOOL KEY OR INTEGRATION TOKEN
                 final_token = None
@@ -194,11 +200,21 @@ async def start_session(
                 env_val = os.getenv("OPENAI_API_KEY") if tts_provider == "openai" else os.getenv(f"{tts_provider.upper()}_API_KEY")
                 if env_val:
                     metadata.setdefault("tts", {})["apiKey"] = env_val
+        else:
+            print(f"WARNING: db_agent with ID {config.id} was NOT found in the database for current user {getattr(current_user, 'email', None)} (ID: {getattr(current_user, 'id', None)}).")
+
 
     # Standardizing dispatch to 'voice-forge-agent-v5' for reliability
     agent_dispatch_name = "voice-forge-agent-v5"
     
+    import json
+    print(f"--- [DIAGNOSTIC] Final metadata for dispatch keys: {list(metadata.keys())}")
+    print(f"--- [DIAGNOSTIC] Final LLM: {metadata.get('llm')}")
+    print(f"--- [DIAGNOSTIC] Final STT: {metadata.get('stt')}")
+    print(f"--- [DIAGNOSTIC] Final TTS: {metadata.get('tts')}")
+    
     token = livekit_service.generate_token(
+
         room_name=room_name,
         identity=identity,
         agent_name=agent_dispatch_name,

@@ -60,7 +60,7 @@ const DashboardPage = () => {
       };
       const res = await sessionApi.start(payload);
       setActiveSession({ ...res.data, agentName: agent.agentName });
-      toast.success('Session Live', { id: toastId });
+      toast.success('Session live', { id: toastId });
     } catch (err) {
       console.error('Launch failed:', err);
       toast.error('Failed to start session', { id: toastId });
@@ -68,149 +68,202 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="space-y-10 animate-in fade-in slide-in-from-bottom-8 duration-500 font-sans">
-      
-      {/* HEADER AREA */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-border pb-6">
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-3xl font-heading font-black text-white tracking-tight leading-tight">Intelligence Overview</h1>
-          <p className="text-muted text-xs font-medium uppercase tracking-widest">Autonomous Fleet Analytics • Forge Intelligence</p>
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+
+      {/* HEADER */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+            Intelligence Overview
+          </h1>
+          <p className="text-sm text-zinc-550 mt-2">
+            Monitor real-time voice compute statistics, link metrics, and fleet status.
+          </p>
         </div>
+
         <button 
           onClick={() => navigate('/agents/create')}
-          className="btn-vapi w-full md:w-auto shadow-[0_0_15px_rgba(0,112,243,0.3)]"
+          className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10 self-start lg:self-auto"
         >
-          <Plus size={16} strokeWidth={2.5} />
-          Initialize Node
+          <Plus size={16} />
+          Register Assistant
         </button>
       </div>
 
       {/* STATS GRID */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 
           label="Computed Minutes" 
-          value={stats?.computedMinutes?.toLocaleString() || "..."} 
-          trend="+12.5%" 
+          value={stats?.computedMinutes?.toLocaleString() || "0"} 
+          trend="+12.5% vs cycle" 
           icon={<Clock size={16} />} 
-          trendUp={true} 
-          glowClass="glow-card-primary"
         />
         <StatCard 
           label="Successful Linkages" 
-          value={stats?.successfulLinkages?.toLocaleString() || "..."} 
-          trend="+8.2%" 
+          value={stats?.successfulLinkages?.toLocaleString() || "0"} 
+          trend="+8.2% conversion" 
           icon={<Phone size={16} />} 
-          trendUp={true} 
-          glowClass="glow-card-emerald"
         />
         <StatCard 
           label="Neural Latency" 
-          value={stats?.neuralLatency || "..."} 
-          trend="-14ms" 
+          value={stats?.neuralLatency || "0ms"} 
+          trend="-14ms optimized" 
           icon={<Activity size={16} />} 
-          trendUp={false} 
-          glowClass="glow-card-purple"
         />
         <StatCard 
           label="Token Burn" 
-          value={stats?.tokenBurn || "..."} 
-          trend="+$2.40" 
+          value={stats?.tokenBurn || "$0.00"} 
+          trend="+$2.40 efficiency" 
           icon={<BarChart3 size={16} />} 
-          trendUp={true} 
-          glowClass="glow-card-amber"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-        {/* RECENT ASSISTANTS */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between px-2">
-            <h2 className="text-xs font-bold text-white uppercase tracking-widest">Recent Nodes</h2>
-            <button onClick={() => navigate('/agents')} className="text-primary text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 hover:gap-3 transition-all">
-              Registry <ChevronRight size={12} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* ACTIVE AGENTS */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-400">Active Registry Nodes</h3>
+            <button 
+              onClick={() => navigate('/agents')} 
+              className="text-xs font-semibold text-zinc-500 hover:text-zinc-350 transition flex items-center gap-1"
+            >
+              View all <ChevronRight size={14} />
             </button>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-4">
             {isLoading ? (
-              [1, 2, 3].map(i => <div key={i} className="h-20 bg-surface-container rounded-lg animate-pulse" />)
+              [1, 2, 3].map(i => (
+                <div key={i} className="h-20 rounded-2xl border border-zinc-850 bg-zinc-900/20 animate-pulse" />
+              ))
             ) : agents.length > 0 ? (
               agents.slice(0, 4).map(agent => (
-                <div key={agent.id} className="group p-4 bg-surface-container/50 border border-border rounded-2xl hover:bg-surface-container transition-all duration-300 flex items-center justify-between backdrop-blur-sm shadow-sm glow-card-primary">
+                <div 
+                  key={agent.id} 
+                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 flex items-center justify-between group cursor-pointer"
+                >
                   <div className="flex items-center gap-4">
-                    <div className="w-11 h-11 rounded-md bg-surface border border-border flex items-center justify-center text-xl shadow-inner group-hover:scale-105 transition-transform duration-500">
-                      {(agent.agentName || '').includes('Property') ? '🏘️' : '🤖'}
+                    <div className="w-12 h-12 rounded-xl bg-zinc-850 flex items-center justify-center text-2xl border border-zinc-800">
+                      {(agent.agentName || '').includes('Jiya') ? '👩‍💼' : (agent.agentName || '').includes('Ramu') ? '👨‍💼' : '🤖'}
                     </div>
-                    <div className="space-y-1">
-                      <h4 className="text-sm font-semibold text-white tracking-wide group-hover:text-primary transition-colors leading-tight">{agent.agentName}</h4>
-                      <p className="text-[10px] text-muted font-mono uppercase tracking-wider leading-none">{agent.llm?.model || 'llama-3.1'} • {agent.language}</p>
+                    <div>
+                      <h4 className="text-sm font-semibold text-zinc-100">{agent.agentName}</h4>
+                      <p className="text-xs text-zinc-500 mt-1 font-medium">{agent.llm?.model ? agent.llm.model.substring(0, 16) : 'llama-3.3'} • {agent.language}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-end mr-4">
-                      <div className="flex items-center gap-1.5 mb-1">
+                    <div className="hidden sm:flex flex-col items-end">
+                      <div className="flex items-center gap-1.5">
                          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                         <span className="text-[9px] font-bold text-emerald-500 uppercase tracking-widest">Active</span>
+                         <span className="text-[10px] text-zinc-400 font-mono">Online</span>
                       </div>
-                      <span className="text-[9px] text-muted font-mono uppercase tracking-widest opacity-70">ID: {agent.id.slice(0, 8)}</span>
+                      <span className="text-[10px] text-zinc-550 font-mono mt-0.5">ID: {agent.id.slice(0, 8)}</span>
                     </div>
                     <button 
                       onClick={() => handleQuickLaunch(agent)}
-                      className="w-9 h-9 rounded-md bg-primary/10 border border-primary/20 text-primary hover:bg-primary hover:text-white transition-all shadow-sm active:scale-95 flex items-center justify-center"
+                      className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition"
+                      title="Launch Session"
                     >
-                      <Play size={14} fill="currentColor" strokeWidth={0} />
+                      <Play size={12} fill="currentColor" strokeWidth={0} className="text-emerald-500" />
                     </button>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-12 border border-dashed border-border rounded-lg text-center bg-surface-container-low/50 backdrop-blur-sm">
-                <p className="text-muted text-[11px] font-bold uppercase tracking-widest">No Active Nodes In Region</p>
+              <div className="p-10 border border-dashed border-zinc-800 rounded-2xl text-center bg-zinc-900/10">
+                <p className="text-zinc-500 text-sm font-medium">No active registry nodes configured.</p>
                 <button 
                   onClick={() => navigate('/agents/create')}
-                  className="mt-4 text-primary text-[10px] font-bold uppercase tracking-widest hover:underline"
+                  className="mt-4 h-9 px-4 rounded-xl border border-zinc-850 bg-zinc-950 text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-zinc-200 transition"
                 >
-                  Register New assistant
+                  Create New Assistant
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* USAGE CHART */}
-        <div className="bg-surface-container/30 border border-border rounded-2xl p-6 flex flex-col shadow-sm glow-card-primary">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-[10px] font-bold text-white uppercase tracking-widest">Neural Bandwidth</h2>
-            <div className="text-[9px] font-bold text-primary px-2 py-1 bg-primary/10 border border-primary/20 rounded-md tracking-wider">7D CYCLE</div>
+        {/* NEURAL DISPATCH MONITOR */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold text-zinc-400">Dispatch Signals</h3>
+            <div className="flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="text-[10px] text-zinc-500 font-mono uppercase">Live Link</span>
+            </div>
           </div>
           
-          <div className="flex-1 flex items-end gap-2 h-40">
-            {[40, 65, 30, 85, 45, 78, 55].map((h, i) => (
-              <div key={i} className="flex-1 group/bar relative h-full flex items-end">
-                <motion.div 
-                  initial={{ height: 0 }}
-                  animate={{ height: `${h}%` }}
-                  transition={{ duration: 0.8, delay: i * 0.05 }}
-                  className="w-full bg-primary/20 rounded-t-sm group-hover/bar:bg-primary transition-all duration-300 relative overflow-hidden border-t border-primary/40 shadow-[0_0_10px_rgba(0,112,243,0)] group-hover/bar:shadow-[0_0_15px_rgba(0,112,243,0.3)]"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-t from-primary/40 to-transparent opacity-0 group-hover/bar:opacity-100 transition-opacity" />
-                </motion.div>
-                <div className="invisible group-hover/bar:visible absolute -top-8 left-1/2 -translate-x-1/2 bg-surface px-2 py-1 border border-border text-[10px] font-mono text-white rounded shadow-xl z-20 whitespace-nowrap">
-                  {h}m
-                </div>
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/70 p-5 flex flex-col justify-between min-h-[300px] font-mono text-[11px] leading-relaxed text-zinc-400 hover:border-zinc-800 hover:shadow-[0_0_25px_rgba(124,58,237,0.03)] transition-all duration-300">
+            <div className="space-y-3">
+              <div className="flex gap-2">
+                <span className="text-zinc-700">16:59:10</span>
+                <span className="text-zinc-500 font-bold">[sys]</span>
+                <span>Secured AES-256 connection...</span>
               </div>
-            ))}
+              <div className="flex gap-2">
+                <span className="text-zinc-700">16:59:12</span>
+                <span className="text-zinc-500 font-bold">[gate]</span>
+                <span>Sarvam websocket validated.</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-zinc-700">16:59:15</span>
+                <span className="text-zinc-500 font-bold">[route]</span>
+                <span>OpenRouter fallback active.</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-zinc-700">16:59:22</span>
+                <span className="text-zinc-550 font-bold">[comp]</span>
+                <span className="text-zinc-500">Burn speed: 0.0031 tok/s</span>
+              </div>
+              <div className="flex gap-2">
+                <span className="text-zinc-700">16:59:30</span>
+                <span className="text-zinc-550 font-bold">[node]</span>
+                <span className="text-emerald-500">Ramu connected successfully</span>
+              </div>
+            </div>
+            
+            <div className="pt-4 border-t border-zinc-900 flex items-center justify-between text-[10px] text-zinc-550 font-bold uppercase tracking-wider">
+              <span>Telemetry Sync</span>
+              <span className="text-zinc-350">100% Online</span>
+            </div>
           </div>
-          
-          <div className="mt-8 pt-6 border-t border-border flex items-center justify-between">
-            <div className="flex flex-col gap-1">
-              <span className="text-[9px] font-bold text-muted uppercase tracking-widest leading-none">Daily Ingest</span>
-              <span className="text-xl font-heading font-black text-white tracking-tight">54.2m</span>
+        </div>
+      </div>
+
+      {/* MINIMAL BANDWIDTH CHART */}
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 flex flex-col relative overflow-hidden hover:border-primary/10 hover:shadow-[0_0_30px_rgba(124,58,237,0.04)] transition-all duration-300">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h2 className="text-sm font-semibold text-zinc-400">Neural Bandwidth Cycle</h2>
+            <p className="text-xs text-zinc-550 mt-1 font-medium">Aggregate agent compute bandwidth in 7-day windows</p>
+          </div>
+          <div className="text-[10px] font-bold text-zinc-400 px-2.5 py-1 bg-zinc-950 border border-zinc-850 rounded-lg uppercase tracking-wider">7d window</div>
+        </div>
+        
+        <div className="flex-1 flex items-end gap-4 h-36">
+          {[40, 65, 30, 85, 45, 78, 55].map((h, i) => (
+            <div key={i} className="flex-1 group/bar relative h-full flex items-end">
+              <motion.div 
+                initial={{ height: 0 }}
+                animate={{ height: `${h}%` }}
+                transition={{ duration: 0.6, delay: i * 0.03 }}
+                className="w-full bg-zinc-800 rounded-lg group-hover/bar:bg-zinc-200 transition-all duration-300 relative overflow-hidden border border-zinc-850 shadow-sm"
+              />
+              <div className="invisible group-hover/bar:visible absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-200 rounded-lg whitespace-nowrap shadow-md z-10 animate-in fade-in zoom-in duration-200">
+                Day {i + 1}: <strong className="text-zinc-50 font-semibold ml-0.5">{h}m</strong>
+              </div>
             </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className="text-[9px] font-bold text-muted uppercase tracking-widest leading-none">Total Compute</span>
-              <span className="text-xl font-heading font-black text-primary tracking-tight">380m</span>
-            </div>
+          ))}
+        </div>
+        
+        <div className="mt-6 pt-4 border-t border-zinc-850/60 flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Daily Ingest Ratio</span>
+            <span className="text-base font-semibold text-zinc-250 mt-1">54.2m <span className="text-[10px] text-zinc-500 font-mono font-normal ml-0.5">tokens</span></span>
+          </div>
+          <div className="flex flex-col items-end">
+            <span className="text-[10px] text-zinc-555 font-bold uppercase tracking-wider">Total Compute Fleet</span>
+            <span className="text-base font-semibold text-zinc-250 mt-1">380m <span className="text-[10px] text-zinc-500 font-mono font-normal ml-0.5">tokens</span></span>
           </div>
         </div>
       </div>
@@ -219,19 +272,19 @@ const DashboardPage = () => {
   );
 };
 
-const StatCard = ({ label, value, trend, icon, trendUp, glowClass = 'glow-card-primary' }: any) => (
-  <div className={`card-vapi !p-5 space-y-4 transition-all duration-300 group hover:scale-[1.02] cursor-pointer ${glowClass}`}>
+const StatCard = ({ label, value, trend, icon }: any) => (
+  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 flex flex-col justify-between min-h-[140px] cursor-pointer group">
     <div className="flex items-center justify-between">
-      <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-white/5 flex items-center justify-center text-muted group-hover:text-primary transition-colors">
+      <div className="w-10 h-10 rounded-xl bg-zinc-850 border border-zinc-800 flex items-center justify-center text-zinc-400">
         {icon}
       </div>
-      <span className={`text-[11px] font-mono font-medium ${trendUp ? 'text-emerald-500' : 'text-primary'}`}>
+      <span className="text-[10px] font-bold text-zinc-400 bg-zinc-950 border border-zinc-850 px-2 py-0.5 rounded-lg uppercase tracking-wider">
         {trend}
       </span>
     </div>
-    <div>
-      <p className="text-[10px] font-bold text-muted uppercase tracking-widest mb-1.5 leading-none">{label}</p>
-      <h3 className="text-2xl font-heading font-black text-white tracking-tight">{value}</h3>
+    <div className="space-y-1 mt-4">
+      <p className="text-xs font-semibold text-zinc-550 uppercase tracking-wider">{label}</p>
+      <h3 className="text-2xl font-semibold text-zinc-100 tracking-tight">{value}</h3>
     </div>
   </div>
 );
