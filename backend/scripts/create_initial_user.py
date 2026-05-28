@@ -1,7 +1,10 @@
 import asyncio
 import uuid
+# pyrefly: ignore [missing-import]
 from app.db.session import AsyncSessionLocal
+# pyrefly: ignore [missing-import]
 from app.models.orm import UserORM
+# pyrefly: ignore [missing-import]
 from app.core.security import get_password_hash
 from sqlalchemy import select
 

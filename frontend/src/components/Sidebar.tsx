@@ -10,7 +10,8 @@ import {
   PlusCircle,
   Package,
   Share2,
-  X
+  X,
+  Phone
 } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAgentStore } from '../store/useAgentStore';
@@ -60,6 +61,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           hoverClass: 'text-zinc-400 hover:text-violet-300 hover:bg-violet-500/5 hover:border-violet-500/10 border border-transparent',
           iconColor: 'text-violet-400',
           iconHoverColor: 'group-hover:text-violet-400'
+        },
+        { 
+          id: 'telephony', 
+          path: '/numbers', 
+          icon: Phone, 
+          label: 'Telephony',
+          activeClass: 'bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-sm shadow-orange-500/5', 
+          hoverClass: 'text-zinc-400 hover:text-orange-300 hover:bg-orange-500/5 hover:border-orange-500/10 border border-transparent',
+          iconColor: 'text-orange-400',
+          iconHoverColor: 'group-hover:text-orange-400'
         },
         { 
           id: 'logs', 
@@ -147,7 +158,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-zinc-950 flex flex-col p-6 border-r border-zinc-800 transition-transform duration-300 lg:sticky lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} h-screen`}>
         {/* Background Glow */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-neural-mesh" />
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-platform-mesh" />
 
         {/* LOGO SECTION - FIXED AT THE TOP */}
         <div className="flex items-center justify-between mb-8 shrink-0 relative z-10">
@@ -192,7 +203,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300 group ${
                         isLinkActive 
                           ? 'bg-primary/10 text-primary border border-primary/25 shadow-lg shadow-primary/5 pl-6' 
-                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 hover:pl-5 hover:border-zinc-800 hover:shadow-[0_0_15px_rgba(124,58,237,0.03)] border border-transparent'
+                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 hover:pl-5 hover:border-zinc-800 hover:shadow-sm border border-transparent'
                       }`}
                     >
                       {/* Active Left Indicator Line */}
@@ -222,7 +233,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="shrink-0 pt-6 border-t border-zinc-800/80 flex flex-col gap-3 relative z-10 mt-auto">
           <button 
             onClick={handleNewAgent}
-            className={`w-full flex items-center gap-3.5 p-3.5 border rounded-2xl transition-all duration-200 group active:scale-98 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] ${
+            className={`w-full flex items-center gap-3.5 p-3.5 border rounded-2xl transition-all duration-200 group active:scale-98 hover:shadow-md ${
               location.pathname === '/agents/create'
                 ? 'bg-primary/10 text-primary border-primary/20 shadow-md shadow-primary/5'
                 : 'bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-700 border-zinc-800/60'
@@ -246,7 +257,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               navigate('/profile');
               onClose();
             }}
-            className={`p-3.5 border rounded-2xl flex items-center gap-3.5 group cursor-pointer transition-all duration-200 active:scale-98 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] ${
+            className={`p-3.5 border rounded-2xl flex items-center gap-3.5 group cursor-pointer transition-all duration-200 active:scale-98 hover:shadow-md ${
               location.pathname === '/profile'
                 ? 'bg-primary/10 text-primary border-primary/20 shadow-md shadow-primary/5'
                 : 'bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-700 border-zinc-800/60'

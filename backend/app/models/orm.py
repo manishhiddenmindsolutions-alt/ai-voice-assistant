@@ -114,6 +114,29 @@ class IntegrationORM(Base):
     # Relationships
     user: Mapped["UserORM"] = relationship(back_populates="integrations")
 
+class SIPTrunkORM(Base):
+    """Tracks per-user LiveKit SIP trunk provisioning for telephony."""
+    __tablename__ = "sip_trunks"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), index=True)
+    livekit_trunk_id: Mapped[str] = mapped_column(String, index=True) # LiveKit's assigned trunk ID
+    trunk_type: Mapped[str] = mapped_column(String) # "inbound" or "outbound"
+    name: Mapped[str] = mapped_column(String, default="")
+    
+    # Twilio SIP Trunk Configuration
+    termination_uri: Mapped[str] = mapped_column(String, nullable=True) # e.g., "my-trunk.pstn.twilio.com"
+    auth_username: Mapped[str] = mapped_column(String, nullable=True) # Encrypted
+    auth_password: Mapped[str] = mapped_column(String, nullable=True) # Encrypted
+    numbers: Mapped[list] = mapped_column(JSONB, default=list) # E.164 phone numbers
+    
+    # LiveKit Dispatch Rule (for inbound trunks)
+    dispatch_rule_id: Mapped[str] = mapped_column(String, nullable=True)
+    
+    status: Mapped[str] = mapped_column(String, default="active") # active, inactive, error
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class PhoneNumberORM(Base):
     __tablename__ = "phone_numbers"
 
@@ -122,6 +145,8 @@ class PhoneNumberORM(Base):
     number: Mapped[str] = mapped_column(String, unique=True, index=True)
     provider: Mapped[str] = mapped_column(String) # e.g., 'twilio', 'telnyx'
     provider_sid: Mapped[str] = mapped_column(String, nullable=True)
+    agent_id: Mapped[str] = mapped_column(String, nullable=True)
+    sip_trunk_id: Mapped[str] = mapped_column(String, nullable=True) # FK to sip_trunks.id
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

@@ -13,11 +13,12 @@ import { agentApi, sessionApi, dashboardApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { AgentAvatar } from '../components/AgentAvatar';
 
 interface DashboardStats {
   computedMinutes: number;
-  successfulLinkages: number;
-  neuralLatency: string;
+  successfulCalls: number;
+  callLatency: string;
   tokenBurn: string;
 }
 
@@ -83,7 +84,7 @@ const DashboardPage = () => {
 
         <button 
           onClick={() => navigate('/agents/create')}
-          className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10 self-start lg:self-auto"
+          className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10 self-start lg:self-auto"
         >
           <Plus size={16} />
           Register Assistant
@@ -99,14 +100,14 @@ const DashboardPage = () => {
           icon={<Clock size={16} />} 
         />
         <StatCard 
-          label="Successful Linkages" 
-          value={stats?.successfulLinkages?.toLocaleString() || "0"} 
+          label="Successful Calls" 
+          value={stats?.successfulCalls?.toLocaleString() || "0"} 
           trend="+8.2% conversion" 
           icon={<Phone size={16} />} 
         />
         <StatCard 
-          label="Neural Latency" 
-          value={stats?.neuralLatency || "0ms"} 
+          label="Call Latency" 
+          value={stats?.callLatency || "0ms"} 
           trend="-14ms optimized" 
           icon={<Activity size={16} />} 
         />
@@ -134,18 +135,16 @@ const DashboardPage = () => {
           <div className="space-y-4">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-20 rounded-2xl border border-zinc-850 bg-zinc-900/20 animate-pulse" />
+                <div key={i} className="h-20 rounded-3xl border border-zinc-850 bg-zinc-900/20 animate-pulse" />
               ))
             ) : agents.length > 0 ? (
               agents.slice(0, 4).map(agent => (
                 <div 
                   key={agent.id} 
-                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 flex items-center justify-between group cursor-pointer"
+                  className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex items-center justify-between group cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-zinc-850 flex items-center justify-center text-2xl border border-zinc-800">
-                      {(agent.agentName || '').includes('Jiya') ? '👩‍💼' : (agent.agentName || '').includes('Ramu') ? '👨‍💼' : '🤖'}
-                    </div>
+                    <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-2xl" />
                     <div>
                       <h4 className="text-sm font-semibold text-zinc-100">{agent.agentName}</h4>
                       <p className="text-xs text-zinc-500 mt-1 font-medium">{agent.llm?.model ? agent.llm.model.substring(0, 16) : 'llama-3.3'} • {agent.language}</p>
@@ -193,7 +192,7 @@ const DashboardPage = () => {
             </div>
           </div>
           
-          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/70 p-5 flex flex-col justify-between min-h-[300px] font-mono text-[11px] leading-relaxed text-zinc-400 hover:border-zinc-800 hover:shadow-[0_0_25px_rgba(124,58,237,0.03)] transition-all duration-300">
+          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/70 p-5 flex flex-col justify-between min-h-[300px] font-mono text-[11px] leading-relaxed text-zinc-400 hover:border-zinc-800 hover:shadow-md transition-all duration-300">
             <div className="space-y-3">
               <div className="flex gap-2">
                 <span className="text-zinc-700">16:59:10</span>
@@ -231,10 +230,10 @@ const DashboardPage = () => {
       </div>
 
       {/* MINIMAL BANDWIDTH CHART */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 flex flex-col relative overflow-hidden hover:border-primary/10 hover:shadow-[0_0_30px_rgba(124,58,237,0.04)] transition-all duration-300">
+      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 flex flex-col relative overflow-hidden hover:border-primary/10 hover:shadow-md transition-all duration-300">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-400">Neural Bandwidth Cycle</h2>
+            <h2 className="text-sm font-semibold text-zinc-400">Call Bandwidth Cycle</h2>
             <p className="text-xs text-zinc-550 mt-1 font-medium">Aggregate agent compute bandwidth in 7-day windows</p>
           </div>
           <div className="text-[10px] font-bold text-zinc-400 px-2.5 py-1 bg-zinc-950 border border-zinc-850 rounded-lg uppercase tracking-wider">7d window</div>
@@ -273,7 +272,7 @@ const DashboardPage = () => {
 };
 
 const StatCard = ({ label, value, trend, icon }: any) => (
-  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 flex flex-col justify-between min-h-[140px] cursor-pointer group">
+  <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[140px] cursor-pointer group">
     <div className="flex items-center justify-between">
       <div className="w-10 h-10 rounded-xl bg-zinc-850 border border-zinc-800 flex items-center justify-center text-zinc-400">
         {icon}

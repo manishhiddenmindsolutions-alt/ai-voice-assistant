@@ -13,7 +13,6 @@ import { Mic, MicOff, PhoneOff, Activity } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import '@livekit/components-styles';
-import { useThemeStore } from '../store/useThemeStore';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -27,27 +26,24 @@ interface VoiceSessionProps {
 // ─── State config — each voice state gets a distinct color signal ──────────────
 
 const STATE_CONFIG = {
-  speaking: { label: 'RESPONDING', color: '#60A5FA', glow: 'rgba(96,165,250,0.14)', ring: 'rgba(96,165,250,0.35)' },
-  listening: { label: 'LISTENING', color: '#FBBF24', glow: 'rgba(251,191,36,0.14)', ring: 'rgba(251,191,36,0.35)' },
-  thinking: { label: 'THINKING', color: '#A78BFA', glow: 'rgba(167,139,250,0.14)', ring: 'rgba(167,139,250,0.35)' },
-  connecting: { label: 'CONNECTING', color: '#52525B', glow: 'rgba(82,82,91,0.08)', ring: 'rgba(82,82,91,0.25)' },
-  idle: { label: 'STANDBY', color: '#52525B', glow: 'rgba(82,82,91,0.08)', ring: 'rgba(82,82,91,0.25)' },
+  speaking: { label: 'RESPONDING', color: '#60A5FA', glow: 'rgba(96,165,250,0.18)', ring: 'rgba(96,165,250,0.4)' },
+  listening: { label: 'LISTENING', color: '#FBBF24', glow: 'rgba(251,191,36,0.18)', ring: 'rgba(251,191,36,0.4)' },
+  thinking: { label: 'THINKING', color: '#A78BFA', glow: 'rgba(167,139,250,0.18)', ring: 'rgba(167,139,250,0.4)' },
+  connecting: { label: 'CONNECTING', color: '#71717A', glow: 'rgba(113,113,122,0.1)', ring: 'rgba(113,113,122,0.3)' },
+  idle: { label: 'STANDBY', color: '#71717A', glow: 'rgba(113,113,122,0.1)', ring: 'rgba(113,113,122,0.3)' },
 } as const;
 
 type Cfg = (typeof STATE_CONFIG)[keyof typeof STATE_CONFIG];
 
 // ─── Root ─────────────────────────────────────────────────────────────────────
 
-const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: VoiceSessionProps) => {
-  const { theme } = useThemeStore();
-  const isLight = theme === 'light';
-
+const VoiceSession = ({ token, url, onDisconnect, agentName = 'Voice Agent' }: VoiceSessionProps) => {
   const handleDisconnected = () => {
     toast('Session ended', {
       style: {
-        background: isLight ? '#ffffff' : '#111111',
-        color: isLight ? '#09090b' : '#ffffff',
-        border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid #222222',
+        background: '#09090b',
+        color: '#ffffff',
+        border: '1px solid rgba(255,255,255,0.08)',
         fontSize: '11px',
         fontWeight: 'bold',
         textTransform: 'uppercase',
@@ -56,6 +52,7 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
     });
     onDisconnect();
   };
+  
   const handleError = (error: Error) => {
     toast.error(`Connection failed: ${error.message}`);
     setTimeout(onDisconnect, 3000);
@@ -65,8 +62,8 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
     <div style={{
       position: 'fixed', inset: 0, zIndex: 100,
       display: 'flex', alignItems: 'flex-end',
-      background: isLight ? 'rgba(255,255,255,0.82)' : 'rgba(0,0,0,0.88)',
-      backdropFilter: 'blur(28px)',
+      background: 'rgba(3, 4, 8, 0.95)',
+      backdropFilter: 'blur(16px)',
       transition: 'background 0.5s'
     }}>
       <AnimatePresence>
@@ -75,18 +72,20 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
           initial={{ y: '100%', opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: '100%', opacity: 0 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
           style={{
             width: '100%',
             height: '100dvh',
-            background: isLight ? '#ffffff' : '#080808',
+            background: 'radial-gradient(circle at center, #0A0D16 0%, #030407 100%)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
-            position: 'relative',
-            transition: 'background 0.5s'
+            position: 'relative'
           }}
         >
+          {/* Subtle Ambient Background Mesh */}
+          <div className="absolute inset-0 bg-platform-mesh opacity-30 pointer-events-none" />
+
           <LiveKitRoom
             token={token} serverUrl={url}
             connect audio video={false}
@@ -105,8 +104,6 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Neural Agent' }: 
 // ─── Inner ────────────────────────────────────────────────────────────────────
 
 const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => void; agentName: string }) => {
-  const { theme } = useThemeStore();
-  const isLight = theme === 'light';
   const [duration, setDuration] = useState(0);
   const { state, audioTrack } = useVoiceAssistant();
   const { localParticipant } = useLocalParticipant();
@@ -128,11 +125,11 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
     if (!localParticipant) return;
     const next = !localParticipant.isMicrophoneEnabled;
     await localParticipant.setMicrophoneEnabled(next);
-    toast(next ? '🎙 Microphone on' : '🔇 Microphone off', {
+    toast(next ? '🎙 Microphone active' : '🔇 Microphone muted', {
       style: {
-        background: isLight ? '#ffffff' : '#111111',
-        color: isLight ? '#09090b' : '#ffffff',
-        border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid #222222',
+        background: '#111115',
+        color: '#ffffff',
+        border: '1px solid rgba(255,255,255,0.08)',
         fontSize: '11px',
         fontWeight: 'bold',
         textTransform: 'uppercase',
@@ -152,26 +149,26 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
         flexShrink: 0,
         zIndex: 10,
         display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-        padding: '22px 28px',
-        borderBottom: isLight ? '1px solid rgba(9,9,11,0.06)' : '1px solid rgba(255,255,255,0.05)',
-        transition: 'border-color 0.5s'
+        padding: '24px 32px',
+        borderBottom: '1px solid rgba(255,255,255,0.04)',
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <motion.div
             animate={{ opacity: [1, 0.4, 1] }}
             transition={{ duration: 2, repeat: Infinity }}
             style={{
-              width: 7, height: 7, borderRadius: '50%',
+              width: 8, height: 8, borderRadius: '50%',
               background: cfg.color, flexShrink: 0,
-              transition: 'background 0.6s',
+              boxShadow: `0 0 10px ${cfg.color}`,
+              transition: 'background 0.5s',
             }}
           />
           <span style={{
             fontFamily: 'ui-monospace,"Cascadia Code",monospace',
-            fontSize: 11, letterSpacing: '0.18em',
-            color: isLight ? 'rgba(9,9,11,0.6)' : 'rgba(255,255,255,0.4)',
+            fontSize: 12, letterSpacing: '0.2em',
+            color: '#E4E4E7',
+            fontWeight: 'bold',
             textTransform: 'uppercase',
-            transition: 'color 0.5s'
           }}>
             {agentName}
           </span>
@@ -180,12 +177,11 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
         <span style={{
           fontFamily: 'ui-monospace,"Cascadia Code",monospace',
           fontSize: 12, letterSpacing: '0.1em',
-          color: isLight ? 'rgba(9,9,11,0.7)' : 'rgba(255,255,255,0.2)',
-          padding: '4px 12px',
-          background: isLight ? 'rgba(9,9,11,0.03)' : 'rgba(255,255,255,0.03)',
-          border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 8,
-          transition: 'all 0.5s'
+          color: '#E4E4E7',
+          padding: '6px 14px',
+          background: 'rgba(255,255,255,0.03)',
+          border: '1px solid rgba(255,255,255,0.08)',
+          borderRadius: 12,
         }}>
           {fmt(duration)}
         </span>
@@ -199,137 +195,148 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
         alignItems: 'center', justifyContent: 'center',
         padding: '48px 28px 32px',
         position: 'relative',
-        gap: 44,
+        gap: 36,
       }}>
-        {/* Ambient glow */}
+        {/* Soft immersive ambient glow sphere */}
         <motion.div
-          animate={{ scale: [1, 1.15, 1], opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.85, 0.5] }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
           style={{
             position: 'absolute',
-            width: 360, height: 360,
+            width: 420, height: 420,
             borderRadius: '50%',
             background: cfg.glow,
-            filter: 'blur(90px)',
+            filter: 'blur(100px)',
             pointerEvents: 'none',
             transition: 'background 1s',
           }}
         />
 
-        {/* Orb */}
+        {/* Dynamic Glowing Orb Display */}
         <OrbDisplay state={state} cfg={cfg} />
 
-        {/* Status label */}
+        {/* State status pill */}
         <AnimatePresence mode="wait">
           <motion.p
             key={state}
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.3 }}
+            transition={{ duration: 0.25 }}
             style={{
               fontFamily: 'ui-monospace,"Cascadia Code",monospace',
-              fontSize: 10, letterSpacing: '0.38em',
+              fontSize: 10, letterSpacing: '0.3em',
               color: cfg.color, textTransform: 'uppercase',
-              padding: '5px 16px',
-              border: `1px solid ${cfg.ring}`,
+              padding: '6px 18px',
+              border: `1px solid ${cfg.color}35`,
               borderRadius: 999,
-              background: cfg.glow,
-              transition: 'color 0.5s, border-color 0.5s, background 0.5s',
+              background: `${cfg.color}08`,
+              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.02), 0 4px 12px rgba(0,0,0,0.5)`,
+              transition: 'all 0.5s',
               margin: 0,
+              fontWeight: 600
             }}
           >
             ● {cfg.label}
           </motion.p>
         </AnimatePresence>
 
-        {/* Visualizer block */}
-        <div style={{ width: '100%', maxWidth: 340, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {/* Agent audio */}
-          <div style={{ height: 56, width: '100%' }}>
-            {audioTrack
-              ? <BarVisualizer trackRef={audioTrack} style={{ width: '100%', height: '100%', color: cfg.color, transition: 'color 0.5s' }} />
-              : <IdleBars />
-            }
+        {/* Waveform Visualization Interface */}
+        <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Agent main audio */}
+          <div style={{ height: 64, width: '100%', display: 'flex', alignItems: 'center' }}>
+            {audioTrack ? (
+              <div className="w-full h-full text-zinc-100 flex items-center" style={{ filter: `drop-shadow(0 0 12px ${cfg.color}40)` }}>
+                <BarVisualizer 
+                  trackRef={audioTrack} 
+                  style={{ width: '100%', height: '100%', color: cfg.color, transition: 'color 0.5s' }} 
+                />
+              </div>
+            ) : (
+              <IdleBars color={cfg.color} />
+            )}
           </div>
 
-          <div style={{ height: 1, background: isLight ? 'rgba(9,9,11,0.06)' : 'rgba(255,255,255,0.04)', transition: 'background 0.5s' }} />
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)' }} />
 
-          {/* Local mic */}
-          <div style={{ height: 16, width: '100%', opacity: 0.15 }}>
+          {/* User local mic visualization */}
+          <div style={{ height: 16, width: '100%', opacity: 0.3 }}>
             {localMicTrack && (
-              <BarVisualizer trackRef={localMicTrack} style={{ width: '100%', height: '100%', color: isLight ? '#09090b' : '#fff', transition: 'color 0.5s' }} />
+              <BarVisualizer 
+                trackRef={localMicTrack} 
+                style={{ width: '100%', height: '100%', color: '#94A3B8' }} 
+              />
             )}
           </div>
         </div>
       </main>
 
-      {/* ── FOOTER ── */}
+      {/* ── FOOTER DOCK (Premium Glassmorphism Dock) ── */}
       <footer style={{
         flexShrink: 0,
         zIndex: 10,
         display: 'flex', justifyContent: 'center', alignItems: 'center',
-        gap: 10,
-        padding: '20px 28px 36px',
-        borderTop: isLight ? '1px solid rgba(9,9,11,0.06)' : '1px solid rgba(255,255,255,0.05)',
-        background: isLight ? 'rgba(255,255,255,0.96)' : 'rgba(8,8,8,0.97)',
-        transition: 'all 0.5s'
+        gap: 16,
+        padding: '24px 32px 48px',
+        borderTop: '1px solid rgba(255,255,255,0.04)',
+        background: 'rgba(7, 9, 15, 0.95)',
       }}>
 
-        {/* Mic */}
+        {/* Mic Toggle Button */}
         <motion.button
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: 0.94 }}
           onClick={toggleMic}
           aria-label={isMuted ? 'Unmute microphone' : 'Mute microphone'}
           style={{
-            width: 58, height: 58, borderRadius: 18, flexShrink: 0,
+            width: 56, height: 56, borderRadius: 20, flexShrink: 0,
             border: isMuted 
-              ? '1px solid rgba(239,68,68,0.45)' 
-              : isLight ? '1px solid rgba(9,9,11,0.1)' : '1px solid rgba(255,255,255,0.1)',
+              ? '1px solid rgba(239,68,68,0.4)' 
+              : '1px solid rgba(255,255,255,0.08)',
             background: isMuted 
               ? 'rgba(239,68,68,0.08)' 
-              : isLight ? 'rgba(9,9,11,0.03)' : 'rgba(255,255,255,0.05)',
-            color: isMuted 
-              ? '#EF4444' 
-              : isLight ? 'rgba(9,9,11,0.65)' : 'rgba(255,255,255,0.55)',
+              : 'rgba(255,255,255,0.03)',
+            color: isMuted ? '#EF4444' : '#E4E4E7',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.3s',
+            cursor: 'pointer', transition: 'all 0.2s',
           }}
+          className="hover:bg-zinc-800/40 hover:border-zinc-700"
         >
-          {isMuted ? <MicOff size={22} /> : <Mic size={22} />}
+          {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
         </motion.button>
 
-        {/* End call */}
+        {/* End Call Button */}
         <motion.button
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: 0.94 }}
           onClick={endCall}
           aria-label="End call"
           style={{
-            width: 80, height: 58, borderRadius: 18, flexShrink: 0,
-            background: '#EF4444',
-            border: '1px solid rgba(239,68,68,0.3)',
-            color: '#fff',
+            width: 84, height: 56, borderRadius: 20, flexShrink: 0,
+            background: 'linear-gradient(135deg, #EF4444 0%, #DC2626 100%)',
+            border: 'none',
+            color: '#ffffff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer',
-            boxShadow: '0 4px 28px rgba(239,68,68,0.22)',
-            transition: 'all 0.3s',
+            boxShadow: '0 8px 30px rgba(239,68,68,0.3)',
+            transition: 'all 0.2s',
           }}
+          className="hover:brightness-110 active:brightness-95"
         >
-          <PhoneOff size={22} strokeWidth={2.5} />
+          <PhoneOff size={20} strokeWidth={2.5} />
         </motion.button>
 
-        {/* Signal quality */}
+        {/* Waveform/Latency Signal Display */}
         <motion.button
-          whileTap={{ scale: 0.92 }}
+          whileTap={{ scale: 0.94 }}
           aria-label="Signal quality"
           style={{
-            width: 58, height: 58, borderRadius: 18, flexShrink: 0,
-            border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid rgba(255,255,255,0.07)',
-            background: isLight ? 'rgba(9,9,11,0.03)' : 'rgba(255,255,255,0.03)',
-            color: isLight ? 'rgba(9,9,11,0.45)' : 'rgba(255,255,255,0.22)',
+            width: 56, height: 56, borderRadius: 20, flexShrink: 0,
+            border: '1px solid rgba(255,255,255,0.08)',
+            background: 'rgba(255,255,255,0.03)',
+            color: '#71717A',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', transition: 'all 0.3s',
+            cursor: 'pointer', transition: 'all 0.2s',
           }}
+          className="hover:bg-zinc-800/40 hover:border-zinc-700 hover:text-zinc-300"
         >
           <Activity size={18} />
         </motion.button>
@@ -341,83 +348,77 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
 // ─── Orb ──────────────────────────────────────────────────────────────────────
 
 const OrbDisplay = ({ state, cfg }: { state: string; cfg: Cfg }) => {
-  const { theme } = useThemeStore();
-  const isLight = theme === 'light';
   const isSpeaking = state === 'speaking';
   const isThinking = state === 'thinking';
   const isListening = state === 'listening';
 
   return (
-    <div style={{ position: 'relative', width: 188, height: 188, flexShrink: 0 }}>
+    <div style={{ position: 'relative', width: 200, height: 200, flexShrink: 0 }}>
 
-      {/* Outer dashed slow ring */}
+      {/* Outer slow ring */}
       <motion.div
         animate={{ rotate: 360 }}
-        transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+        transition={{ duration: 24, repeat: Infinity, ease: 'linear' }}
         style={{
-          position: 'absolute', inset: -14, borderRadius: '50%',
-          border: `1px dashed ${cfg.ring}`,
-          opacity: 0.45, transition: 'border-color 0.7s',
+          position: 'absolute', inset: -16, borderRadius: '50%',
+          border: `1px dashed ${cfg.color}25`,
+          opacity: 0.5, transition: 'border-color 0.7s',
         }}
       />
 
-      {/* Pulse ring — active when speaking */}
+      {/* Active pulse ring — scales when active */}
       <motion.div
         animate={isSpeaking
-          ? { scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }
-          : { scale: 1, opacity: 0.2 }
+          ? { scale: [1, 1.15, 1], opacity: [0.4, 0.8, 0.4] }
+          : { scale: 1, opacity: 0.15 }
         }
-        transition={{ duration: 1.4, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
-          position: 'absolute', inset: -5, borderRadius: '50%',
-          border: `1px solid ${cfg.ring}`,
+          position: 'absolute', inset: -6, borderRadius: '50%',
+          border: `1px solid ${cfg.color}45`,
           transition: 'border-color 0.7s',
         }}
       />
 
-      {/* Thinking spinner */}
+      {/* Thinking state overlay */}
       {isThinking && (
         <motion.div
           animate={{ rotate: -360 }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: 'linear' }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
           style={{
-            position: 'absolute', inset: 10, borderRadius: '50%',
-            border: `1px solid ${cfg.ring}`,
-            borderTopColor: 'transparent', borderLeftColor: 'transparent',
+            position: 'absolute', inset: 8, borderRadius: '50%',
+            border: `2px solid ${cfg.color}35`,
+            borderTopColor: cfg.color, borderLeftColor: 'transparent',
           }}
         />
       )}
 
-      {/* Core sphere */}
+      {/* Central Core Glowing Sphere */}
       <motion.div
         animate={
-          isSpeaking ? { scale: [1, 1.03, 1] } :
-            isListening ? { scale: [0.97, 1.02, 0.97] } :
+          isSpeaking ? { scale: [1, 1.05, 1] } :
+            isListening ? { scale: [0.98, 1.03, 0.98] } :
               { scale: 1 }
         }
-        transition={{ duration: isSpeaking ? 0.9 : 2.4, repeat: Infinity, ease: 'easeInOut' }}
+        transition={{ duration: isSpeaking ? 0.8 : 2, repeat: Infinity, ease: 'easeInOut' }}
         style={{
           width: '100%', height: '100%', borderRadius: '50%',
-          background: isLight 
-            ? `radial-gradient(circle at 35% 32%, ${cfg.color}26 0%, #FAFAFA 62%)` 
-            : `radial-gradient(circle at 35% 32%, ${cfg.color}1A 0%, #0F0F0F 62%)`,
-          border: isLight ? '1px solid rgba(9,9,11,0.08)' : '1px solid rgba(255,255,255,0.07)',
-          boxShadow: isLight 
-            ? `inset 0 1px 0 rgba(255,255,255,0.8), 0 0 56px ${cfg.glow}` 
-            : `inset 0 1px 0 rgba(255,255,255,0.05), 0 0 56px ${cfg.glow}`,
+          background: `radial-gradient(circle at 35% 32%, ${cfg.color}15 0%, #080A12 70%)`,
+          border: '1px solid rgba(255,255,255,0.06)',
+          boxShadow: `inset 0 1px 1px rgba(255,255,255,0.08), 0 0 60px ${cfg.color}20`,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          transition: 'all 0.9s',
+          transition: 'all 0.6s',
         }}
       >
-        {/* Inner light source */}
+        {/* Core dynamic neon signal dot */}
         <motion.div
-          animate={{ opacity: [0.55, 1, 0.55], scale: [0.85, 1.1, 0.85] }}
-          transition={{ duration: 2.2, repeat: Infinity, ease: 'easeInOut' }}
+          animate={{ opacity: [0.6, 1, 0.6], scale: [0.9, 1.15, 0.9] }}
+          transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
           style={{
-            width: 14, height: 14, borderRadius: '50%',
+            width: 16, height: 16, borderRadius: '50%',
             background: cfg.color,
-            boxShadow: `0 0 20px ${cfg.color}, 0 0 44px ${cfg.color}66`,
-            transition: 'background 0.6s, box-shadow 0.6s',
+            boxShadow: `0 0 20px ${cfg.color}, 0 0 40px ${cfg.color}60`,
+            transition: 'background 0.5s, box-shadow 0.5s',
           }}
         />
       </motion.div>
@@ -425,28 +426,26 @@ const OrbDisplay = ({ state, cfg }: { state: string; cfg: Cfg }) => {
   );
 };
 
-// ─── Idle Bars (shown when no agent audio track) ───────────────────────────────
+// ─── Idle Bars (bounces elegantly matching current state) ─────────────────────
 
-const IdleBars = () => {
-  const { theme } = useThemeStore();
-  const isLight = theme === 'light';
-
+const IdleBars = ({ color }: { color: string }) => {
   return (
     <div style={{
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      gap: 4, height: '100%', opacity: isLight ? 0.35 : 0.1,
-      transition: 'opacity 0.5s'
+      gap: 5, height: '100%', opacity: 0.4,
+      width: '100%'
     }}>
-      {[14, 22, 10, 30, 18, 26, 12, 20, 16, 24, 8, 18].map((h, i) => (
+      {[12, 24, 16, 32, 20, 28, 14, 22, 18, 26, 10, 16, 12, 24, 16].map((h, i) => (
         <motion.div
           key={i}
-          animate={{ scaleY: [0.35, 1, 0.35] }}
-          transition={{ duration: 1.8, repeat: Infinity, delay: i * 0.08, ease: 'easeInOut' }}
+          animate={{ scaleY: [0.3, 1, 0.3] }}
+          transition={{ duration: 1.5, repeat: Infinity, delay: i * 0.08, ease: 'easeInOut' }}
           style={{
             width: 3, height: h, borderRadius: 2,
-            background: isLight ? '#09090b' : '#ffffff',
-            transformOrigin: 'bottom',
-            transition: 'background 0.5s'
+            background: color,
+            transformOrigin: 'center',
+            transition: 'background 0.5s',
+            boxShadow: `0 0 8px ${color}50`
           }}
         />
       ))}

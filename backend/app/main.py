@@ -19,7 +19,8 @@ if sys.stderr and sys.stderr.encoding != 'utf-8':
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard
+from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard, twilio, telephony, freeswitch
+from app.api.v1.endpoints import settings as settings_ep
 # pyrefly: ignore [missing-import]
 from app.core.config import settings
 # pyrefly: ignore [missing-import]
@@ -93,11 +94,15 @@ app.include_router(sessions.router, prefix=f"{settings.API_V1_STR}/sessions", ta
 app.include_router(tools.router, prefix=f"{settings.API_V1_STR}/tools", tags=["Tools"])
 app.include_router(numbers.router, prefix=f"{settings.API_V1_STR}/numbers", tags=["Numbers"])
 app.include_router(calls.router, prefix=f"{settings.API_V1_STR}/calls", tags=["Calls"])
+app.include_router(twilio.router, prefix=f"{settings.API_V1_STR}/telephony/twilio", tags=["Twilio Telephony"])
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth", tags=["Auth"])
 app.include_router(integrations.router, prefix=f"{settings.API_V1_STR}/integrations", tags=["Integrations"])
 app.include_router(keys.router, prefix=f"{settings.API_V1_STR}/keys", tags=["Keys"])
 app.include_router(providers.router, prefix=f"{settings.API_V1_STR}/providers", tags=["Providers"])
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["Dashboard"])
+app.include_router(telephony.router, prefix=f"{settings.API_V1_STR}/telephony", tags=["Telephony"])
+app.include_router(freeswitch.router, prefix=f"{settings.API_V1_STR}/telephony/freeswitch", tags=["FreeSWITCH Telephony"])
+app.include_router(settings_ep.router, prefix=f"{settings.API_V1_STR}/settings", tags=["Settings"])
 
 @app.get("/hello")
 def read_root():

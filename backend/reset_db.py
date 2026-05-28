@@ -17,7 +17,7 @@ async def reset_db():
         print("Inserting default user...")
         # Simple execute to insert default user
         from sqlalchemy import text
-        await conn.execute(text("INSERT INTO users (id, email, full_name, created_at) VALUES ('default_user', 'user@example.com', 'Default User', NOW()) ON CONFLICT (id) DO NOTHING"))
+        await conn.execute(text("INSERT INTO users (id, email, full_name, is_active, secrets, created_at) VALUES ('default_user', 'user@example.com', 'Default User', TRUE, '{}', NOW()) ON CONFLICT (id) DO NOTHING"))
     
     print("Database reset successfully.")
     await engine.dispose()

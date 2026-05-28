@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Key, ArrowLeft, ShieldCheck, Save, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { Key, ShieldCheck, Save, CheckCircle, AlertCircle, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
+import { BackButton } from '../components/BackButton';
 
 export const KeysPage: React.FC = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -80,7 +79,7 @@ export const KeysPage: React.FC = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-[50vh] space-y-4">
         <div className="w-8 h-8 rounded-full border-2 border-primary/20 border-t-primary animate-spin" />
-        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Piping Secure Vault...</span>
+        <span className="text-[10px] font-black text-zinc-600 uppercase tracking-widest">Loading Secure Vault...</span>
       </div>
     );
   }
@@ -153,10 +152,7 @@ export const KeysPage: React.FC = () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-zinc-800 pb-4">
         <div className="flex items-center gap-4">
-          <button onClick={() => navigate('/')} className="btn-back-premium">
-            <ArrowLeft size={14} />
-            <span>Overview</span>
-          </button>
+          <BackButton fallbackPath="/" label="Overview" />
           <div className="space-y-1">
             <h1 className="text-xl md:text-2xl font-bold text-zinc-100 uppercase tracking-wider leading-tight">BYOK Provider Keys</h1>
             <div className="flex items-center gap-2">
@@ -180,7 +176,7 @@ export const KeysPage: React.FC = () => {
               <Key size={18} />
             </div>
             <div className="space-y-2">
-              <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">Neural Vault Security</h3>
+              <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-wider">Vault Security</h3>
               <p className="text-xs text-zinc-500 leading-relaxed font-semibold">
                 Your keys are immediately encrypted at rest using high-grade symmetric wrappers. The dashboard decrypts key hashes only in memory during call execution, and <span className="text-primary font-bold">never</span> exposes the raw API key back to any UI.
               </p>
@@ -242,7 +238,7 @@ export const KeysPage: React.FC = () => {
           <button 
             type="submit"
             disabled={saving}
-            className="w-full h-12 bg-primary hover:bg-primary/95 text-xs font-bold text-white dark:text-zinc-955 uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(0,102,255,0.25)] border border-primary/20 transition-all duration-300 disabled:opacity-55"
+            className="w-full h-12 bg-primary hover:bg-primary/95 text-xs font-bold text-on-primary uppercase tracking-widest rounded-xl flex items-center justify-center gap-2 hover:shadow-[0_0_20px_rgba(0,102,255,0.25)] border border-primary/20 transition-all duration-300 disabled:opacity-55"
           >
             <Save size={14} />
             <span>{saving ? 'Synchronizing BYOK Profile...' : 'Save Keys Configuration'}</span>

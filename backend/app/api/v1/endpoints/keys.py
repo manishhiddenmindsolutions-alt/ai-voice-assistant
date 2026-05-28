@@ -26,6 +26,11 @@ class KeysUpdate(BaseModel):
     deepgram_key: Optional[str] = None
     sarvam_key: Optional[str] = None
     openrouter_key: Optional[str] = None
+
+    # Twilio Credentials
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_phone_number: Optional[str] = None
     
     # Store settings defaults (e.g., default models)
     default_settings: Optional[Dict[str, Any]] = None
@@ -41,7 +46,11 @@ async def get_user_keys(
     
     masked_keys = {}
     # We decrypt and mask the keys for visual feedback
-    key_names = ["groq_key", "cerebras_key", "openai_key", "deepgram_key", "sarvam_key", "openrouter_key", "llm_key", "stt_key", "tts_key"]
+    key_names = [
+        "groq_key", "cerebras_key", "openai_key", "deepgram_key", "sarvam_key", "openrouter_key", 
+        "llm_key", "stt_key", "tts_key",
+        "twilio_account_sid", "twilio_auth_token", "twilio_phone_number"
+    ]
     for key_name in key_names:
         if key_name in secrets:
             decrypted = vault.decrypt(secrets[key_name])
@@ -77,7 +86,11 @@ async def update_user_keys(
         secrets["tts_provider"] = payload.tts_provider
         
     # Update keys securely (encrypt before saving)
-    key_names = ["groq_key", "cerebras_key", "openai_key", "deepgram_key", "sarvam_key", "openrouter_key", "llm_key", "stt_key", "tts_key"]
+    key_names = [
+        "groq_key", "cerebras_key", "openai_key", "deepgram_key", "sarvam_key", "openrouter_key", 
+        "llm_key", "stt_key", "tts_key",
+        "twilio_account_sid", "twilio_auth_token", "twilio_phone_number"
+    ]
     for key_name in key_names:
         val = getattr(payload, key_name, None)
         if val is not None:

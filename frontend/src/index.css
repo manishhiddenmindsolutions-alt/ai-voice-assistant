@@ -1,80 +1,98 @@
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 :root {
-  /* LIGHT MODE BY DEFAULT */
-  --background: #fafafa;
-  --on-background: #09090b;
-  --primary: #09090b;
-  --on-primary: #ffffff;
-  --primary-container: #f4f4f5;
-  --on-primary-container: #09090b;
-  --secondary: #f4f4f5;
-  --on-secondary: #09090b;
-  --secondary-container: #4b5563; /* Darker charcoal for zinc-600 text mapping */
-  --on-secondary-container: #09090b;
-  --tertiary: #3f3f46;
-  --on-tertiary: #ffffff;
-  --tertiary-container: #e4e4e7;
-  --on-tertiary-container: #09090b;
-  --error: #ef4444;
-  --on-error: #ffffff;
-  --error-container: #fee2e2;
-  --on-error-container: #991b1b;
-  --surface: #ffffff;
-  --surface-dim: #f4f4f5;
-  --surface-bright: #ffffff;
-  --surface-container-lowest: #ffffff;
-  --surface-container-low: #f4f4f5;
-  --surface-container: #f4f4f5;
-  --surface-container-high: #e4e4e7;
-  --surface-container-highest: #d4d4d8;
-  --on-surface: #09090b;
-  --on-surface-variant: #18181b; /* Almost black for zinc-400 text mapping */
-  --outline: #71717a; /* Legible medium-dark grey for zinc-700 mapping */
-  --outline-variant: #e4e4e7;
-  --inverse-surface: #09090b;
-  --inverse-on-surface: #ffffff;
-  --inverse-primary: #ffffff;
+  /* LIGHT MODE - Premium Slate & Indigo Theme */
+  --background: #F8FAFC; /* Slate-50 background for soft, low-contrast canvas */
+  --on-background: #0F172A; /* Slate-900 deep slate for primary text */
+  --primary: #4F46E5; /* Indigo-600 gorgeous brand color */
+  --on-primary: #FFFFFF;
+  --primary-container: #EEF2F6;
+  --on-primary-container: #4F46E5;
+  --secondary: #F1F5F9; /* Slate-100 */
+  --on-secondary: #334155; /* Slate-700 */
+  --secondary-container: #E2E8F0; /* Slate-200 */
+  --on-secondary-container: #0F172A;
+  --tertiary: #64748B; /* Slate-500 */
+  --on-tertiary: #FFFFFF; 
+  --tertiary-container: #E2E8F0;
+  --on-tertiary-container: #0F172A;
+  --error: #EF4444;
+  --on-error: #FFFFFF;
+  --error-container: #FEE2E2;
+  --on-error-container: #991B1B;
+  --surface: #FFFFFF; /* Pure white surfaces */
+  --surface-dim: #F8FAFC;
+  --surface-bright: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F8FAFC;
+  --surface-container: #F1F5F9;
+  --surface-container-high: #E2E8F0;
+  --surface-container-highest: #CBD5E1;
+  --on-surface: #0F172A;
+  --on-surface-variant: #334155;
+  --outline: #94A3B8; /* Slate-400 */
+  --outline-variant: #E2E8F0; /* Slate-200 */
+  --inverse-surface: #0F172A;
+  --inverse-on-surface: #FFFFFF;
+  --inverse-primary: #FFFFFF;
 
   /* Custom UI variables */
-  --card: #ffffff;
-  --primary-glow: rgba(0, 0, 0, 0.02);
-  --muted: #3f3f46; /* High-contrast charcoal for zinc-500 text mapping */
-  --border: rgba(9, 9, 11, 0.08);
-  --border-hover: rgba(9, 9, 11, 0.15);
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(9, 9, 11, 0.04);
-  --neural-mesh: radial-gradient(at 0% 0%, hsla(240, 5%, 98%, 0.15) 0, transparent 50%), 
-                 radial-gradient(at 50% 0%, hsla(240, 5%, 95%, 0.08) 0, transparent 50%), 
-                 radial-gradient(at 100% 0%, hsla(240, 5%, 98%, 0.15) 0, transparent 50%);
+  --card: #FFFFFF;
+  --primary-glow: rgba(79, 70, 229, 0.05); /* Soft indigo glow */
+  --muted: #64748B; /* Slate-500 */
+  --border: rgba(148, 163, 184, 0.15); /* Clean, soft border */
+  --border-hover: rgba(148, 163, 184, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.75);
+  --glass-border: rgba(148, 163, 184, 0.08);
+  --platform-mesh: radial-gradient(at 0% 0%, hsla(240, 40%, 95%, 0.4) 0, transparent 50%), 
+                 radial-gradient(at 50% 0%, hsla(260, 40%, 96%, 0.3) 0, transparent 50%), 
+                 radial-gradient(at 100% 0%, hsla(220, 40%, 95%, 0.4) 0, transparent 50%);
+
+  /* Global Tailwind Zinc color mapping overrides for light mode */
+  --color-zinc-50: #FFFFFF;
+  --color-zinc-100: #0F172A; /* Primary text -> Slate-900 */
+  --color-zinc-150: #F1F5F9; /* Off-white containers -> Slate-100 */
+  --color-zinc-200: #1E293B; /* Bold headings -> Slate-800 */
+  --color-zinc-250: #E2E8F0; /* Clean borders -> Slate-200 */
+  --color-zinc-300: #334155; /* Secondary text -> Slate-700 */
+  --color-zinc-350: #64748B; /* Muted text -> Slate-500 */
+  --color-zinc-400: #475569; /* Accent/Muted text -> Slate-600 */
+  --color-zinc-500: #64748B; /* Neutral Slate-500 */
+  --color-zinc-600: #475569; /* Neutral Slate-600 */
+  --color-zinc-650: #F8FAFC; /* Extra soft grey -> Slate-50 */
+  --color-zinc-700: #94A3B8; /* Border/Muted -> Slate-400 */
+  --color-zinc-800: #E2E8F0; /* Soft borders -> Slate-200 */
+  --color-zinc-850: #F1F5F9; /* Slate-100 */
+  --color-zinc-900: #E2E8F0; /* Card/Container borders -> Slate-200 */
+  --color-zinc-950: #FFFFFF; /* Layout panels/inputs/sidebar bg -> Pure White */
 }
 
 .dark {
-  /* DARK MODE OVERRIDES */
-  --background: #09090b;
+  /* DARK MODE OVERRIDES - High contrast midnight black & pristine white details */
+  --background: #09090B;
   --on-background: #f4f4f5;
   --primary: #ffffff;
-  --on-primary: #09090b;
-  --primary-container: #18181b;
+  --on-primary: #09090B;
+  --primary-container: #18181B;
   --on-primary-container: #ffffff;
   --secondary: #27272a;
   --on-secondary: #f4f4f5;
   --secondary-container: #3f3f46;
   --on-secondary-container: #ffffff;
   --tertiary: #a1a1aa;
-  --on-tertiary: #09090b;
+  --on-tertiary: #09090B;
   --tertiary-container: #52525b;
   --on-tertiary-container: #ffffff;
   --error: #f87171;
   --on-error: #7f1d1d;
   --error-container: #991b1b;
   --on-error-container: #fee2e2;
-  --surface: #09090b;
-  --surface-dim: #09090b;
+  --surface: #09090B;
+  --surface-dim: #09090B;
   --surface-bright: #27272a;
   --surface-container-lowest: #030303;
-  --surface-container-low: #09090b;
-  --surface-container: #09090b;
+  --surface-container-low: #09090B;
+  --surface-container: #09090B;
   --surface-container-high: #18181b;
   --surface-container-highest: #27272a;
   --on-surface: #f4f4f5;
@@ -86,16 +104,34 @@
   --inverse-primary: #000000;
 
   /* Custom UI variables */
-  --card: #09090b;
+  --card: #09090B;
   --primary-glow: rgba(255, 255, 255, 0.01);
   --muted: #71717a;
   --border: rgba(63, 63, 70, 0.3);
   --border-hover: rgba(161, 161, 170, 0.3);
   --glass-bg: rgba(9, 9, 11, 0.85);
   --glass-border: rgba(255, 255, 255, 0.01);
-  --neural-mesh: radial-gradient(at 0% 0%, hsla(240, 5%, 12%, 0.1) 0, transparent 50%), 
+  --platform-mesh: radial-gradient(at 0% 0%, hsla(240, 5%, 12%, 0.1) 0, transparent 50%), 
                  radial-gradient(at 50% 0%, hsla(240, 5%, 18%, 0.05) 0, transparent 50%), 
                  radial-gradient(at 100% 0%, hsla(240, 5%, 12%, 0.1) 0, transparent 50%);
+
+  /* Global Tailwind Zinc color mapping overrides */
+  --color-zinc-50: #FFFFFF;
+  --color-zinc-100: #FFFFFF;
+  --color-zinc-150: #27272A;
+  --color-zinc-200: #F4F4F5;
+  --color-zinc-250: #27272A;
+  --color-zinc-300: #F4F4F5;
+  --color-zinc-350: #A1A1AA;
+  --color-zinc-400: #A1A1AA;
+  --color-zinc-500: #71717a;
+  --color-zinc-600: #27272A;
+  --color-zinc-650: #27272A;
+  --color-zinc-700: #3F3F46;
+  --color-zinc-800: #27272A;
+  --color-zinc-850: #18181B;
+  --color-zinc-900: #09090B;
+  --color-zinc-950: #09090B;
 }
 
 @import "tailwindcss";
@@ -106,6 +142,7 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
   
   --color-primary: var(--primary);
+  --color-on-primary: var(--on-primary);
   --color-primary-glow: var(--primary-glow);
   --color-background: var(--background);
   --color-card: var(--card);
@@ -117,22 +154,22 @@
   --color-border-hover: var(--border-hover);
   --color-white: #ffffff;
 
-  --color-zinc-950: var(--surface-container-lowest);
-  --color-zinc-900: var(--surface-container-low);
-  --color-zinc-850: var(--surface-container-high);
-  --color-zinc-800: var(--outline-variant);
-  --color-zinc-700: var(--outline);
-  --color-zinc-650: var(--tertiary-container);
-  --color-zinc-600: var(--secondary-container);
-  --color-zinc-500: var(--muted);
-  --color-zinc-400: var(--on-surface-variant);
-  --color-zinc-350: #c4c4c7;
-  --color-zinc-300: var(--on-surface);
-  --color-zinc-250: #e4e4e7;
-  --color-zinc-200: var(--on-background);
-  --color-zinc-150: #ececed;
-  --color-zinc-100: var(--inverse-surface);
-  --color-zinc-50: #ffffff;
+  --color-zinc-950: var(--color-zinc-950);
+  --color-zinc-900: var(--color-zinc-900);
+  --color-zinc-850: var(--color-zinc-850);
+  --color-zinc-800: var(--color-zinc-800);
+  --color-zinc-700: var(--color-zinc-700);
+  --color-zinc-650: var(--color-zinc-650);
+  --color-zinc-600: var(--color-zinc-600);
+  --color-zinc-500: var(--color-zinc-500);
+  --color-zinc-400: var(--color-zinc-400);
+  --color-zinc-350: var(--color-zinc-350);
+  --color-zinc-300: var(--color-zinc-300);
+  --color-zinc-250: var(--color-zinc-250);
+  --color-zinc-200: var(--color-zinc-200);
+  --color-zinc-150: var(--color-zinc-150);
+  --color-zinc-100: var(--color-zinc-100);
+  --color-zinc-50: var(--color-zinc-50);
 
   --animate-portal: portal-glow 15s ease-in-out infinite;
   --animate-pulse-slow: pulse-slow 10s ease-in-out infinite;
@@ -164,7 +201,7 @@
     100% { transform: translateX(100%); }
   }
 
-  @keyframes neural-float {
+  @keyframes platform-float {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-3px); }
   }
@@ -309,6 +346,10 @@
     linear-gradient(to bottom, var(--border) 1px, transparent 1px);
 }
 
+.bg-platform-mesh {
+  background-image: var(--platform-mesh);
+}
+
 .glow-card-primary:hover {
   @apply border-zinc-800 bg-zinc-950/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)];
 }
@@ -329,17 +370,23 @@
   @apply border-amber-500/20 bg-zinc-950/80 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.05)];
 }
 
-/* Back button premium styles */
+/* Premium Back Button styling with beautiful glowing color combinations */
 .btn-back-premium {
-  @apply flex items-center gap-2.5 px-4 py-2 rounded-xl bg-zinc-950 border border-zinc-900 hover:border-zinc-800 text-zinc-500 hover:text-zinc-200 text-xs font-bold transition-all duration-150 shadow-xs hover:shadow-sm;
+  @apply flex items-center gap-2 px-3.5 py-1.5 rounded-xl 
+         bg-zinc-950 border border-zinc-800 text-zinc-400 
+         hover:bg-zinc-150 hover:text-primary hover:border-primary/40 
+         text-xs font-bold transition-all duration-200 shadow-xs 
+         hover:shadow-[0_2px_12px_-2px_rgba(79,70,229,0.15)] cursor-pointer;
 }
 
 .btn-back-premium svg {
-  @apply transition-transform duration-150;
+  @apply transition-transform duration-200;
 }
 
-.btn-back-premium:hover svg {
-  @apply -translate-x-1;
+.dark .btn-back-premium {
+  @apply bg-zinc-900 border border-zinc-800/80 text-zinc-400 
+         hover:bg-zinc-850 hover:text-violet-400 hover:border-violet-500/40 
+         hover:shadow-[0_2px_12px_-2px_rgba(139,92,246,0.22)];
 }
 
 /* Glassmorphism Overlays */

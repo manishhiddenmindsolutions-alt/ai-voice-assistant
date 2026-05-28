@@ -20,6 +20,9 @@ import CreateAgentPage from './pages/CreateAgentPage';
 import ComingSoonPage from './pages/ComingSoonPage';
 import ToolsPage from './pages/ToolsPage';
 import TelephonyPage from './pages/TelephonyPage';
+import CallLogsPage from './pages/CallLogsPage';
+import AnalyticsPage from './pages/AnalyticsPage';
+import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProvidersPage from './pages/ProvidersPage';
@@ -113,7 +116,7 @@ const AppLayout = () => {
   }, [theme]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-zinc-950 text-zinc-100 antialiased">
+    <div className="flex h-screen overflow-hidden bg-background text-foreground antialiased">
 
       {/* SIDEBAR */}
       <Sidebar
@@ -253,14 +256,14 @@ const AppLayout = () => {
               <Route
                 path="/logs"
                 element={
-                  <ComingSoonPage title="Call Logs" />
+                  <CallLogsPage />
                 }
               />
 
               <Route
                 path="/analytics"
                 element={
-                  <ComingSoonPage title="Analytics" />
+                  <AnalyticsPage />
                 }
               />
 
@@ -287,7 +290,7 @@ const AppLayout = () => {
               <Route
                 path="/settings"
                 element={
-                  <ComingSoonPage title="Settings" />
+                  <SettingsPage />
                 }
               />
 

@@ -3,6 +3,7 @@ import uuid
 import logging
 from typing import Optional
 from livekit import api
+# pyre-ignore[missing-import]
 from app.core.config import settings
 
 logger = logging.getLogger("sip-service")
@@ -43,13 +44,14 @@ class SIPService:
             if not sip_trunk_id:
                 raise ValueError("LIVEKIT_SIP_TRUNK_ID is not configured. Cannot make outbound calls.")
 
-            await client.sip.create_sip_participant(
-                room_name=room_name,
+            req = api.CreateSIPParticipantRequest(
                 sip_trunk_id=sip_trunk_id,
-                sip_number=to_number,
+                sip_call_to=to_number,
+                room_name=room_name,
                 participant_identity=f"phone_{to_number}",
                 participant_name="User Mobile",
             )
+            await client.sip.create_sip_participant(req)
             
             return {
                 "room_name": room_name,

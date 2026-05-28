@@ -1,9 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, RefreshCw, X, Zap, ArrowLeft } from 'lucide-react';
+import { Plus, Trash2, RefreshCw, X, Zap } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api, { toolApi } from '../services/api';
 import { DecommissionModal } from './DecommissionModal';
-import { useNavigate } from 'react-router-dom';
+import { BackButton } from './BackButton';
+
+const GoogleCalendarIcon = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" fill="#4285F4" />
+    <path d="M5 20V8h14v12H5z" fill="white" />
+    <path d="M7 10h4v4H7v-4zm6 0h4v4h-4v-4z" fill="#4285F4" />
+  </svg>
+);
+
+const GoogleSheetsIcon = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" fill="#0F9D58" />
+    <path d="M14 2v6h6l-6-6z" fill="#57BB8A" />
+    <path d="M8 12h8v2H8v-2zm0 4h8v2H8v-2zm0-8h4v2H8V8z" fill="white" />
+  </svg>
+);
+
+const N8NIcon = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="24" rx="6" fill="#FF6D5A" />
+    <circle cx="9" cy="12" r="2.5" fill="white" />
+    <circle cx="15" cy="12" r="2.5" fill="white" />
+    <path d="M9 12h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+
+const CustomWebhookIcon = ({ size = 22 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="24" height="24" rx="6" fill="#06B6D4" />
+    <path d="M18 10h-4V4l-8 10h4v6l8-10z" fill="white" />
+  </svg>
+);
+
+const renderToolIcon = (toolType: string, size = 22) => {
+  switch (toolType) {
+    case 'CALENDAR':
+      return <GoogleCalendarIcon size={size} />;
+    case 'SHEETS':
+      return <GoogleSheetsIcon size={size} />;
+    case 'N8N':
+      return <N8NIcon size={size} />;
+    default:
+      return <CustomWebhookIcon size={size} />;
+  }
+};
 
 interface Tool {
   id: string;
@@ -27,7 +72,6 @@ interface Integration {
 }
 
 export const ToolManager: React.FC = () => {
-  const navigate = useNavigate();
   const [tools, setTools] = useState<Tool[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [isTesting, setIsTesting] = useState<string | null>(null);
@@ -82,7 +126,7 @@ export const ToolManager: React.FC = () => {
     const toastId = toast.loading('Registering Tool...');
     try {
       await toolApi.create(newTool);
-      toast.success('Neural Link Established', { id: toastId });
+      toast.success('Tool Connected successfully', { id: toastId });
       setIsAdding(false);
       fetchTools();
       // Reset form
@@ -109,7 +153,7 @@ export const ToolManager: React.FC = () => {
   const handleTestTool = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     setIsTesting(id);
-    const toastId = toast.loading('Testing Neural Link...');
+    const toastId = toast.loading('Testing Connection...');
     try {
       const res = await toolApi.test(id);
       if (res.data.status === 'success') {
@@ -120,7 +164,7 @@ export const ToolManager: React.FC = () => {
         toast.error(`Offline: ${res.data.error}`, { id: toastId });
       }
     } catch (err) {
-      toast.error('Neural Link Timeout', { id: toastId });
+      toast.error('Connection Timeout', { id: toastId });
     } finally {
       setIsTesting(null);
     }
@@ -138,7 +182,7 @@ export const ToolManager: React.FC = () => {
     const toastId = toast.loading(`Severing ${name}...`);
     try {
       await toolApi.delete(id);
-      toast.success('Link Decommissioned', { id: toastId });
+      toast.success('Tool Disconnected', { id: toastId });
       setDecommissioningItem(null);
       fetchTools();
     } catch (err) {
@@ -153,7 +197,7 @@ export const ToolManager: React.FC = () => {
     if (!newTool.url) return toast.error("Webhook URL is required for testing");
     setIsTestingConfig(true);
     setTestResult(null);
-    const toastId = toast.loading('Probing Neural Path...');
+    const toastId = toast.loading('Testing Webhook Endpoint...');
     try {
       const res = await toolApi.testConfig(newTool);
       if (res.data.status === 'success') {
@@ -161,10 +205,10 @@ export const ToolManager: React.FC = () => {
         toast.success(`Success: Node responded with ${res.data.code}`, { id: toastId });
       } else {
         setTestResult({ status: 'failure', error: res.data.error });
-        toast.error(`Probe Failed: ${res.data.error}`, { id: toastId });
+        toast.error(`Test Failed: ${res.data.error}`, { id: toastId });
       }
     } catch (err) {
-      toast.error('Probe Timeout', { id: toastId });
+      toast.error('Test Timeout', { id: toastId });
     } finally {
       setIsTestingConfig(false);
     }
@@ -185,20 +229,14 @@ export const ToolManager: React.FC = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate('/')}
-            className="h-11 px-5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2"
-          >
-            <ArrowLeft size={16} />
-            Back
-          </button>
+          <BackButton fallbackPath="/" label="Overview" />
 
           <button
             onClick={() => {
               setCreationStep('type');
               setIsAdding(true);
             }}
-            className="h-11 px-5 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
+            className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
           >
             <Plus size={16} />
             Add Tool
@@ -211,20 +249,14 @@ export const ToolManager: React.FC = () => {
         {tools.map((tool) => (
           <div
             key={tool.id}
-            className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 flex flex-col justify-between min-h-[260px] group cursor-pointer"
+            className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[260px] group cursor-pointer"
           >
             <div>
               {/* TOP */}
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-zinc-850 flex items-center justify-center text-2xl border border-zinc-800">
-                    {tool.tool_type === 'CALENDAR'
-                      ? '📅'
-                      : tool.tool_type === 'SHEETS'
-                      ? '📊'
-                      : tool.tool_type === 'N8N'
-                      ? '🤖'
-                      : '🔌'}
+                  <div className="w-12 h-12 rounded-2xl bg-zinc-950/40 flex items-center justify-center border border-zinc-800">
+                    {renderToolIcon(tool.tool_type, 24)}
                   </div>
 
                   <div>
@@ -285,7 +317,7 @@ export const ToolManager: React.FC = () => {
             setCreationStep('type');
             setIsAdding(true);
           }}
-          className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/20 p-6 flex flex-col items-center justify-center min-h-[260px] hover:border-primary/30 hover:bg-zinc-900/40 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.03)] transition-all duration-300 group"
+          className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/20 p-6 flex flex-col items-center justify-center min-h-[260px] hover:border-primary/30 hover:bg-zinc-900/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group"
         >
           <div className="w-14 h-14 rounded-2xl bg-zinc-850 flex items-center justify-center text-zinc-450 group-hover:text-zinc-200 transition border border-zinc-800 mb-5">
             <Plus size={22} />
@@ -334,7 +366,7 @@ export const ToolManager: React.FC = () => {
                     }}
                     className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-zinc-900/40 border border-zinc-850 hover:border-primary/50 hover:bg-primary/5 transition text-center group"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-zinc-850 flex items-center justify-center text-2xl group-hover:scale-110 transition border border-zinc-800">🔌</div>
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-950/40 flex items-center justify-center group-hover:scale-110 transition border border-zinc-800"><CustomWebhookIcon size={24} /></div>
                     <div>
                       <h4 className="text-sm font-semibold text-zinc-100">Custom Webhook</h4>
                       <p className="text-xs text-zinc-500 mt-1">Connect any REST API endpoint</p>
@@ -348,7 +380,7 @@ export const ToolManager: React.FC = () => {
                     }}
                     className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-zinc-900/40 border border-zinc-850 hover:border-blue-500/50 hover:bg-blue-500/5 transition text-center group"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-zinc-850 flex items-center justify-center text-2xl group-hover:scale-110 transition border border-zinc-800">🤖</div>
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-950/40 flex items-center justify-center group-hover:scale-110 transition border border-zinc-800"><N8NIcon size={24} /></div>
                     <div>
                       <h4 className="text-sm font-semibold text-zinc-100">n8n Workflow</h4>
                       <p className="text-xs text-zinc-500 mt-1">Budgeting, spreadsheets & custom flows</p>
@@ -362,7 +394,7 @@ export const ToolManager: React.FC = () => {
                     }}
                     className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-zinc-900/40 border border-zinc-850 hover:border-amber-500/50 hover:bg-amber-500/5 transition text-center group"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-zinc-850 flex items-center justify-center text-2xl group-hover:scale-110 transition border border-zinc-800">📅</div>
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-950/40 flex items-center justify-center group-hover:scale-110 transition border border-zinc-800"><GoogleCalendarIcon size={24} /></div>
                     <div>
                       <h4 className="text-sm font-semibold text-zinc-100">Google Calendar</h4>
                       <p className="text-xs text-zinc-500 mt-1">Schedule meetings & query events</p>
@@ -376,7 +408,7 @@ export const ToolManager: React.FC = () => {
                     }}
                     className="flex flex-col items-center gap-4 p-6 rounded-2xl bg-zinc-900/40 border border-zinc-850 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition text-center group"
                   >
-                    <div className="w-12 h-12 rounded-2xl bg-zinc-850 flex items-center justify-center text-2xl group-hover:scale-110 transition border border-zinc-800">📊</div>
+                    <div className="w-12 h-12 rounded-2xl bg-zinc-950/40 flex items-center justify-center group-hover:scale-110 transition border border-zinc-800"><GoogleSheetsIcon size={24} /></div>
                     <div>
                       <h4 className="text-sm font-semibold text-zinc-100">Google Sheets</h4>
                       <p className="text-xs text-zinc-500 mt-1">Log session entries & user profiles</p>
@@ -437,10 +469,10 @@ export const ToolManager: React.FC = () => {
                       <div className="p-4 bg-primary/5 border border-primary/20 rounded-xl space-y-2">
                         <div className="flex items-center gap-2">
                           <div className="w-1.5 h-1.5 rounded-full bg-primary" />
-                          <span className="text-xs font-bold text-primary uppercase tracking-widest">N8N NEURAL BRIDGE</span>
+                          <span className="text-xs font-bold text-primary uppercase tracking-widest">N8N INTEGRATION BRIDGE</span>
                         </div>
                         <p className="text-xs text-zinc-550 leading-relaxed font-semibold">
-                          Connect your n8n workflow. Configured scopes will be securely passed as payload JSON payload variables.
+                          Connect your n8n workflow. Configured scopes will be securely passed as payload JSON variables.
                         </p>
                       </div>
 
@@ -742,9 +774,9 @@ export const ToolManager: React.FC = () => {
 
                     <button
                       onClick={handleSave}
-                      className="flex-[1.5] h-11 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition shadow-lg shadow-primary/10"
+                      className="flex-[1.5] h-11 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition shadow-lg shadow-primary/10"
                     >
-                      Save Neural Link
+                      Save Tool Connection
                     </button>
                   </div>
 
@@ -814,7 +846,7 @@ export const ToolManager: React.FC = () => {
         isOpen={!!decommissioningItem}
         onClose={() => setDecommissioningItem(null)}
         onConfirm={confirmDecommission}
-        title="Sever Neural Link"
+        title="Disconnect Tool"
         itemName={decommissioningItem?.name || ''}
         loading={isDeleting}
       />

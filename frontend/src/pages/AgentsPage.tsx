@@ -11,12 +11,15 @@ import {
     Filter,
     Users,
     Trash2,
-    Edit2
+    Edit2,
+    Phone
 } from 'lucide-react';
-import { agentApi, sessionApi } from '../services/api';
+import { agentApi, sessionApi, numbersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { DecommissionModal } from '../components/DecommissionModal';
+import { BackButton } from '../components/BackButton';
+import { AgentAvatar } from '../components/AgentAvatar';
 
 const AgentsPage = () => {
     const { agents, setAgents, setEditingAgent, setActiveSession } = useAgentStore();
@@ -25,7 +28,17 @@ const AgentsPage = () => {
     const [isRefreshing, setIsRefreshing] = useState(false);
     const [decommissioningItem, setDecommissioningItem] = useState<{id: string, name: string} | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [numbers, setNumbers] = useState<any[]>([]);
     const navigate = useNavigate();
+
+    const fetchNumbers = async () => {
+        try {
+            const resp = await numbersApi.list();
+            setNumbers(resp.data);
+        } catch (err) {
+            console.error("Failed to load active telephony numbers", err);
+        }
+    };
 
     const fetchAgents = async (silent = false) => {
         if (!silent) setIsLoading(true);
@@ -34,6 +47,7 @@ const AgentsPage = () => {
         try {
             const res = await agentApi.list();
             setAgents(res.data);
+            fetchNumbers();
         } catch (err) {
             console.error('Fetch failed', err);
             toast.error('Failed to sync assistants');
@@ -112,6 +126,9 @@ const AgentsPage = () => {
             {/* HEADER */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
                 <div>
+                    <div className="mb-5">
+                        <BackButton fallbackPath="/" label="Overview" />
+                    </div>
                     <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
                         Assistants Registry
                     </h1>
@@ -131,7 +148,7 @@ const AgentsPage = () => {
 
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="h-11 px-5 rounded-xl bg-primary text-zinc-950 text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
+                        className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
                     >
                         <Plus size={16} />
                         Register Assistant
@@ -179,23 +196,16 @@ const AgentsPage = () => {
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredAgents.map((agent) => {
-                        const isRealEstate = (agent.agentName || '').includes('Real Estate') || (agent.prompt || '').toLowerCase().includes('closer');
-                        const isConcierge = (agent.agentName || '').includes('Concierge');
-                        const isTechSupport = (agent.agentName || '').includes('Technical');
-
                         return (
-                            <div
+                             <div
                                 key={agent.id}
-                                className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 hover:border-primary/30 hover:bg-zinc-900/60 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.12)] hover:shadow-primary/5 transition-all duration-300 flex flex-col justify-between min-h-[290px] group cursor-pointer relative overflow-hidden"
+                                className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 hover:border-primary/30 hover:bg-zinc-900/60 hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[290px] group cursor-pointer relative overflow-hidden"
                             >
                                 <div>
                                     {/* CARD TOP */}
                                     <div className="flex items-start justify-between mb-5">
                                         <div className="flex items-center gap-4">
-                                            {/* GRADIENT ICON CONTAINER */}
-                                            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-zinc-800/80 to-zinc-900/60 flex items-center justify-center text-2xl border border-zinc-700/50 shadow-inner group-hover:scale-105 group-hover:border-primary/20 transition-all duration-300">
-                                                {isRealEstate ? '🏘️' : isConcierge ? '🤵' : isTechSupport ? '⚙️' : '🤖'}
-                                            </div>
+                                            <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-2xl" />
 
                                             <div>
                                                 <h3 className="text-base font-semibold text-zinc-105 line-clamp-1 leading-tight group-hover:text-primary transition-colors duration-300">
@@ -214,14 +224,14 @@ const AgentsPage = () => {
                                         <div className="flex items-center gap-2">
                                             <button 
                                                 onClick={(e) => handleEdit(agent, e)}
-                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-all shadow"
+                                                className="w-9 h-9 rounded-2xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-all shadow"
                                                 title="Configure"
                                             >
                                                 <Edit2 size={13} />
                                             </button>
                                             <button 
                                                 onClick={(e) => handleDelete(agent.id, agent.agentName, e)}
-                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-905 flex items-center justify-center text-zinc-455 hover:text-red-400 hover:border-red-500/20 transition-all shadow"
+                                                className="w-9 h-9 rounded-2xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-905 flex items-center justify-center text-zinc-455 hover:text-red-400 hover:border-red-500/20 transition-all shadow"
                                                 title="Decommission"
                                             >
                                                 <Trash2 size={13} />
@@ -237,7 +247,7 @@ const AgentsPage = () => {
 
                                 {/* FOOTER & LAUNCH ACTIONS */}
                                 <div className="mt-5 pt-4 border-t border-zinc-900/60 flex items-center justify-between">
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-wrap gap-2 max-w-[70%]">
                                         <Badge 
                                             label={agent.language.toUpperCase()} 
                                             icon={<Globe size={12} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
@@ -246,6 +256,24 @@ const AgentsPage = () => {
                                             label={agent.llm?.model ? agent.llm.model.split('/').pop()?.substring(0, 12) || agent.llm.model.substring(0, 12) : 'llama-3.3'} 
                                             icon={<Cpu size={12} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
                                         />
+                                        {numbers.filter(n => n.agent_id === agent.id).length > 0 ? (
+                                            numbers.filter(n => n.agent_id === agent.id).map(n => (
+                                                <Badge 
+                                                    key={n.id}
+                                                    label={n.number} 
+                                                    icon={<Phone size={11} className="text-orange-500" />} 
+                                                    onClick={(e) => { e.stopPropagation(); navigate('/numbers'); }}
+                                                    className="cursor-pointer border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-orange-400 font-bold"
+                                                />
+                                            ))
+                                        ) : (
+                                            <Badge 
+                                                label="Link Line" 
+                                                icon={<Plus size={10} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
+                                                onClick={(e) => { e.stopPropagation(); navigate('/numbers'); }}
+                                                className="cursor-pointer hover:bg-zinc-800/80 hover:text-zinc-200"
+                                            />
+                                        )}
                                     </div>
 
                                     <button
@@ -263,9 +291,9 @@ const AgentsPage = () => {
                     {/* ADD NEW CARD OVERHAUL */}
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="rounded-2xl border-2 border-dashed border-zinc-850 bg-zinc-900/10 p-6 flex flex-col items-center justify-center min-h-[290px] hover:border-primary/45 hover:bg-zinc-900/20 hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(124,58,237,0.02)] transition-all duration-300 group"
+                        className="rounded-3xl border-2 border-dashed border-zinc-850 bg-zinc-900/10 p-6 flex flex-col items-center justify-center min-h-[290px] hover:border-primary/45 hover:bg-zinc-900/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300 group"
                     >
-                        <div className="w-14 h-14 rounded-2xl bg-zinc-950 flex items-center justify-center text-zinc-500 group-hover:text-zinc-200 transition-all border border-zinc-800 mb-5 group-hover:scale-105 group-hover:border-primary/20">
+                        <div className="w-14 h-14 rounded-3xl bg-zinc-950 flex items-center justify-center text-zinc-500 group-hover:text-zinc-200 transition-all border border-zinc-800 mb-5 group-hover:scale-105 group-hover:border-primary/20">
                             <Plus size={20} />
                         </div>
                         <h3 className="text-base font-semibold text-zinc-200 group-hover:text-primary transition-colors">
@@ -293,10 +321,15 @@ const AgentsPage = () => {
 interface BadgeProps {
     label: string;
     icon: React.ReactNode;
+    onClick?: (e: React.MouseEvent) => void;
+    className?: string;
 }
 
-const Badge = ({ label, icon }: BadgeProps) => (
-    <div className="flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800/80 rounded-lg text-[10px] font-mono text-zinc-400 leading-none">
+const Badge = ({ label, icon, onClick, className }: BadgeProps) => (
+    <div 
+        onClick={onClick}
+        className={`flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800/80 rounded-lg text-[10px] font-mono text-zinc-400 leading-none transition-all duration-200 select-none ${className || ''}`}
+    >
         {icon}
         <span>{label}</span>
     </div>

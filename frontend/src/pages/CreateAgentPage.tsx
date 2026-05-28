@@ -6,7 +6,6 @@ import {
   Volume2, 
   Info,
   Zap,
-  ArrowLeft,
   Code,
   Activity,
   Sparkles,
@@ -16,6 +15,8 @@ import {
 import api, { agentApi, sessionApi, toolApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import { BackButton } from '../components/BackButton';
+import { AgentAvatar } from '../components/AgentAvatar';
 
 const LLM_MODELS = {
   groq: [
@@ -90,6 +91,8 @@ const CreateAgentPage = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [availableTools, setAvailableTools] = useState<any[]>([]);
+  const [userNumbers, setUserNumbers] = useState<any[]>([]);
+  const [selectedNumberId, setSelectedNumberId] = useState<string>('none');
   const navigate = useNavigate();
 
   // Dynamic Provider Model state variables
@@ -172,8 +175,24 @@ const CreateAgentPage = () => {
         console.error("Failed to load neural tools", err);
       }
     };
+
+    // Fetch user numbers
+    const fetchNumbers = async () => {
+      try {
+        const res = await numbersApi.list();
+        setUserNumbers(res.data || []);
+        if (editingAgent) {
+          const linkedNum = res.data?.find((n: any) => n.agent_id === editingAgent.id);
+          if (linkedNum) {
+            setSelectedNumberId(linkedNum.id);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to load user numbers", err);
+      }
+    };
     
-    Promise.all([fetchDynamicProviders(), fetchTools()]).finally(() => {
+    Promise.all([fetchDynamicProviders(), fetchTools(), fetchNumbers()]).finally(() => {
       setIsLoading(false);
     });
   }, [editingAgent]);
@@ -193,7 +212,7 @@ const CreateAgentPage = () => {
   const handleSave = async (andLaunch = false) => {
     if (!formData.agentName.trim()) return toast.error('Assistant name is required');
     
-    const processToast = toast.loading(andLaunch ? 'Forging & Testing...' : 'Synchronizing Forge...');
+    const processToast = toast.loading(andLaunch ? 'Deploying & Testing...' : 'Saving Assistant...');
     
     try {
       const res = await agentApi.createOrUpdate(formData);
@@ -206,6 +225,19 @@ const CreateAgentPage = () => {
           selectedToolIds.map((toolId: string) => agentApi.linkTool(saved.id, toolId))
         );
       }
+
+      // Link / Unlink selected phone number
+      await Promise.all(
+        userNumbers.map(async (num: any) => {
+          if (num.id === selectedNumberId) {
+            if (num.agent_id !== saved.id) {
+              await numbersApi.update(num.id, { agent_id: saved.id });
+            }
+          } else if (num.agent_id === saved.id) {
+            await numbersApi.update(num.id, { agent_id: null });
+          }
+        })
+      );
       
       const newAgents = [...agents];
       const idx = newAgents.findIndex((a: any) => a.id === saved.id);
@@ -216,14 +248,14 @@ const CreateAgentPage = () => {
       if (andLaunch) {
         const sessionRes = await sessionApi.start(saved);
         setActiveSession(sessionRes.data);
-        toast.success('Neural Link Established', { id: processToast });
+        toast.success('Voice Agent Live', { id: processToast });
       } else {
-        toast.success('Forge Synchronized', { id: processToast });
+        toast.success('Assistant Saved successfully', { id: processToast });
         navigate('/agents');
       }
     } catch (err) {
-      console.error('Forge failed:', err);
-      toast.error('Forge Protocol Error', { id: processToast });
+      console.error('Save failed:', err);
+      toast.error('Failed to save assistant', { id: processToast });
     }
   };
 
@@ -264,7 +296,7 @@ const CreateAgentPage = () => {
     </div>
   );
 
-  if (isLoading) return <div className="h-full flex items-center justify-center text-lg font-medium text-zinc-400 animate-pulse">Establishing Forge...</div>;
+  if (isLoading) return <div className="h-full flex items-center justify-center text-lg font-medium text-zinc-400 animate-pulse">Preparing Assistant...</div>;
 
   const currentProvider = (formData.llm?.provider || 'groq') as keyof typeof LLM_MODELS;
   const currentModels = dynamicModels[currentProvider] || LLM_MODELS.groq;
@@ -275,13 +307,9 @@ const CreateAgentPage = () => {
       {/* HEADER */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
         <div>
-          <button
-            onClick={() => navigate('/agents')}
-            className="h-9 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2 mb-5"
-          >
-            <ArrowLeft size={14} />
-            Back
-          </button>
+          <div className="mb-5">
+            <BackButton fallbackPath="/agents" label="Agents" />
+          </div>
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
             {editingAgent ? 'Configure Assistant' : 'Register Assistant'}
           </h1>
@@ -293,9 +321,9 @@ const CreateAgentPage = () => {
           <button onClick={() => handleSave(false)} className="h-11 px-5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2">
             Save Draft
           </button>
-          <button onClick={() => handleSave(true)} className="h-11 px-5 rounded-xl bg-primary text-zinc-950 text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10">
+          <button onClick={() => handleSave(true)} className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10">
             <Zap size={15} fill="currentColor" strokeWidth={0} />
-            Initialize Link
+            Launch Agent
           </button>
         </div>
       </div>
@@ -313,14 +341,14 @@ const CreateAgentPage = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 px-1">
                   <Sparkles size={14} className="text-zinc-500" />
-                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Neural Blueprints</span>
+                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Agent Blueprints</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {BLUEPRINTS.map(bp => (
                     <button
                       key={bp.name}
                       onClick={() => applyBlueprint(bp)}
-                      className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 text-left"
+                      className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 text-left"
                     >
                       <div className="text-3xl mb-4">{bp.icon}</div>
                       <h3 className="text-base font-semibold text-zinc-100 mb-2">{bp.name}</h3>
@@ -331,7 +359,7 @@ const CreateAgentPage = () => {
               </div>
 
               {/* IDENTITY FORM */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 space-y-6">
+              <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-zinc-300">Assistant Name</label>
@@ -342,6 +370,24 @@ const CreateAgentPage = () => {
                       placeholder="e.g. Identity Node-01" 
                     />
                   </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-zinc-300">Linked Phone Number</label>
+                    <select
+                      value={selectedNumberId}
+                      onChange={e => setSelectedNumberId(e.target.value)}
+                      className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition cursor-pointer"
+                    >
+                      <option value="none">No Phone Number (Web / Chat only)</option>
+                      {userNumbers.map((num: any) => (
+                        <option key={num.id} value={num.id}>
+                          {num.number} ({num.provider === 'twilio' ? 'Twilio Telephony' : num.provider.toUpperCase()})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <ConfigGroup 
                     label="Intelligence Provider" 
                     value={formData.llm.provider} 
@@ -355,9 +401,6 @@ const CreateAgentPage = () => {
                       });
                     }} 
                   />
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <ConfigGroup 
                     label="Core Inference Model" 
                     value={formData.llm.model} 
@@ -365,6 +408,9 @@ const CreateAgentPage = () => {
                     labels={currentModels.map((m: any) => m.name)} 
                     onChange={(m: string) => setFormData({ ...formData, llm: { ...formData.llm, model: m } })} 
                   />
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <SensitivitySlider 
                     label="Creativity (Temperature)" 
                     value={formData.llm.temperature} 
@@ -423,7 +469,7 @@ const CreateAgentPage = () => {
                     }} 
                   />
                   <ConfigGroup 
-                    label="Neural ID" 
+                    label="Voice ID" 
                     value={formData.tts.voice} 
                     options={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.id)} 
                     labels={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.name)} 
@@ -431,7 +477,7 @@ const CreateAgentPage = () => {
                   />
                 </ProPanel>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300">
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
                 <SensitivitySlider 
                   label="Speech Pace (Speed)" 
                   value={formData.tts.pace || 1.0} 
@@ -446,10 +492,10 @@ const CreateAgentPage = () => {
           )}
 
           {step === 3 && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 space-y-6 animate-in fade-in duration-300">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 space-y-6 animate-in fade-in duration-300">
               <div className="flex items-center justify-between mb-2">
                 <div>
-                  <h3 className="text-lg font-semibold text-zinc-100">Neural Registry Linking</h3>
+                  <h3 className="text-lg font-semibold text-zinc-100">Agent Tools Integration</h3>
                   <p className="text-sm text-zinc-500 mt-1">Connect operational tools to execute platform triggers.</p>
                 </div>
                 <button onClick={() => navigate('/tools')} className="h-9 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-305 hover:bg-zinc-800 transition">Marketplace</button>
@@ -476,13 +522,13 @@ const CreateAgentPage = () => {
                         }}
                         className={`p-5 rounded-2xl border text-left transition-all duration-300 group relative ${
                           isSelected 
-                            ? 'bg-primary/5 border-primary/45 shadow-[0_0_15px_rgba(124,58,237,0.03)]' 
+                            ? 'bg-primary/5 border-primary/45 shadow-sm' 
                             : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800 hover:bg-zinc-900/20'
                         }`}
                       >
                         <div className="flex justify-between items-center mb-3">
                           <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                            isSelected ? 'bg-primary text-zinc-950 shadow shadow-primary/10' : 'bg-zinc-900 text-zinc-500'
+                            isSelected ? 'bg-primary text-on-primary shadow shadow-primary/10' : 'bg-zinc-900 text-zinc-500'
                           }`}>
                             <Code size={16} />
                           </div>
@@ -499,7 +545,7 @@ const CreateAgentPage = () => {
           )}
 
           {step === 4 && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 space-y-8 animate-in fade-in duration-300">
+            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 space-y-8 animate-in fade-in duration-300">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="text-lg font-semibold text-zinc-100">Audio Signal Processing</h3>
                 <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">Advanced Audio</span>
@@ -549,23 +595,21 @@ const CreateAgentPage = () => {
                 if (step < 4) setStep(s => s + 1);
                 else handleSave(true);
               }}
-              className="h-11 px-6 rounded-xl bg-primary text-zinc-950 text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+              className="h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
             >
-              {step < 4 ? 'Next Stage' : 'Forge & Launch'}
+              {step < 4 ? 'Next Stage' : 'Save & Launch'}
             </button>
           </div>
         </div>
 
         {/* SIDEBAR PREVIEW (MATCHES PROFILE CARD STYLE EXACTLY) */}
         <div className="space-y-6">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 sticky top-24">
+          <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 sticky top-24">
             
             <div className="flex flex-col items-center text-center">
               {/* AVATAR BOX WITH STATUS DOT */}
               <div className="relative mb-5">
-                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center text-5xl">
-                  {BLUEPRINTS.find(b => b.name === formData.agentName)?.icon || '🤖'}
-                </div>
+                <AgentAvatar name={formData.agentName} agent={formData} className="w-24 h-24 text-5xl" />
                 <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-emerald-500 border-2 border-zinc-950 animate-pulse" />
               </div>
 

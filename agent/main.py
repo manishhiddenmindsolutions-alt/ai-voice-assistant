@@ -16,7 +16,7 @@ else:
     ssl._create_default_https_context = _create_unverified_https_context
 
 from livekit import rtc
-from livekit.agents import cli, JobContext, WorkerOptions, AutoSubscribe, JobProcess, llm
+from livekit.agents import cli, JobContext, WorkerOptions, AutoSubscribe, JobProcess, llm, RoomInputOptions
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import silero
 
@@ -95,6 +95,17 @@ async def entrypoint(ctx: JobContext):
     """Main entry point for the HMS Voice Agent."""
     logger.info(f"--- [START] Job {ctx.job.id} for room {ctx.room.name} ---")
 
+    # Set up room event listeners for robust manual track subscription
+    @ctx.room.on("track_published")
+    def on_track_published(publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        if publication.kind == rtc.TrackKind.KIND_AUDIO:
+            logger.info(f"--- [HMS DEBUG] Track published: {publication.sid} by {participant.identity}. Subscribing manually... ---")
+            publication.set_subscribed(True)
+
+    @ctx.room.on("track_subscribed")
+    def on_track_subscribed(track: rtc.Track, publication: rtc.TrackPublication, participant: rtc.RemoteParticipant):
+        logger.info(f"--- [HMS DEBUG] Track subscribed: {publication.sid} ({track.kind}) by {participant.identity} ---")
+
     await ctx.connect(auto_subscribe=AutoSubscribe.SUBSCRIBE_ALL)
     
     # Wait for at least one participant to be present
@@ -105,6 +116,16 @@ async def entrypoint(ctx: JobContext):
         except RuntimeError as e:
             logger.warning(f"Stop waiting: {e}")
             return
+            
+    # Ensure remote participant's audio tracks are subscribed manually as a fallback
+    for p_id, p in ctx.room.remote_participants.items():
+        logger.info(f"--- [HMS DEBUG] Checking existing participant: {p.identity} ---")
+        for pub_id, pub in p.track_publications.items():
+            if pub.kind == rtc.TrackKind.KIND_AUDIO:
+                logger.info(f"--- [HMS DEBUG] Found audio track: {pub.sid}. Subscribed={pub.subscribed} ---")
+                if not pub.subscribed:
+                    logger.info(f"--- [HMS DEBUG] Manually subscribing to track: {pub.sid} ---")
+                    pub.set_subscribed(True)
     
     # Parse Metadata for configuration
     config = {}
@@ -114,6 +135,34 @@ async def entrypoint(ctx: JobContext):
             logger.info(f"--- [HMS DEBUG] Parsed Config: {json.dumps({k: ('***' if k == 'apiKey' else v) for k, v in config.items()})} ---")
         except Exception as e:
             logger.warning(f"Failed to parse metadata: {e}")
+
+    # Dynamic SIP routing fallback (no pre-dispatch metadata available)
+    if not config:
+        participant = next(iter(ctx.room.remote_participants.values()), None)
+        dialed_number = None
+        caller_number = None
+        agent_id = None
+        room_name = ctx.room.name
+        
+        if participant:
+            dialed_number = participant.attributes.get("sip.trunkPhoneNumber")
+            caller_number = participant.attributes.get("sip.phoneNumber")
+            agent_id = participant.attributes.get("sip.agentId")
+            room_name = participant.attributes.get("sip.roomName") or ctx.room.name
+            
+        if dialed_number:
+            logger.info(f"--- [HMS DEBUG] Dynamic SIP call detected on: {dialed_number} from {caller_number} (Agent={agent_id}, Room={room_name}). Resolving agent config... ---")
+            try:
+                url = f"{BACKEND_URL}/api/v1/numbers/inbound-config?number={dialed_number}&caller_number={caller_number or ''}&room_name={room_name}&agent_id={agent_id or ''}"
+                async with aiohttp.ClientSession() as session:
+                    async with session.get(url) as resp:
+                        if resp.status == 200:
+                            config = await resp.json()
+                            logger.info(f"--- [HMS DEBUG] Dynamic config loaded successfully: {json.dumps(config)} ---")
+                        else:
+                            logger.warning(f"Backend inbound-config returned non-200 status: {resp.status}")
+            except Exception as e:
+                logger.error(f"Error fetching dynamic inbound-config from backend: {e}")
 
 
     # Initialize components
@@ -179,9 +228,11 @@ async def entrypoint(ctx: JobContext):
 
     # --- Start Agent Session ---
     logger.info("Starting Agent Session...")
-    await session.start(agent, room=ctx.room)
+    await session.start(agent, room=ctx.room, room_input_options=RoomInputOptions(close_on_disconnect=False))
     
-    # Greet the user immediately
+    # Greet the user with a delay to ensure Twilio SIP handshake finishes
+    logger.info("Waiting 5 seconds for Twilio SIP handshake to complete before greeting...")
+    await asyncio.sleep(5)
     logger.info("Agent session started. Sending greeting...")
     await session.say("Hello me apki kese help kr skta hu?", allow_interruptions=True)
 

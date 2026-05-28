@@ -5,7 +5,6 @@ import {
   User as UserIcon, 
   Key, 
   LogOut, 
-  ArrowLeft, 
   Loader2,
   Copy,
   Eye,
@@ -13,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { BackButton } from '../components/BackButton';
 
 const PRESETS = [
   'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&auto=format&fit=crop&q=80',
@@ -22,7 +22,7 @@ const PRESETS = [
 ];
 
 const PERMISSIONS = [
-  { name: 'Neural Call Handshake', desc: 'Allow real-time speech signaling over WebRTC gateways.', status: 'Authorized' },
+  { name: 'Secure WebRTC Signaling', desc: 'Allow real-time speech signaling over WebRTC gateways.', status: 'Authorized' },
   { name: 'Model Inference Bypass', desc: 'Allows direct execution of BYOK models per custom router rules.', status: 'Authorized' },
   { name: 'Tools Execution & Dispatch', desc: 'Read/write permissions for sheets sync, webhooks, and calendar.', status: 'Authorized' },
   { name: 'Platform Admin Key Rotation', desc: 'Full privileges to encrypt and rotate credentials keys.', status: 'System Default' }
@@ -42,6 +42,14 @@ export const ProfilePage = () => {
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || '');
   const [isUpdating, setIsUpdating] = useState(false);
   const [showToken, setShowToken] = useState(false);
+  
+  // Sync state when user object loads/updates
+  useEffect(() => {
+    if (user) {
+      setFullName(user.full_name || '');
+      setAvatarUrl(user.avatar_url || '');
+    }
+  }, [user]);
   
   // Asset Metrics
   const [metrics, setMetrics] = useState({
@@ -120,13 +128,9 @@ export const ProfilePage = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
 
         <div>
-          <button
-            onClick={() => navigate('/')}
-            className="h-9 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2 mb-5"
-          >
-            <ArrowLeft size={14} />
-            Back
-          </button>
+          <div className="mb-5">
+            <BackButton fallbackPath="/" label="Overview" />
+          </div>
 
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
             Account Settings
@@ -153,7 +157,7 @@ export const ProfilePage = () => {
         <div className="space-y-6">
 
           {/* PROFILE CARD */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
 
             <div className="flex flex-col items-center text-center">
 
@@ -219,7 +223,7 @@ export const ProfilePage = () => {
           </div>
 
           {/* TOKEN CARD */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
 
             <div className="flex items-center justify-between mb-5">
 
@@ -275,7 +279,7 @@ export const ProfilePage = () => {
         <div className="space-y-8">
 
           {/* PROFILE FORM */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
 
             <div className="mb-6">
 
@@ -371,7 +375,7 @@ export const ProfilePage = () => {
               <button
                 type="submit"
                 disabled={isUpdating}
-                className="h-11 px-6 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2"
+                className="h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2"
               >
                 {isUpdating ? (
                   <>
@@ -389,7 +393,7 @@ export const ProfilePage = () => {
           </div>
 
           {/* PERMISSIONS */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300">
+          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
 
             <div className="mb-6">
 

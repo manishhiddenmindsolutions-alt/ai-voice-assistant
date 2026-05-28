@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  ArrowLeft, 
   Plus, 
   RefreshCw, 
   Trash2, 
@@ -16,9 +15,9 @@ import {
   Lock,
   X
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import toast from 'react-hot-toast';
+import { BackButton } from '../components/BackButton';
 
 interface ProviderModel {
   id: string;
@@ -162,7 +161,7 @@ const StatCard = ({
   label,
   value,
 }: any) => (
-  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 group cursor-pointer">
+  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group cursor-pointer">
     <div className="flex items-center justify-between mb-5">
       <div className="w-11 h-11 rounded-xl bg-zinc-850 flex items-center justify-center text-zinc-300 group-hover:text-primary transition-colors border border-zinc-800">
         {icon}
@@ -178,7 +177,6 @@ const StatCard = ({
 );
 
 const ProvidersPage: React.FC = () => {
-  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [connections, setConnections] = useState<ProviderConnection[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -295,13 +293,9 @@ const ProvidersPage: React.FC = () => {
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
 
         <div>
-          <button
-            onClick={() => navigate('/')}
-            className="h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2 mb-5"
-          >
-            <ArrowLeft size={14} />
-            Back
-          </button>
+          <div className="mb-5">
+            <BackButton fallbackPath="/" label="Overview" />
+          </div>
 
           <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
             Provider Connections
@@ -314,7 +308,7 @@ const ProvidersPage: React.FC = () => {
 
         <button
           onClick={startAddFlow}
-          className="h-11 px-6 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition flex items-center gap-2"
+          className="h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2"
         >
           <Plus size={16} />
           Connect Provider
@@ -385,7 +379,7 @@ const ProvidersPage: React.FC = () => {
 
             <button
               onClick={startAddFlow}
-              className="mt-6 h-11 px-6 rounded-xl bg-primary text-white text-sm font-medium hover:opacity-90 transition"
+              className="mt-6 h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition"
             >
               Connect Provider
             </button>
@@ -404,7 +398,7 @@ const ProvidersPage: React.FC = () => {
               return (
                 <div
                   key={conn.id}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-[0_0_20px_rgba(124,58,237,0.04)] transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer"
                 >
 
                   {/* TOP */}
@@ -547,7 +541,7 @@ const ProvidersPage: React.FC = () => {
                   <div key={step} className="flex items-center flex-1 last:flex-none">
                     <div className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-mono border transition-all ${
                       wizardStep === step 
-                        ? 'bg-primary text-white border-primary shadow-sm shadow-primary/10'
+                        ? 'bg-primary text-on-primary border-primary shadow-sm shadow-primary/10'
                         : wizardStep > step
                         ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500'
                         : 'bg-zinc-100 dark:bg-zinc-900/50 border-zinc-200 dark:border-zinc-850 text-zinc-400 dark:text-zinc-600'
@@ -588,7 +582,7 @@ const ProvidersPage: React.FC = () => {
                             setSelectedProvider(key);
                             setWizardStep(2);
                           }}
-                          className={`p-3 rounded-lg text-left border hover:border-primary/25 hover:bg-zinc-900/20 hover:-translate-y-0.5 hover:shadow-[0_0_15px_rgba(124,58,237,0.04)] transition-all duration-300 flex items-center justify-between group ${
+                          className={`p-3 rounded-lg text-left border hover:border-primary/25 hover:bg-zinc-900/20 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 flex items-center justify-between group ${
                             isConnected ? 'border-zinc-900 bg-zinc-950 opacity-80' : 'border-zinc-900 bg-zinc-950/40'
                           }`}
                         >
