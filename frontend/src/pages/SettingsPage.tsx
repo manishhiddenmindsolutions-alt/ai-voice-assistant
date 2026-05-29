@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import {
-  Settings,
   Shield,
   Phone,
   Globe,
@@ -52,8 +51,6 @@ const SettingsPage = () => {
   const [account, setAccount] = useState<any>(null);
 
   // Loading
-  const [loadingTelephony, setLoadingTelephony] = useState(true);
-  const [loadingGeneral, setLoadingGeneral] = useState(true);
   const [savingTelephony, setSavingTelephony] = useState(false);
   const [savingGeneral, setSavingGeneral] = useState(false);
 
@@ -72,9 +69,6 @@ const SettingsPage = () => {
         setAccount(accResp.data);
       } catch (err) {
         console.error('Failed to load settings:', err);
-      } finally {
-        setLoadingTelephony(false);
-        setLoadingGeneral(false);
       }
     };
     load();
@@ -118,15 +112,17 @@ const SettingsPage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
       {/* HEADER */}
-      <div className="flex items-center gap-4 md:gap-5 mb-8">
-        <BackButton fallbackPath="/" label="Overview" />
-        <div className="space-y-1">
-          <h1 className="text-xl md:text-2xl font-bold uppercase tracking-wider text-zinc-100 leading-none mb-0">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+        <div>
+          <div className="mb-5">
+            <BackButton fallbackPath="/" label="Overview" />
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
             Settings
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 mt-2">
             <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-            <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider leading-none">
+            <p className="text-zinc-550 text-xs font-bold uppercase tracking-wider leading-none">
               System Configuration
             </p>
           </div>
@@ -144,11 +140,11 @@ const SettingsPage = () => {
                   onClick={() => setActiveSection(s.id)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
                     activeSection === s.id
-                      ? 'bg-zinc-800/50 text-zinc-100 border border-zinc-700'
+                      ? 'bg-blue-500/10 text-blue-450 border border-blue-500/20'
                       : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/20 border border-transparent'
                   }`}
                 >
-                  <s.icon size={15} className={activeSection === s.id ? s.color : 'text-zinc-600'} />
+                  <s.icon size={15} className={activeSection === s.id ? 'text-blue-400' : 'text-zinc-600'} />
                   {s.label}
                 </button>
               ))}
@@ -225,14 +221,14 @@ const SettingsPage = () => {
                     <InputField
                       label="Account SID"
                       value={telephony.twilio_account_sid}
-                      onChange={v => setTelephony({ ...telephony, twilio_account_sid: v })}
+                      onChange={(v: string) => setTelephony({ ...telephony, twilio_account_sid: v })}
                       placeholder="ACXXXXXXXX"
                       icon={<Hash size={13} />}
                     />
                     <InputField
                       label="Phone Number"
                       value={telephony.twilio_phone_number}
-                      onChange={v => setTelephony({ ...telephony, twilio_phone_number: v })}
+                      onChange={(v: string) => setTelephony({ ...telephony, twilio_phone_number: v })}
                       placeholder="+1234567890"
                       icon={<Phone size={13} />}
                       mono
@@ -241,7 +237,7 @@ const SettingsPage = () => {
                   <InputField
                     label="Auth Token"
                     value={telephony.twilio_auth_token}
-                    onChange={v => setTelephony({ ...telephony, twilio_auth_token: v })}
+                    onChange={(v: string) => setTelephony({ ...telephony, twilio_auth_token: v })}
                     placeholder="Vaulted token"
                     icon={<Shield size={13} />}
                     type="password"
@@ -250,7 +246,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSaveTelephony}
                     disabled={savingTelephony}
-                    className="btn-vapi w-full h-11 rounded-xl shadow-xs transition-all duration-300 font-bold uppercase tracking-wider text-xs gap-2"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold h-11 rounded-xl transition-all duration-300 uppercase tracking-wider text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {savingTelephony ? <Loader2 className="animate-spin" size={16} /> : (
                       <>
@@ -355,7 +351,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSaveGeneral}
                     disabled={savingGeneral}
-                    className="btn-vapi w-full h-11 rounded-xl shadow-xs transition-all duration-300 font-bold uppercase tracking-wider text-xs gap-2"
+                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold h-11 rounded-xl transition-all duration-300 uppercase tracking-wider text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
                   >
                     {savingGeneral ? <Loader2 className="animate-spin" size={16} /> : (
                       <>
@@ -429,7 +425,7 @@ const InputField = ({ label, value, onChange, placeholder, icon, type = 'text', 
     </label>
     <input
       type={type}
-      className={`w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-4 text-sm text-zinc-200 outline-none focus:border-amber-500 transition-all placeholder:text-zinc-700 ${mono ? 'font-mono' : ''}`}
+      className={`w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-4 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 ${mono ? 'font-mono' : ''}`}
       placeholder={placeholder}
       value={value}
       onChange={e => onChange(e.target.value)}

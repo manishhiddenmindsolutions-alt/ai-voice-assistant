@@ -2,13 +2,14 @@
 SIP Trunk Service — Programmatic LiveKit SIP Trunk & Dispatch Rule Management.
 
 Handles per-user provisioning of:
-- Inbound SIP Trunks (for receiving calls via Twilio → LiveKit)
-- Outbound SIP Trunks (for placing calls via LiveKit → Twilio)
+- Inbound SIP Trunks (for receiving calls via SIP providers → LiveKit)
+- Outbound SIP Trunks (for placing calls via LiveKit → SIP providers)
 - Dispatch Rules (auto-routing inbound calls to voice agents)
 - SIP Participants (initiating outbound calls)
 """
 import os
 import uuid
+import json
 import logging
 from typing import Optional, List
 from livekit import api
@@ -40,21 +41,24 @@ class SIPTrunkService:
         name: str,
         numbers: List[str],
         allowed_addresses: Optional[List[str]] = None,
+        krisp_enabled: bool = True,
     ) -> dict:
         """
         Creates a LiveKit SIP Inbound Trunk.
-        This allows LiveKit to accept incoming SIP calls from the carrier (Twilio).
+        This allows LiveKit to accept incoming SIP calls from the carrier.
         
         Args:
             name: Human-readable trunk name
             numbers: List of E.164 phone numbers associated with this trunk
             allowed_addresses: Optional IP allowlist for security
+            krisp_enabled: Enable Krisp noise cancellation for inbound calls
         """
         client = self._get_client()
         try:
             trunk_info = api.SIPInboundTrunkInfo(
                 name=name,
                 numbers=numbers,
+                krisp_enabled=krisp_enabled,
             )
             if allowed_addresses:
                 trunk_info.allowed_addresses = allowed_addresses
@@ -89,13 +93,13 @@ class SIPTrunkService:
     ) -> dict:
         """
         Creates a LiveKit SIP Outbound Trunk.
-        This allows LiveKit to place outgoing calls through the carrier (Twilio SIP).
+        This allows LiveKit to place outgoing calls through the carrier (e.g. Twilio SIP).
         
         Args:
             name: Human-readable trunk name
-            address: Twilio SIP Termination URI (e.g., "my-trunk.pstn.twilio.com")
+            address: SIP Termination URI (e.g., "my-trunk.pstn.twilio.com")
             numbers: Caller ID phone numbers (E.164)
-            auth_username: SIP auth username (from Twilio Credential List)
+            auth_username: SIP auth username (from Credential List)
             auth_password: SIP auth password
         """
         client = self._get_client()
@@ -140,6 +144,8 @@ class SIPTrunkService:
         Creates a SIP Dispatch Rule that auto-routes inbound calls to a LiveKit room
         and dispatches the specified voice agent.
         
+        Uses the correct CreateSIPDispatchRuleRequest API with dispatch_rule=SIPDispatchRuleInfo().
+        
         Args:
             trunk_ids: List of inbound trunk IDs this rule applies to
             agent_name: Agent worker name to dispatch
@@ -163,11 +169,15 @@ class SIPTrunkService:
                 ]
             )
 
-            request = api.CreateSIPDispatchRuleRequest(
+            dispatch_rule_info = api.SIPDispatchRuleInfo(
                 rule=rule,
                 name=f"dispatch-{room_prefix}",
                 trunk_ids=trunk_ids,
                 room_config=room_config,
+            )
+
+            request = api.CreateSIPDispatchRuleRequest(
+                dispatch_rule=dispatch_rule_info,
             )
 
             result = await client.sip.create_sip_dispatch_rule(request)
@@ -186,6 +196,30 @@ class SIPTrunkService:
         finally:
             await client.aclose()
 
+    # ─── LIST DISPATCH RULES ─────────────────────────────────────────────────
+
+    async def list_dispatch_rules(self) -> list:
+        """Lists all SIP dispatch rules on the LiveKit project."""
+        client = self._get_client()
+        try:
+            result = await client.sip.list_sip_dispatch_rule(
+                api.ListSIPDispatchRuleRequest()
+            )
+            return [
+                {
+                    "dispatch_rule_id": r.sip_dispatch_rule_id,
+                    "name": r.name,
+                    "trunk_ids": list(r.trunk_ids) if r.trunk_ids else [],
+                    "room_prefix": r.rule.dispatch_rule_individual.room_prefix if r.rule and r.rule.dispatch_rule_individual else None,
+                }
+                for r in result.items
+            ]
+        except Exception as e:
+            logger.error(f"Failed to list dispatch rules: {e}")
+            return []
+        finally:
+            await client.aclose()
+
     # ─── OUTBOUND CALL (SIP PARTICIPANT) ─────────────────────────────────────
 
     async def dial_outbound(
@@ -196,6 +230,7 @@ class SIPTrunkService:
         agent_name: str = "voice-forge-agent-v5",
         participant_identity: Optional[str] = None,
         metadata: str = "",
+        krisp_enabled: bool = True,
     ) -> dict:
         """
         Initiates an outbound call via LiveKit SIP using the correct two-step flow:
@@ -209,6 +244,7 @@ class SIPTrunkService:
             agent_name: Agent worker name to dispatch
             participant_identity: Identity for the SIP participant
             metadata: JSON metadata string with agent config (prompt, language, etc.)
+            krisp_enabled: Enable Krisp noise cancellation for the call
         """
         if not room_name:
             room_name = f"outbound_{uuid.uuid4().hex[:8]}"
@@ -238,6 +274,7 @@ class SIPTrunkService:
                 room_name=room_name,
                 participant_identity=participant_identity,
                 participant_name=f"Caller {to_number}",
+                krisp_enabled=krisp_enabled,
             )
 
             result = await client.sip.create_sip_participant(request)

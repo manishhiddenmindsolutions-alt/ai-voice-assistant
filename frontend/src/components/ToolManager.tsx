@@ -6,35 +6,39 @@ import { DecommissionModal } from './DecommissionModal';
 import { BackButton } from './BackButton';
 
 const GoogleCalendarIcon = ({ size = 22 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2z" fill="#4285F4" />
-    <path d="M5 20V8h14v12H5z" fill="white" />
-    <path d="M7 10h4v4H7v-4zm6 0h4v4h-4v-4z" fill="#4285F4" />
-  </svg>
+  <img 
+    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/google-calendar.svg" 
+    alt="Google Calendar" 
+    style={{ width: size, height: size }}
+    className="object-contain animate-fade-in" 
+  />
 );
 
 const GoogleSheetsIcon = ({ size = 22 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z" fill="#0F9D58" />
-    <path d="M14 2v6h6l-6-6z" fill="#57BB8A" />
-    <path d="M8 12h8v2H8v-2zm0 4h8v2H8v-2zm0-8h4v2H8V8z" fill="white" />
-  </svg>
+  <img 
+    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/google-sheets.svg" 
+    alt="Google Sheets" 
+    style={{ width: size, height: size }}
+    className="object-contain animate-fade-in" 
+  />
 );
 
 const N8NIcon = ({ size = 22 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#FF6D5A" />
-    <circle cx="9" cy="12" r="2.5" fill="white" />
-    <circle cx="15" cy="12" r="2.5" fill="white" />
-    <path d="M9 12h6" stroke="white" strokeWidth="2" strokeLinecap="round" />
-  </svg>
+  <img 
+    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/n8n.svg" 
+    alt="n8n Workflow" 
+    style={{ width: size, height: size }}
+    className="object-contain animate-fade-in" 
+  />
 );
 
 const CustomWebhookIcon = ({ size = 22 }: { size?: number }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="24" height="24" rx="6" fill="#06B6D4" />
-    <path d="M18 10h-4V4l-8 10h4v6l8-10z" fill="white" />
-  </svg>
+  <img 
+    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/n8n.svg" 
+    alt="n8n Webhook Relay" 
+    style={{ width: size, height: size }}
+    className="object-contain animate-fade-in" 
+  />
 );
 
 const renderToolIcon = (toolType: string, size = 22) => {
@@ -215,20 +219,24 @@ export const ToolManager: React.FC = () => {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-500 font-sans">
 
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 pb-6 border-b border-zinc-900/60 mb-10">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-400 leading-tight">
             Tool Marketplace
           </h1>
-          <p className="text-sm text-zinc-500 mt-2">
-            Connect APIs, workflows and integrations to your assistants.
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Sync workflows & automated API relays</p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3.5 self-start md:self-auto">
           <BackButton fallbackPath="/" label="Overview" />
 
           <button
@@ -236,75 +244,77 @@ export const ToolManager: React.FC = () => {
               setCreationStep('type');
               setIsAdding(true);
             }}
-            className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
+            className="h-11 px-5 rounded-xl bg-gradient-to-r from-zinc-100 via-zinc-200 to-zinc-300 text-zinc-950 text-xs font-bold uppercase tracking-wider hover:opacity-90 transition flex items-center gap-2"
           >
-            <Plus size={16} />
-            Add Tool
+            <Plus size={15} strokeWidth={2.5} />
+            Add New Tool
           </button>
         </div>
       </div>
 
       {/* TOOLS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
         {tools.map((tool) => (
           <div
             key={tool.id}
-            className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[260px] group cursor-pointer"
+            className="rounded-3xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-xl p-6 hover:border-zinc-800 hover:bg-zinc-950 transition-all duration-300 flex flex-col justify-between min-h-[270px] group cursor-pointer relative overflow-hidden"
           >
+            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-800/10 to-transparent" />
+
             <div>
               {/* TOP */}
               <div className="flex items-start justify-between mb-5">
                 <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-zinc-950/40 flex items-center justify-center border border-zinc-800">
+                  <div className="w-13 h-13 rounded-2xl bg-zinc-900/60 flex items-center justify-center border border-zinc-850 shadow-md">
                     {renderToolIcon(tool.tool_type, 24)}
                   </div>
 
                   <div>
-                    <h3 className="text-base font-semibold text-zinc-100 line-clamp-1 group-hover:text-primary transition-colors duration-300">
+                    <h3 className="text-base font-extrabold text-zinc-200 tracking-wide group-hover:text-zinc-100 transition-colors duration-300 line-clamp-1">
                       {tool.name}
                     </h3>
-                    <p className="text-sm text-zinc-500 mt-1 uppercase font-semibold text-[10px] tracking-wider">
+                    <span className="text-[9px] font-bold text-zinc-550 uppercase tracking-widest block mt-0.5">
                       {tool.category || tool.tool_type}
-                    </p>
+                    </span>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2">
                   <button
                     onClick={(e) => handleTestTool(tool.id, e)}
-                    className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition"
+                    className="w-9 h-9 rounded-xl border border-zinc-900 bg-zinc-950 flex items-center justify-center text-zinc-500 hover:text-zinc-200 hover:border-zinc-800 transition-all duration-300 active:scale-95"
                     title="Probe Link"
                   >
-                    <Zap size={14} className={isTesting === tool.id ? 'animate-pulse text-yellow-500' : ''} />
+                    <Zap size={13} className={isTesting === tool.id ? 'animate-pulse text-yellow-500' : ''} />
                   </button>
 
                   <button
                     onClick={(e) => handleDelete(tool.id, tool.name, e)}
-                    className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center text-zinc-400 hover:text-red-500 hover:border-red-500/20 transition"
+                    className="w-9 h-9 rounded-xl border border-zinc-900 bg-zinc-950 flex items-center justify-center text-zinc-550 hover:text-red-500 hover:border-red-500/20 transition-all duration-300 active:scale-95"
                     title="Decommission Link"
                   >
-                    <Trash2 size={14} />
+                    <Trash2 size={13} />
                   </button>
                 </div>
               </div>
 
               {/* DESCRIPTION */}
-              <p className="text-sm text-zinc-400 leading-relaxed line-clamp-2">
-                {tool.description || 'External integration for AI assistants.'}
+              <p className="text-zinc-500 text-xs leading-relaxed font-semibold line-clamp-2">
+                {tool.description || 'External integration adapter for cellular routing nodes.'}
               </p>
             </div>
 
             {/* URL/INFO */}
-            <div className="mt-5 p-3 rounded-xl bg-zinc-950 border border-zinc-800">
+            <div className="mt-5 p-3.5 rounded-2xl bg-zinc-950/60 border border-zinc-900 shadow-inner">
               <div className="flex items-center justify-between">
-                <span className="text-xs text-zinc-550 font-semibold">
+                <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">
                   {tool.tool_type === 'N8N' ? 'Orchestration Flow' : 'Endpoint Node'}
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-zinc-900 border border-zinc-850 text-zinc-300">
+                <span className="text-[8px] font-extrabold px-2 py-0.5 rounded bg-zinc-900 border border-zinc-850/80 text-zinc-400">
                   {tool.method}
                 </span>
               </div>
-              <p className="mt-2 text-xs text-zinc-400 font-mono truncate">
+              <p className="mt-2 text-[10px] text-zinc-400 font-mono truncate leading-none">
                 {tool.tool_type === 'WEBHOOK' || tool.tool_type === 'N8N' ? tool.url : 'Native Relay Adapter'}
               </p>
             </div>
@@ -317,16 +327,16 @@ export const ToolManager: React.FC = () => {
             setCreationStep('type');
             setIsAdding(true);
           }}
-          className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-900/20 p-6 flex flex-col items-center justify-center min-h-[260px] hover:border-primary/30 hover:bg-zinc-900/40 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group"
+          className="rounded-3xl border border-dashed border-zinc-800 bg-zinc-950/10 p-6 flex flex-col items-center justify-center min-h-[270px] hover:border-zinc-700 hover:bg-zinc-950/20 hover:-translate-y-0.5 transition-all duration-300 group relative overflow-hidden"
         >
-          <div className="w-14 h-14 rounded-2xl bg-zinc-850 flex items-center justify-center text-zinc-450 group-hover:text-zinc-200 transition border border-zinc-800 mb-5">
-            <Plus size={22} />
+          <div className="w-14 h-14 rounded-2xl bg-zinc-950 border border-zinc-900 flex items-center justify-center text-zinc-500 group-hover:text-zinc-300 group-hover:border-zinc-800 transition duration-300 mb-5 shadow-inner">
+            <Plus size={22} strokeWidth={2.5} />
           </div>
-          <h3 className="text-base font-medium text-zinc-100">
+          <h3 className="text-sm font-extrabold text-zinc-300 tracking-wide uppercase tracking-widest">
             Add New Tool
           </h3>
-          <p className="text-sm text-zinc-500 mt-2 text-center max-w-[220px] leading-relaxed">
-            Connect webhooks, APIs and automated flows.
+          <p className="text-zinc-550 text-xs mt-2.5 text-center max-w-[220px] leading-relaxed font-semibold">
+            Connect custom webhooks, workflows and direct Google service integrations.
           </p>
         </button>
       </div>

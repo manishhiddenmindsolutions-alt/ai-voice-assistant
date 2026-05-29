@@ -132,7 +132,7 @@ const AgentsPage = () => {
                     <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
                         Assistants Registry
                     </h1>
-                    <p className="text-sm text-zinc-500 mt-2">
+                    <p className="text-sm text-zinc-500 mt-2 font-normal">
                         Deploy, monitor and orchestrate your autonomous AI voice agents.
                     </p>
                 </div>
@@ -165,7 +165,7 @@ const AgentsPage = () => {
                         placeholder="Search HMS registry..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950/40 pl-11 pr-10 text-sm outline-none focus:border-primary transition"
+                        className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950/40 pl-11 pr-10 text-sm outline-none focus:border-primary/40 transition"
                     />
                     {searchTerm && (
                         <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-355">
@@ -179,7 +179,7 @@ const AgentsPage = () => {
                         <Filter size={14} />
                         Filter Operations
                     </button>
-                    <div className="h-11 px-4 border border-zinc-850 rounded-xl bg-zinc-950/20 flex items-center gap-2 text-zinc-550 text-xs font-semibold uppercase tracking-wider">
+                    <div className="h-11 px-4 border border-zinc-800 rounded-xl bg-zinc-950/20 flex items-center gap-2 text-zinc-500 text-xs font-medium uppercase tracking-wider">
                         <Users size={14} className="text-zinc-500" />
                         <span>{agents.length} Nodes</span>
                     </div>
@@ -199,7 +199,7 @@ const AgentsPage = () => {
                         return (
                              <div
                                 key={agent.id}
-                                className="rounded-3xl border border-zinc-800 bg-zinc-900/40 p-6 hover:border-primary/30 hover:bg-zinc-900/60 hover:-translate-y-1 hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[290px] group cursor-pointer relative overflow-hidden"
+                                className="card-premium p-6 flex flex-col justify-between min-h-[290px] group cursor-pointer relative overflow-hidden"
                             >
                                 <div>
                                     {/* CARD TOP */}
@@ -208,11 +208,11 @@ const AgentsPage = () => {
                                             <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-2xl" />
 
                                             <div>
-                                                <h3 className="text-base font-semibold text-zinc-105 line-clamp-1 leading-tight group-hover:text-primary transition-colors duration-300">
+                                                <h3 className="text-base font-semibold text-zinc-200 line-clamp-1 leading-tight group-hover:text-primary transition-colors duration-300">
                                                     {agent.agentName || 'Unnamed Node'}
                                                 </h3>
                                                 <div className="flex items-center gap-2 mt-1.5">
-                                                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-450 text-[10px] font-semibold uppercase tracking-wider scale-90">
+                                                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium uppercase tracking-wider scale-90">
                                                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                                         <span>Active</span>
                                                     </div>
@@ -224,14 +224,14 @@ const AgentsPage = () => {
                                         <div className="flex items-center gap-2">
                                             <button 
                                                 onClick={(e) => handleEdit(agent, e)}
-                                                className="w-9 h-9 rounded-2xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-all shadow"
+                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
                                                 title="Configure"
                                             >
                                                 <Edit2 size={13} />
                                             </button>
                                             <button 
                                                 onClick={(e) => handleDelete(agent.id, agent.agentName, e)}
-                                                className="w-9 h-9 rounded-2xl border border-zinc-800 bg-zinc-950/60 hover:bg-zinc-905 flex items-center justify-center text-zinc-455 hover:text-red-400 hover:border-red-500/20 transition-all shadow"
+                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-red-500 hover:border-red-500/20 transition-all shadow-sm"
                                                 title="Decommission"
                                             >
                                                 <Trash2 size={13} />
@@ -240,13 +240,13 @@ const AgentsPage = () => {
                                     </div>
 
                                     {/* PROMPT DESCRIPTION */}
-                                    <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 min-h-[60px] italic pt-1">
+                                    <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 min-h-[60px] italic pt-1 font-normal">
                                         "{agent.prompt || 'Autonomous voice assistant configured and ready for live operation.'}"
                                     </p>
                                 </div>
 
                                 {/* FOOTER & LAUNCH ACTIONS */}
-                                <div className="mt-5 pt-4 border-t border-zinc-900/60 flex items-center justify-between">
+                                <div className="mt-5 pt-4 border-t border-zinc-800/40 flex items-center justify-between">
                                     <div className="flex flex-wrap gap-2 max-w-[70%]">
                                         <Badge 
                                             label={agent.language.toUpperCase()} 
@@ -278,9 +278,9 @@ const AgentsPage = () => {
 
                                     <button
                                         onClick={(e) => handleLaunch(agent, e)}
-                                        className="h-9 px-4 rounded-xl bg-zinc-950 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-300 hover:text-zinc-100 transition-all flex items-center gap-2 shadow group/btn"
+                                        className="h-9 px-4 rounded-xl bg-zinc-950/50 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-400 hover:text-primary transition-all flex items-center gap-2 shadow-sm group/btn"
                                     >
-                                        <Play size={10} fill="currentColor" strokeWidth={0} className="text-emerald-500 group-hover/btn:scale-110 group-hover/btn:text-emerald-450 transition-transform" />
+                                        <Play size={10} fill="currentColor" strokeWidth={0} className="text-emerald-400 group-hover/btn:scale-110 transition-transform" />
                                         <span>Launch</span>
                                     </button>
                                 </div>
@@ -291,15 +291,16 @@ const AgentsPage = () => {
                     {/* ADD NEW CARD OVERHAUL */}
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="rounded-3xl border-2 border-dashed border-zinc-850 bg-zinc-900/10 p-6 flex flex-col items-center justify-center min-h-[290px] hover:border-primary/45 hover:bg-zinc-900/20 hover:-translate-y-1 hover:shadow-md transition-all duration-300 group"
+                        className="rounded-3xl border-2 border-dashed border-zinc-850/60 hover:border-primary/40 bg-zinc-950/20 hover:bg-zinc-950/40 p-6 flex flex-col items-center justify-center min-h-[290px] transition-all duration-300 group relative overflow-hidden backdrop-blur-md"
                     >
-                        <div className="w-14 h-14 rounded-3xl bg-zinc-950 flex items-center justify-center text-zinc-500 group-hover:text-zinc-200 transition-all border border-zinc-800 mb-5 group-hover:scale-105 group-hover:border-primary/20">
+                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-800/5 to-transparent" />
+                        <div className="w-14 h-14 rounded-2xl bg-zinc-950/50 border border-zinc-850 flex items-center justify-center text-zinc-500 group-hover:text-primary group-hover:border-primary/20 group-hover:bg-zinc-950 transition-all mb-5 group-hover:scale-105">
                             <Plus size={20} />
                         </div>
-                        <h3 className="text-base font-semibold text-zinc-200 group-hover:text-primary transition-colors">
+                        <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider group-hover:text-primary transition-colors">
                             Register Assistant
                         </h3>
-                        <p className="text-sm text-zinc-500 mt-2 text-center max-w-[220px] leading-relaxed">
+                        <p className="text-[11px] text-zinc-550 mt-2 text-center max-w-[200px] leading-relaxed font-semibold">
                             Initialize a new connection node for your voice assistant.
                         </p>
                     </button>
@@ -328,7 +329,7 @@ interface BadgeProps {
 const Badge = ({ label, icon, onClick, className }: BadgeProps) => (
     <div 
         onClick={onClick}
-        className={`flex items-center gap-1.5 px-3 py-1 bg-zinc-950 border border-zinc-800/80 rounded-lg text-[10px] font-mono text-zinc-400 leading-none transition-all duration-200 select-none ${className || ''}`}
+        className={`flex items-center gap-1.5 px-3 py-1 bg-zinc-950/40 border border-zinc-800/60 rounded-lg text-[10px] font-mono text-zinc-400 leading-none transition-all duration-200 select-none ${className || ''}`}
     >
         {icon}
         <span>{label}</span>

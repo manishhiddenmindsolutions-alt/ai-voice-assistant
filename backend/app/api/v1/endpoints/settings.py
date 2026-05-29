@@ -93,12 +93,6 @@ async def get_telephony_settings(
         "inbound_active": has_inbound,
         "outbound_active": has_outbound,
         "trunk_count": len(trunks),
-        "freeswitch_host": os.getenv("FREESWITCH_ESL_HOST", "127.0.0.1"),
-        "freeswitch_esl_port": int(os.getenv("FREESWITCH_ESL_PORT", "8021")),
-        "freeswitch_media_ws_url": os.getenv("FREESWITCH_MEDIA_WS_URL", "ws://127.0.0.1:8000/api/v1/telephony/freeswitch/media"),
-        "freeswitch_dialplan_xml_url": "http://127.0.0.1:8000/api/v1/telephony/freeswitch/dialplan",
-        "freeswitch_status": "online",
-        "freeswitch_active_gateways": len(trunks),
     }
 
 

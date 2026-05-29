@@ -69,22 +69,26 @@ const DashboardPage = () => {
   };
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-500 font-sans">
 
-      {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 pb-6 border-b border-zinc-800 mb-10">
+        <div className="space-y-1">
+          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-100 leading-tight">
             Intelligence Overview
           </h1>
-          <p className="text-sm text-zinc-550 mt-2">
-            Monitor real-time voice compute statistics, link metrics, and fleet status.
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Real-time voice compute statistics & registry nodes</p>
+          </div>
         </div>
 
         <button 
           onClick={() => navigate('/agents/create')}
-          className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10 self-start lg:self-auto"
+          className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10 self-start md:self-auto"
         >
           <Plus size={16} />
           Register Assistant
@@ -92,7 +96,7 @@ const DashboardPage = () => {
       </div>
 
       {/* STATS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
         <StatCard 
           label="Computed Minutes" 
           value={stats?.computedMinutes?.toLocaleString() || "0"} 
@@ -119,61 +123,61 @@ const DashboardPage = () => {
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
         {/* ACTIVE AGENTS */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-400">Active Registry Nodes</h3>
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Active Registry Nodes</h3>
             <button 
               onClick={() => navigate('/agents')} 
-              className="text-xs font-semibold text-zinc-500 hover:text-zinc-350 transition flex items-center gap-1"
+              className="text-xs font-medium text-zinc-500 hover:text-primary transition flex items-center gap-1 uppercase tracking-wider"
             >
               View all <ChevronRight size={14} />
             </button>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-3">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-20 rounded-3xl border border-zinc-850 bg-zinc-900/20 animate-pulse" />
+                <div key={i} className="h-22 rounded-2xl border border-zinc-800 bg-zinc-950/20 animate-pulse" />
               ))
             ) : agents.length > 0 ? (
               agents.slice(0, 4).map(agent => (
                 <div 
                   key={agent.id} 
-                  className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex items-center justify-between group cursor-pointer"
+                  className="card-premium p-5 flex items-center justify-between group cursor-pointer"
                 >
                   <div className="flex items-center gap-4">
-                    <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-2xl" />
+                    <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-xl shadow-sm border border-zinc-800" />
                     <div>
-                      <h4 className="text-sm font-semibold text-zinc-100">{agent.agentName}</h4>
-                      <p className="text-xs text-zinc-500 mt-1 font-medium">{agent.llm?.model ? agent.llm.model.substring(0, 16) : 'llama-3.3'} • {agent.language}</p>
+                      <h4 className="text-sm font-semibold text-zinc-200 tracking-wide">{agent.agentName}</h4>
+                      <p className="text-[10px] text-zinc-500 mt-1 uppercase font-medium tracking-wider">{agent.llm?.model ? agent.llm.model.substring(0, 16) : 'llama-3.3'} • {agent.language}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="hidden sm:flex flex-col items-end">
                       <div className="flex items-center gap-1.5">
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                         <span className="text-[10px] text-zinc-400 font-mono">Online</span>
+                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                         <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-wider">Online</span>
                       </div>
-                      <span className="text-[10px] text-zinc-550 font-mono mt-0.5">ID: {agent.id.slice(0, 8)}</span>
+                      <span className="text-[9px] text-zinc-500 font-mono mt-0.5 font-medium uppercase tracking-wider">ID: {agent.id.slice(0, 8)}</span>
                     </div>
                     <button 
                       onClick={() => handleQuickLaunch(agent)}
-                      className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition"
+                      className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-950/50 flex items-center justify-center text-zinc-400 hover:text-primary hover:border-primary/20 transition active:scale-95 shadow-sm"
                       title="Launch Session"
                     >
-                      <Play size={12} fill="currentColor" strokeWidth={0} className="text-emerald-500" />
+                      <Play size={12} fill="currentColor" strokeWidth={0} className="text-emerald-400" />
                     </button>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-10 border border-dashed border-zinc-800 rounded-2xl text-center bg-zinc-900/10">
-                <p className="text-zinc-500 text-sm font-medium">No active registry nodes configured.</p>
+              <div className="p-10 border border-dashed border-zinc-800 rounded-2xl text-center">
+                <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">No active registry nodes configured.</p>
                 <button 
                   onClick={() => navigate('/agents/create')}
-                  className="mt-4 h-9 px-4 rounded-xl border border-zinc-850 bg-zinc-950 text-xs font-semibold text-zinc-300 hover:bg-zinc-900 hover:text-zinc-200 transition"
+                  className="mt-4 h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-950/50 text-xs font-medium uppercase tracking-wider text-zinc-400 hover:text-primary hover:border-primary/20 transition active:scale-98 shadow-sm"
                 >
                   Create New Assistant
                 </button>
@@ -182,87 +186,87 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* NEURAL DISPATCH MONITOR */}
+        {/* DISPATCH SIGNALS PANEL */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-zinc-400">Dispatch Signals</h3>
+          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
+            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dispatch Signals</h3>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="text-[10px] text-zinc-500 font-mono uppercase">Live Link</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-wider">Live Link</span>
             </div>
           </div>
           
-          <div className="rounded-2xl border border-zinc-850 bg-zinc-950/70 p-5 flex flex-col justify-between min-h-[300px] font-mono text-[11px] leading-relaxed text-zinc-400 hover:border-zinc-800 hover:shadow-md transition-all duration-300">
-            <div className="space-y-3">
-              <div className="flex gap-2">
-                <span className="text-zinc-700">16:59:10</span>
-                <span className="text-zinc-500 font-bold">[sys]</span>
-                <span>Secured AES-256 connection...</span>
+          <div className="card-premium p-5 flex flex-col justify-between min-h-[300px] font-mono text-[10px] leading-relaxed text-zinc-400">
+            <div className="space-y-3.5">
+              <div className="flex gap-2.5">
+                <span className="text-zinc-500 font-medium">16:59:10</span>
+                <span className="text-primary/60 font-semibold uppercase tracking-wider">[sys]</span>
+                <span className="text-zinc-400">Secured AES-256 connection...</span>
               </div>
-              <div className="flex gap-2">
-                <span className="text-zinc-700">16:59:12</span>
-                <span className="text-zinc-500 font-bold">[gate]</span>
-                <span>Sarvam websocket validated.</span>
+              <div className="flex gap-2.5">
+                <span className="text-zinc-500 font-medium">16:59:12</span>
+                <span className="text-primary/60 font-semibold uppercase tracking-wider">[gate]</span>
+                <span className="text-zinc-400">Sarvam websocket validated.</span>
               </div>
-              <div className="flex gap-2">
-                <span className="text-zinc-700">16:59:15</span>
-                <span className="text-zinc-500 font-bold">[route]</span>
-                <span>OpenRouter fallback active.</span>
+              <div className="flex gap-2.5">
+                <span className="text-zinc-500 font-medium">16:59:15</span>
+                <span className="text-primary/60 font-semibold uppercase tracking-wider">[route]</span>
+                <span className="text-zinc-400">OpenRouter fallback active.</span>
               </div>
-              <div className="flex gap-2">
-                <span className="text-zinc-700">16:59:22</span>
-                <span className="text-zinc-550 font-bold">[comp]</span>
+              <div className="flex gap-2.5">
+                <span className="text-zinc-500 font-medium">16:59:22</span>
+                <span className="text-primary/60 font-semibold uppercase tracking-wider">[comp]</span>
                 <span className="text-zinc-500">Burn speed: 0.0031 tok/s</span>
               </div>
-              <div className="flex gap-2">
-                <span className="text-zinc-700">16:59:30</span>
-                <span className="text-zinc-550 font-bold">[node]</span>
-                <span className="text-emerald-500">Ramu connected successfully</span>
+              <div className="flex gap-2.5">
+                <span className="text-zinc-500 font-medium">16:59:30</span>
+                <span className="text-primary/60 font-semibold uppercase tracking-wider">[node]</span>
+                <span className="text-emerald-400 font-semibold">Ramu connected successfully</span>
               </div>
             </div>
             
-            <div className="pt-4 border-t border-zinc-900 flex items-center justify-between text-[10px] text-zinc-550 font-bold uppercase tracking-wider">
+            <div className="pt-4 border-t border-zinc-800 flex items-center justify-between text-[9px] text-zinc-500 font-medium uppercase tracking-wider mt-4">
               <span>Telemetry Sync</span>
-              <span className="text-zinc-350">100% Online</span>
+              <span className="text-zinc-400 animate-pulse">100% Online</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* MINIMAL BANDWIDTH CHART */}
-      <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 flex flex-col relative overflow-hidden hover:border-primary/10 hover:shadow-md transition-all duration-300">
-        <div className="flex items-center justify-between mb-6">
+      {/* BANDWIDTH CHART */}
+      <div className="card-premium p-6 flex flex-col">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-400">Call Bandwidth Cycle</h2>
-            <p className="text-xs text-zinc-550 mt-1 font-medium">Aggregate agent compute bandwidth in 7-day windows</p>
+            <h2 className="text-sm font-semibold text-zinc-200 tracking-wide uppercase">Call Bandwidth Cycle</h2>
+            <p className="text-[10px] text-zinc-500 mt-1 font-medium uppercase tracking-wider">Aggregate agent compute bandwidth in 7-day windows</p>
           </div>
-          <div className="text-[10px] font-bold text-zinc-400 px-2.5 py-1 bg-zinc-950 border border-zinc-850 rounded-lg uppercase tracking-wider">7d window</div>
+          <div className="text-[9px] font-semibold text-zinc-400 px-2.5 py-1 bg-zinc-900/50 border border-zinc-800 rounded-lg uppercase tracking-wider">7d window</div>
         </div>
         
-        <div className="flex-1 flex items-end gap-4 h-36">
+        <div className="flex-1 flex items-end gap-5 h-36 px-2">
           {[40, 65, 30, 85, 45, 78, 55].map((h, i) => (
             <div key={i} className="flex-1 group/bar relative h-full flex items-end">
               <motion.div 
                 initial={{ height: 0 }}
                 animate={{ height: `${h}%` }}
                 transition={{ duration: 0.6, delay: i * 0.03 }}
-                className="w-full bg-zinc-800 rounded-lg group-hover/bar:bg-zinc-200 transition-all duration-300 relative overflow-hidden border border-zinc-850 shadow-sm"
+                className="w-full bg-primary/10 rounded-xl group-hover/bar:bg-primary/25 transition-all duration-300 relative overflow-hidden border border-primary/10 shadow-sm"
               />
-              <div className="invisible group-hover/bar:visible absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-800 px-2 py-1 text-[10px] font-mono text-zinc-200 rounded-lg whitespace-nowrap shadow-md z-10 animate-in fade-in zoom-in duration-200">
-                Day {i + 1}: <strong className="text-zinc-50 font-semibold ml-0.5">{h}m</strong>
+              <div className="invisible group-hover/bar:visible absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-800 px-2 py-1 text-[9px] font-mono text-zinc-300 rounded-lg whitespace-nowrap shadow-md z-10 animate-in fade-in zoom-in duration-200">
+                Day {i + 1}: <strong className="text-zinc-100 font-semibold ml-0.5">{h}m</strong>
               </div>
             </div>
           ))}
         </div>
         
-        <div className="mt-6 pt-4 border-t border-zinc-850/60 flex items-center justify-between">
+        <div className="mt-8 pt-4 border-t border-zinc-800 flex items-center justify-between">
           <div className="flex flex-col">
-            <span className="text-[10px] text-zinc-550 font-bold uppercase tracking-wider">Daily Ingest Ratio</span>
-            <span className="text-base font-semibold text-zinc-250 mt-1">54.2m <span className="text-[10px] text-zinc-500 font-mono font-normal ml-0.5">tokens</span></span>
+            <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-wider">Daily Ingest Ratio</span>
+            <span className="text-base font-semibold text-zinc-200 mt-1 leading-none">54.2m <span className="text-[9px] text-zinc-500 font-mono font-medium uppercase ml-0.5">tokens</span></span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[10px] text-zinc-555 font-bold uppercase tracking-wider">Total Compute Fleet</span>
-            <span className="text-base font-semibold text-zinc-250 mt-1">380m <span className="text-[10px] text-zinc-500 font-mono font-normal ml-0.5">tokens</span></span>
+            <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-wider">Total Compute Fleet</span>
+            <span className="text-base font-semibold text-zinc-200 mt-1 leading-none">380m <span className="text-[9px] text-zinc-500 font-mono font-medium uppercase ml-0.5">tokens</span></span>
           </div>
         </div>
       </div>
@@ -272,18 +276,18 @@ const DashboardPage = () => {
 };
 
 const StatCard = ({ label, value, trend, icon }: any) => (
-  <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between min-h-[140px] cursor-pointer group">
+  <div className="card-premium p-6 flex flex-col justify-between min-h-[150px] cursor-pointer group">
     <div className="flex items-center justify-between">
-      <div className="w-10 h-10 rounded-xl bg-zinc-850 border border-zinc-800 flex items-center justify-center text-zinc-400">
+      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary shadow-sm">
         {icon}
       </div>
-      <span className="text-[10px] font-bold text-zinc-400 bg-zinc-950 border border-zinc-850 px-2 py-0.5 rounded-lg uppercase tracking-wider">
+      <span className="text-[9px] font-medium text-zinc-500 bg-zinc-900/40 border border-zinc-800 px-2 py-0.5 rounded-lg uppercase tracking-wider">
         {trend}
       </span>
     </div>
-    <div className="space-y-1 mt-4">
-      <p className="text-xs font-semibold text-zinc-550 uppercase tracking-wider">{label}</p>
-      <h3 className="text-2xl font-semibold text-zinc-100 tracking-tight">{value}</h3>
+    <div className="space-y-1.5 mt-5">
+      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{label}</p>
+      <h3 className="text-2xl font-semibold text-zinc-100 tracking-tight leading-none">{value}</h3>
     </div>
   </div>
 );

@@ -1,13 +1,14 @@
+@import "tailwindcss";
 @import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
 
 :root {
-  /* LIGHT MODE - Premium Slate & Indigo Theme */
+  /* LIGHT MODE - Premium Slate & Blue Theme */
   --background: #F8FAFC; /* Slate-50 background for soft, low-contrast canvas */
   --on-background: #0F172A; /* Slate-900 deep slate for primary text */
-  --primary: #4F46E5; /* Indigo-600 gorgeous brand color */
+  --primary: #0F62FE; /* Premium Royal IBM Blue */
   --on-primary: #FFFFFF;
-  --primary-container: #EEF2F6;
-  --on-primary-container: #4F46E5;
+  --primary-container: #E0F2FE; /* Sky blue container */
+  --on-primary-container: #0369A1;
   --secondary: #F1F5F9; /* Slate-100 */
   --on-secondary: #334155; /* Slate-700 */
   --secondary-container: #E2E8F0; /* Slate-200 */
@@ -38,15 +39,15 @@
 
   /* Custom UI variables */
   --card: #FFFFFF;
-  --primary-glow: rgba(79, 70, 229, 0.05); /* Soft indigo glow */
+  --primary-glow: rgba(15, 98, 254, 0.05); /* Soft royal blue glow */
   --muted: #64748B; /* Slate-500 */
   --border: rgba(148, 163, 184, 0.15); /* Clean, soft border */
   --border-hover: rgba(148, 163, 184, 0.3);
   --glass-bg: rgba(255, 255, 255, 0.75);
   --glass-border: rgba(148, 163, 184, 0.08);
-  --platform-mesh: radial-gradient(at 0% 0%, hsla(240, 40%, 95%, 0.4) 0, transparent 50%), 
-                 radial-gradient(at 50% 0%, hsla(260, 40%, 96%, 0.3) 0, transparent 50%), 
-                 radial-gradient(at 100% 0%, hsla(220, 40%, 95%, 0.4) 0, transparent 50%);
+  --platform-mesh: radial-gradient(at 0% 0%, hsla(210, 40%, 95%, 0.4) 0, transparent 50%), 
+                 radial-gradient(at 50% 0%, hsla(220, 40%, 96%, 0.3) 0, transparent 50%), 
+                 radial-gradient(at 100% 0%, hsla(200, 40%, 95%, 0.4) 0, transparent 50%);
 
   /* Global Tailwind Zinc color mapping overrides for light mode */
   --color-zinc-50: #FFFFFF;
@@ -68,73 +69,71 @@
 }
 
 .dark {
-  /* DARK MODE OVERRIDES - High contrast midnight black & pristine white details */
-  --background: #09090B;
-  --on-background: #f4f4f5;
-  --primary: #ffffff;
-  --on-primary: #09090B;
-  --primary-container: #18181B;
-  --on-primary-container: #ffffff;
-  --secondary: #27272a;
-  --on-secondary: #f4f4f5;
-  --secondary-container: #3f3f46;
-  --on-secondary-container: #ffffff;
-  --tertiary: #a1a1aa;
-  --on-tertiary: #09090B;
-  --tertiary-container: #52525b;
-  --on-tertiary-container: #ffffff;
-  --error: #f87171;
-  --on-error: #7f1d1d;
-  --error-container: #991b1b;
-  --on-error-container: #fee2e2;
-  --surface: #09090B;
-  --surface-dim: #09090B;
-  --surface-bright: #27272a;
-  --surface-container-lowest: #030303;
-  --surface-container-low: #09090B;
-  --surface-container: #09090B;
-  --surface-container-high: #18181b;
-  --surface-container-highest: #27272a;
-  --on-surface: #f4f4f5;
-  --on-surface-variant: #a1a1aa;
-  --outline: #3f3f46;
-  --outline-variant: #27272a;
-  --inverse-surface: #f4f4f5;
-  --inverse-on-surface: #18181b;
+  /* DARK MODE - Rich Navy-Blue Theme (NOT black) */
+  --background: #0B1527; /* Deep navy blue */
+  --on-background: #E8EDF5;
+  --primary: #3B82F6; /* Vibrant cobalt blue */
+  --on-primary: #FFFFFF;
+  --primary-container: #1E3A5F;
+  --on-primary-container: #60A5FA;
+  --secondary: #162240;
+  --on-secondary: #E2E8F0;
+  --secondary-container: #1E3358;
+  --on-secondary-container: #FFFFFF;
+  --tertiary: #8BA3C7;
+  --on-tertiary: #0B1527;
+  --tertiary-container: #2A4068;
+  --on-tertiary-container: #FFFFFF;
+  --error: #F87171;
+  --on-error: #7F1D1D;
+  --error-container: #991B1B;
+  --on-error-container: #FEE2E2;
+  --surface: #0E1B33; /* Rich navy surface */
+  --surface-dim: #091326;
+  --surface-bright: #1A2D4D;
+  --surface-container-lowest: #060E1E;
+  --surface-container-low: #0B1527;
+  --surface-container: #0E1B33;
+  --surface-container-high: #132847;
+  --surface-container-highest: #1A3358;
+  --on-surface: #E2E8F0;
+  --on-surface-variant: #8BA3C7;
+  --outline: #2A4068;
+  --outline-variant: #162240;
+  --inverse-surface: #E2E8F0;
+  --inverse-on-surface: #0B1527;
   --inverse-primary: #000000;
 
   /* Custom UI variables */
-  --card: #09090B;
-  --primary-glow: rgba(255, 255, 255, 0.01);
-  --muted: #71717a;
-  --border: rgba(63, 63, 70, 0.3);
-  --border-hover: rgba(161, 161, 170, 0.3);
-  --glass-bg: rgba(9, 9, 11, 0.85);
-  --glass-border: rgba(255, 255, 255, 0.01);
-  --platform-mesh: radial-gradient(at 0% 0%, hsla(240, 5%, 12%, 0.1) 0, transparent 50%), 
-                 radial-gradient(at 50% 0%, hsla(240, 5%, 18%, 0.05) 0, transparent 50%), 
-                 radial-gradient(at 100% 0%, hsla(240, 5%, 12%, 0.1) 0, transparent 50%);
+  --card: #0E1B33;
+  --primary-glow: rgba(59, 130, 246, 0.04);
+  --muted: #6B89B8;
+  --border: rgba(42, 64, 104, 0.5);
+  --border-hover: rgba(99, 135, 189, 0.3);
+  --glass-bg: rgba(14, 27, 51, 0.85);
+  --glass-border: rgba(59, 130, 246, 0.05);
+  --platform-mesh: radial-gradient(at 0% 0%, hsla(215, 60%, 15%, 0.25) 0, transparent 50%), 
+                 radial-gradient(at 50% 0%, hsla(225, 50%, 18%, 0.15) 0, transparent 50%), 
+                 radial-gradient(at 100% 0%, hsla(210, 55%, 15%, 0.25) 0, transparent 50%);
 
-  /* Global Tailwind Zinc color mapping overrides */
-  --color-zinc-50: #FFFFFF;
-  --color-zinc-100: #FFFFFF;
-  --color-zinc-150: #27272A;
-  --color-zinc-200: #F4F4F5;
-  --color-zinc-250: #27272A;
-  --color-zinc-300: #F4F4F5;
-  --color-zinc-350: #A1A1AA;
-  --color-zinc-400: #A1A1AA;
-  --color-zinc-500: #71717a;
-  --color-zinc-600: #27272A;
-  --color-zinc-650: #27272A;
-  --color-zinc-700: #3F3F46;
-  --color-zinc-800: #27272A;
-  --color-zinc-850: #18181B;
-  --color-zinc-900: #09090B;
-  --color-zinc-950: #09090B;
+  /* Global Tailwind Zinc color mapping - Navy blue tinted */
+  --color-zinc-50: #F0F4FA;
+  --color-zinc-100: #E8EDF5;
+  --color-zinc-150: #162240; /* Navy container */
+  --color-zinc-200: #D8E1F0;
+  --color-zinc-250: #1A2D4D;
+  --color-zinc-300: #C8D4E8;
+  --color-zinc-350: #8BA3C7;
+  --color-zinc-400: #8BA3C7;
+  --color-zinc-500: #6B89B8;
+  --color-zinc-600: #1A2D4D;
+  --color-zinc-650: #162240;
+  --color-zinc-700: #2A4068;
+  --color-zinc-800: #1A2D4D;
+  --color-zinc-850: #132847; /* Rich navy panel */
+  --color-zinc-900: #0E1B33; /* Navy card BG */
+  --color-zinc-950: #0B1527; /* Deep navy base */
 }
-
-@import "tailwindcss";
 
 @theme {
   --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
@@ -267,30 +266,29 @@
 
 @layer components {
   .btn-vapi {
-    @apply relative h-9 px-4.5 bg-zinc-100 text-zinc-950 font-semibold text-[13px] rounded-xl 
-           hover:bg-zinc-200 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] 
-           transition-all duration-150 ease-in-out flex items-center justify-center gap-2 shadow-sm hover:shadow-md;
+    @apply relative h-9 px-4.5 bg-primary text-on-primary font-semibold text-[13px] rounded-xl 
+           hover:opacity-90 transition-all duration-150 ease-in-out flex items-center justify-center gap-2;
   }
 
   .btn-outline {
     @apply h-9 px-4.5 bg-zinc-900/40 border border-zinc-800 text-zinc-300 font-semibold text-[13px] rounded-xl 
-           hover:bg-zinc-850 hover:border-zinc-700 hover:text-zinc-100 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
-           transition-all duration-150 ease-in-out flex items-center justify-center gap-2 shadow-xs hover:shadow-sm;
+           hover:bg-zinc-850 hover:border-zinc-700 hover:text-zinc-100
+           transition-all duration-150 ease-in-out flex items-center justify-center gap-2;
   }
 
   .btn-danger {
     @apply h-9 px-4.5 bg-red-500/10 border border-red-500/25 text-red-600 font-semibold text-[13px] rounded-xl 
-           hover:bg-red-500/20 hover:text-red-700 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]
-           transition-all duration-150 ease-in-out flex items-center justify-center gap-2 shadow-xs;
+           hover:bg-red-500/20 hover:text-red-700
+           transition-all duration-150 ease-in-out flex items-center justify-center gap-2;
   }
 
   .input-vapi {
     @apply h-9 bg-zinc-950 border border-zinc-850 rounded-xl px-3.5 text-[13px] text-zinc-100 font-sans
-           placeholder:text-zinc-500 focus:border-zinc-600 focus:ring-0 outline-none transition-all duration-300 ease-in-out;
+           placeholder:text-zinc-500 focus:border-primary/40 focus:ring-0 outline-none transition-all duration-300 ease-in-out;
   }
 
   .card-vapi {
-    @apply p-6 rounded-2xl bg-zinc-950/60 border border-zinc-900/80 hover:border-zinc-800/80 hover:-translate-y-0.5 hover:shadow-md transition-all duration-150 ease-in-out;
+    @apply p-6 rounded-2xl bg-zinc-950/60 border border-zinc-900/80 hover:border-zinc-800/80 transition-all duration-150 ease-in-out;
   }
 
   .nav-item-vapi {
@@ -298,7 +296,7 @@
   }
 
   .nav-item-vapi.active {
-    @apply bg-zinc-900 text-zinc-100 border border-zinc-800/80 shadow-xs;
+    @apply bg-primary/10 text-primary border border-primary/20 shadow-xs;
   }
 
   /* Wizard Specifics */
@@ -306,13 +304,13 @@
     @apply w-7 h-7 rounded-lg flex items-center justify-center text-[11px] font-bold transition-all duration-150 border;
   }
   .step-active {
-    @apply bg-zinc-100 text-zinc-950 border-zinc-200 shadow-sm;
+    @apply bg-primary text-on-primary border-primary/40 shadow-sm;
   }
   .step-inactive {
     @apply bg-zinc-950 text-zinc-500 border-zinc-900;
   }
   .step-completed {
-    @apply bg-zinc-900 text-zinc-400 border-zinc-800;
+    @apply bg-primary/10 text-primary border-primary/20;
   }
 }
 
@@ -351,32 +349,32 @@
 }
 
 .glow-card-primary:hover {
-  @apply border-zinc-800 bg-zinc-950/80 shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)];
+  @apply border-primary/20 shadow-[0_4px_20px_-4px_rgba(59,130,246,0.08)];
 }
 
 .dark .glow-card-primary:hover {
-  @apply shadow-[0_4px_20px_-4px_rgba(255,255,255,0.02)];
+  @apply shadow-[0_4px_20px_-4px_rgba(59,130,246,0.06)];
 }
 
 .glow-card-emerald:hover {
-  @apply border-emerald-500/20 bg-zinc-950/80 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.05)];
+  @apply border-emerald-500/20 shadow-[0_4px_20px_-4px_rgba(16,185,129,0.05)];
 }
 
 .glow-card-purple:hover {
-  @apply border-purple-500/20 bg-zinc-950/80 shadow-[0_4px_20px_-4px_rgba(139,92,246,0.05)];
+  @apply border-purple-500/20 shadow-[0_4px_20px_-4px_rgba(139,92,246,0.05)];
 }
 
 .glow-card-amber:hover {
-  @apply border-amber-500/20 bg-zinc-950/80 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.05)];
+  @apply border-amber-500/20 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.05)];
 }
 
-/* Premium Back Button styling with beautiful glowing color combinations */
+/* Premium Back Button styling */
 .btn-back-premium {
   @apply flex items-center gap-2 px-3.5 py-1.5 rounded-xl 
          bg-zinc-950 border border-zinc-800 text-zinc-400 
          hover:bg-zinc-150 hover:text-primary hover:border-primary/40 
          text-xs font-bold transition-all duration-200 shadow-xs 
-         hover:shadow-[0_2px_12px_-2px_rgba(79,70,229,0.15)] cursor-pointer;
+         hover:shadow-[0_2px_12px_-2px_rgba(59,130,246,0.15)] cursor-pointer;
 }
 
 .btn-back-premium svg {
@@ -384,9 +382,9 @@
 }
 
 .dark .btn-back-premium {
-  @apply bg-zinc-900 border border-zinc-800/80 text-zinc-400 
-         hover:bg-zinc-850 hover:text-violet-400 hover:border-violet-500/40 
-         hover:shadow-[0_2px_12px_-2px_rgba(139,92,246,0.22)];
+  @apply bg-zinc-900/60 border border-zinc-800/80 text-zinc-400 
+         hover:bg-zinc-850 hover:text-primary hover:border-primary/40 
+         hover:shadow-[0_2px_12px_-2px_rgba(59,130,246,0.15)];
 }
 
 /* Glassmorphism Overlays */
@@ -401,4 +399,107 @@
   background-color: var(--surface-container-lowest);
   border: 1px solid var(--border);
   font-family: 'JetBrains Mono', monospace;
+}
+
+/* -------------------------------------------------------------
+   LIGHT THEME BACKGROUND OVERRIDES
+   Ensures that standard zinc-based background and hover utility classes
+   render as crisp white and soft light greys when the dark theme is inactive.
+   ------------------------------------------------------------- */
+:root:not(.dark) .bg-zinc-50 {
+  background-color: #F8FAFC !important;
+}
+:root:not(.dark) .bg-zinc-100 {
+  background-color: #F1F5F9 !important;
+}
+:root:not(.dark) .bg-zinc-150 {
+  background-color: #F1F5F9 !important;
+}
+:root:not(.dark) .bg-zinc-200 {
+  background-color: #E2E8F0 !important;
+}
+:root:not(.dark) .bg-zinc-900 {
+  background-color: #F8FAFC !important;
+}
+:root:not(.dark) .bg-zinc-950 {
+  background-color: #FFFFFF !important;
+}
+:root:not(.dark) .bg-zinc-900\/40 {
+  background-color: rgba(248, 250, 252, 0.4) !important;
+}
+:root:not(.dark) .bg-zinc-950\/40 {
+  background-color: rgba(255, 255, 255, 0.4) !important;
+}
+:root:not(.dark) .bg-zinc-950\/60 {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+}
+:root:not(.dark) .hover\:bg-zinc-950:hover {
+  background-color: #F8FAFC !important;
+}
+:root:not(.dark) .hover\:bg-zinc-900:hover {
+  background-color: #F1F5F9 !important;
+}
+:root:not(.dark) .hover\:bg-zinc-850:hover {
+  background-color: #F1F5F9 !important;
+}
+:root:not(.dark) .hover\:bg-zinc-100:hover {
+  background-color: #E2E8F0 !important;
+}
+:root:not(.dark) .border-zinc-900 {
+  border-color: #E2E8F0 !important;
+}
+:root:not(.dark) .border-zinc-800 {
+  border-color: #E2E8F0 !important;
+}
+:root:not(.dark) .border-zinc-850 {
+  border-color: #F1F5F9 !important;
+}
+:root:not(.dark) .border-zinc-700 {
+  border-color: #CBD5E1 !important;
+}
+
+/* -------------------------------------------------------------
+   GLOBAL PREMIUM CARD STYLE
+   Universal card component with glassmorphic backdrop-blur,
+   rounded corners, clean border transitions, and top-line glow.
+   ------------------------------------------------------------- */
+.card-premium {
+  position: relative;
+  overflow: hidden;
+  border-radius: 1.5rem !important;
+  border: 1px solid rgba(226, 232, 240, 0.8) !important;
+  background-color: rgba(255, 255, 255, 0.4) !important;
+  backdrop-filter: blur(20px) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.dark .card-premium {
+  border: 1px solid rgba(42, 64, 104, 0.35) !important;
+  background-color: rgba(14, 27, 51, 0.5) !important;
+}
+
+.card-premium:hover {
+  border-color: rgba(203, 213, 225, 1) !important;
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.dark .card-premium:hover {
+  border-color: rgba(59, 130, 246, 0.15) !important;
+  background-color: rgba(14, 27, 51, 0.7) !important;
+}
+
+.card-premium::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(15, 98, 254, 0.08), transparent);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.dark .card-premium::before {
+  background: linear-gradient(to right, transparent, rgba(59, 130, 246, 0.12), transparent);
 }

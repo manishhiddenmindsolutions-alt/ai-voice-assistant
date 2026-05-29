@@ -19,7 +19,9 @@ if sys.stderr and sys.stderr.encoding != 'utf-8':
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard, twilio, telephony, freeswitch
+# pyrefly: ignore [missing-import]
+from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard, twilio, telephony
+# pyrefly: ignore [missing-import]
 from app.api.v1.endpoints import settings as settings_ep
 # pyrefly: ignore [missing-import]
 from app.core.config import settings
@@ -101,7 +103,6 @@ app.include_router(keys.router, prefix=f"{settings.API_V1_STR}/keys", tags=["Key
 app.include_router(providers.router, prefix=f"{settings.API_V1_STR}/providers", tags=["Providers"])
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["Dashboard"])
 app.include_router(telephony.router, prefix=f"{settings.API_V1_STR}/telephony", tags=["Telephony"])
-app.include_router(freeswitch.router, prefix=f"{settings.API_V1_STR}/telephony/freeswitch", tags=["FreeSWITCH Telephony"])
 app.include_router(settings_ep.router, prefix=f"{settings.API_V1_STR}/settings", tags=["Settings"])
 
 @app.get("/hello")

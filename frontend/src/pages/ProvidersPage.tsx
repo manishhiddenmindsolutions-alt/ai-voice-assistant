@@ -161,7 +161,7 @@ const StatCard = ({
   label,
   value,
 }: any) => (
-  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 group cursor-pointer">
+  <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-5 hover:border-primary/20 hover:bg-zinc-900/60 transition-all duration-300 group cursor-pointer">
     <div className="flex items-center justify-between mb-5">
       <div className="w-11 h-11 rounded-xl bg-zinc-850 flex items-center justify-center text-zinc-300 group-hover:text-primary transition-colors border border-zinc-800">
         {icon}
@@ -398,7 +398,7 @@ const ProvidersPage: React.FC = () => {
               return (
                 <div
                   key={conn.id}
-                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 flex flex-col justify-between group cursor-pointer"
+                  className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 transition-all duration-300 flex flex-col justify-between group cursor-pointer"
                 >
 
                   {/* TOP */}
@@ -407,7 +407,7 @@ const ProvidersPage: React.FC = () => {
                     <div className="flex items-center gap-4">
 
                       {/* LOGO */}
-                      <div className="w-14 h-14 rounded-2xl border border-zinc-800 bg-zinc-950 flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 group-hover:border-zinc-700 transition-all duration-300 relative">
+                      <div className="w-14 h-14 rounded-2xl border border-zinc-800 bg-zinc-950 flex items-center justify-center overflow-hidden shrink-0 group-hover:border-zinc-700 transition-all duration-300 relative">
 
                         {meta.logo.startsWith('http') ? (
                           <img
@@ -582,7 +582,7 @@ const ProvidersPage: React.FC = () => {
                             setSelectedProvider(key);
                             setWizardStep(2);
                           }}
-                          className={`p-3 rounded-lg text-left border hover:border-primary/25 hover:bg-zinc-900/20 hover:-translate-y-0.5 hover:shadow-sm transition-all duration-300 flex items-center justify-between group ${
+                          className={`p-3 rounded-lg text-left border hover:border-primary/25 hover:bg-zinc-900/20 transition-all duration-300 flex items-center justify-between group ${
                             isConnected ? 'border-zinc-900 bg-zinc-950 opacity-80' : 'border-zinc-900 bg-zinc-950/40'
                           }`}
                         >

@@ -199,7 +199,6 @@ async def handle_twilio_flow_bridge(
     lk_sip_domain = os.getenv("LIVEKIT_SIP_DOMAIN", "sip.livekit.cloud")
     
     # Resolve the caller's registered number dynamically from the call record
-    from app.models.orm import CallORM
     call_result = await db.execute(
         select(CallORM).where(CallORM.session_id == room)
     )
@@ -209,11 +208,13 @@ async def handle_twilio_flow_bridge(
     lk_sip_username = os.getenv("LIVEKIT_SIP_USERNAME")
     lk_sip_password = os.getenv("LIVEKIT_SIP_PASSWORD")
     auth_attr = ""
+    if lk_sip_username and lk_sip_password:
+        auth_attr = f' username="{lk_sip_username}" password="{lk_sip_password}"'
     # Dial into the LiveKit SIP domain — the agent is already dispatched to this room
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Dial>
-        <Sip username="twilio" password="twilio_secure_password_123!">sip:{sip_number}@{lk_sip_domain}:5061;transport=tls</Sip>
+        <Sip{auth_attr}>sip:{sip_number}@{lk_sip_domain};transport=tcp</Sip>
     </Dial>
 </Response>"""
     

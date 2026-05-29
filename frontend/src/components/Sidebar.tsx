@@ -47,50 +47,50 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           path: '/', 
           icon: LayoutDashboard, 
           label: 'Overview',
-          activeClass: 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 shadow-sm shadow-cyan-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-cyan-300 hover:bg-cyan-500/5 hover:border-cyan-500/10 border border-transparent',
-          iconColor: 'text-cyan-400',
-          iconHoverColor: 'group-hover:text-cyan-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'agents', 
           path: '/agents', 
           icon: Users, 
           label: 'Agents',
-          activeClass: 'bg-violet-500/10 text-violet-400 border border-violet-500/20 shadow-sm shadow-violet-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-violet-300 hover:bg-violet-500/5 hover:border-violet-500/10 border border-transparent',
-          iconColor: 'text-violet-400',
-          iconHoverColor: 'group-hover:text-violet-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'telephony', 
           path: '/numbers', 
           icon: Phone, 
           label: 'Telephony',
-          activeClass: 'bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-sm shadow-orange-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-orange-300 hover:bg-orange-500/5 hover:border-orange-500/10 border border-transparent',
-          iconColor: 'text-orange-400',
-          iconHoverColor: 'group-hover:text-orange-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'logs', 
           path: '/logs', 
           icon: History, 
           label: 'Call Logs',
-          activeClass: 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 shadow-sm shadow-emerald-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-emerald-300 hover:bg-emerald-500/5 hover:border-emerald-500/10 border border-transparent',
-          iconColor: 'text-emerald-400',
-          iconHoverColor: 'group-hover:text-emerald-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'analytics', 
           path: '/analytics', 
           icon: BarChart3, 
           label: 'Analytics',
-          activeClass: 'bg-amber-500/10 text-amber-400 border border-amber-500/20 shadow-sm shadow-amber-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-amber-300 hover:bg-amber-500/5 hover:border-amber-500/10 border border-transparent',
-          iconColor: 'text-amber-400',
-          iconHoverColor: 'group-hover:text-amber-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
       ]
     },
@@ -102,40 +102,40 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           path: '/providers', 
           icon: Key, 
           label: 'Providers',
-          activeClass: 'bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 shadow-sm shadow-yellow-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-yellow-300 hover:bg-yellow-500/5 hover:border-yellow-500/10 border border-transparent',
-          iconColor: 'text-yellow-400',
-          iconHoverColor: 'group-hover:text-yellow-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'webhooks', 
           path: '/tools', 
           icon: Package, 
           label: 'Webhooks',
-          activeClass: 'bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-sm shadow-blue-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-blue-300 hover:bg-blue-500/5 hover:border-blue-500/10 border border-transparent',
-          iconColor: 'text-blue-400',
-          iconHoverColor: 'group-hover:text-blue-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'integrations', 
           path: '/integrations', 
           icon: Share2, 
           label: 'Integrations',
-          activeClass: 'bg-rose-500/10 text-rose-400 border border-rose-500/20 shadow-sm shadow-rose-500/5', 
-          hoverClass: 'text-zinc-400 hover:text-rose-300 hover:bg-rose-500/5 hover:border-rose-500/10 border border-transparent',
-          iconColor: 'text-rose-400',
-          iconHoverColor: 'group-hover:text-rose-400'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
         { 
           id: 'settings', 
           path: '/settings', 
           icon: Settings, 
           label: 'Settings',
-          activeClass: 'bg-zinc-800/30 text-zinc-100 border border-zinc-700/50 shadow-xs', 
-          hoverClass: 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/20 hover:border-zinc-700/20 border border-transparent',
-          iconColor: 'text-zinc-400',
-          iconHoverColor: 'group-hover:text-zinc-300'
+          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
+          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
+          iconColor: 'text-primary',
+          iconHoverColor: 'group-hover:text-primary'
         },
       ]
     }
@@ -156,7 +156,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-zinc-950 flex flex-col p-6 border-r border-zinc-800 transition-transform duration-300 lg:sticky lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} h-screen`}>
+      <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-zinc-950 flex flex-col p-6 border-r border-zinc-800/60 transition-transform duration-300 lg:sticky lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} h-screen`}>
         {/* Background Glow */}
         <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-platform-mesh" />
 
@@ -171,8 +171,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-heading font-black leading-none tracking-[0.12em] text-zinc-100 uppercase mt-0.5">HMS</span>
-              <span className="text-[9px] text-zinc-500 font-extrabold tracking-widest uppercase mt-2 opacity-80">HiddenMindSolutions</span>
+              <span className="text-lg font-heading font-bold leading-none tracking-[0.12em] text-zinc-100 uppercase mt-0.5">HMS</span>
+              <span className="text-[9px] text-zinc-500 font-semibold tracking-widest uppercase mt-2 opacity-80">HiddenMindSolutions</span>
             </div>
           </NavLink>
 
@@ -188,7 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         <div className="flex-1 overflow-y-auto pr-1 py-2 space-y-6 custom-scrollbar relative z-10">
           {navGroups.map((group) => (
             <div key={group.label} className="space-y-3">
-              <div className="px-4 text-xs font-extrabold uppercase tracking-wider text-zinc-500 flex items-center gap-3">
+              <div className="px-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-3">
                  <div className="h-[1px] w-4 bg-zinc-800" />
                  {group.label}
                </div>
@@ -217,9 +217,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                           isLinkActive ? 'text-primary' : `text-zinc-500 ${item.iconHoverColor}`
                         } transition-all duration-300 shrink-0 group-hover:scale-110`} 
                       />
-                      <span className="font-semibold text-xs tracking-wider uppercase transition-colors duration-300">{item.label}</span>
+                      <span className="font-medium text-xs tracking-wider uppercase transition-colors duration-300">{item.label}</span>
                       {item.id === 'agents' && (
-                         <span className="ml-auto text-[10px] font-extrabold bg-zinc-900 border border-zinc-800 px-2 py-0.5 rounded-lg text-zinc-400 transition-colors duration-300">{agents.length}</span>
+                         <span className="ml-auto text-[10px] font-semibold bg-zinc-900/50 border border-zinc-800 px-2 py-0.5 rounded-lg text-zinc-400 transition-colors duration-300">{agents.length}</span>
                       )}
                     </NavLink>
                   );
@@ -230,7 +230,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* FOOTER ACTIONS - LOCKED AT THE BOTTOM */}
-        <div className="shrink-0 pt-6 border-t border-zinc-800/80 flex flex-col gap-3 relative z-10 mt-auto">
+        <div className="shrink-0 pt-6 border-t border-zinc-800/50 flex flex-col gap-3 relative z-10 mt-auto">
           <button 
             onClick={handleNewAgent}
             className={`w-full flex items-center gap-3.5 p-3.5 border rounded-2xl transition-all duration-200 group active:scale-98 hover:shadow-md ${
@@ -263,7 +263,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                 : 'bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-700 border-zinc-800/60'
             }`}
           >
-            <div className="w-9 h-9 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center overflow-hidden font-semibold text-xs text-zinc-400 group-hover:text-primary transition-all shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-center overflow-hidden font-medium text-xs text-zinc-400 group-hover:text-primary transition-all shrink-0">
               {user?.avatar_url ? (
                 <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (

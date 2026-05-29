@@ -13,14 +13,12 @@ import {
   Phone,
   CheckCircle2,
   XCircle,
-  AlertTriangle,
   Zap,
   User,
   Bot,
   X,
 } from 'lucide-react';
 import { callsApi } from '../services/api';
-import { useAgentStore } from '../store/useAgentStore';
 import { BackButton } from '../components/BackButton';
 
 interface CallRecord {
@@ -74,8 +72,6 @@ const CallLogsPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showFilters, setShowFilters] = useState(false);
-  
-  const { agents } = useAgentStore();
 
   const fetchCalls = async () => {
     setLoading(true);
@@ -129,35 +125,35 @@ const CallLogsPage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-8">
-        <div className="flex items-center gap-4 md:gap-5">
-          <BackButton fallbackPath="/" label="Overview" />
-          <div className="space-y-1">
-            <h1 className="text-xl md:text-2xl font-bold uppercase tracking-wider text-zinc-100 leading-none mb-0">
-              Call Logs
-            </h1>
-            <div className="flex items-center gap-2">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" />
-              <p className="text-zinc-500 text-xs font-bold uppercase tracking-wider leading-none">
-                {total} Total Records
-              </p>
-            </div>
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+        <div>
+          <div className="mb-5">
+            <BackButton fallbackPath="/" label="Overview" />
+          </div>
+          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+            Call Logs
+          </h1>
+          <div className="flex items-center gap-2 mt-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" />
+            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider leading-none">
+              {total} Total Records
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 self-start lg:self-auto">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 border ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium uppercase tracking-wider transition-all duration-300 border ${
               showFilters
-                ? 'bg-zinc-900 text-emerald-400 border-emerald-500/20'
-                : 'bg-zinc-950 text-zinc-400 border-zinc-800 hover:border-zinc-700'
+                ? 'bg-primary/10 text-primary border-primary/20'
+                : 'bg-zinc-950/40 text-zinc-400 border-zinc-800 hover:border-zinc-700'
             }`}
           >
             <Filter size={13} />
             Filters
             {(directionFilter || statusFilter) && (
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              <span className="w-2 h-2 rounded-full bg-primary" />
             )}
           </button>
         </div>
@@ -165,13 +161,13 @@ const CallLogsPage = () => {
 
       {/* FILTERS BAR */}
       {showFilters && (
-        <div className="mb-6 p-5 bg-zinc-950/60 border border-zinc-800 rounded-2xl animate-in slide-in-from-top duration-300">
+        <div className="mb-6 p-5 card-premium animate-in slide-in-from-top duration-300">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             {/* Search */}
             <div className="relative">
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
               <input
-                className="w-full bg-zinc-900 border border-zinc-800 rounded-xl h-10 pl-9 pr-4 text-sm text-zinc-200 outline-none focus:border-emerald-500 transition-all placeholder:text-zinc-600"
+                className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl h-10 pl-9 pr-4 text-sm text-zinc-200 outline-none focus:border-primary/40 transition-all placeholder:text-zinc-500"
                 placeholder="Search numbers, agents..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
@@ -180,7 +176,7 @@ const CallLogsPage = () => {
             
             {/* Direction */}
             <select
-              className="bg-zinc-900 border border-zinc-800 rounded-xl h-10 px-4 text-sm font-semibold text-zinc-200 outline-none focus:border-emerald-500 transition-all cursor-pointer"
+              className="bg-zinc-900/40 border border-zinc-800 rounded-xl h-10 px-4 text-sm font-medium text-zinc-200 outline-none focus:border-primary/40 transition-all cursor-pointer"
               value={directionFilter}
               onChange={e => setDirectionFilter(e.target.value)}
             >
@@ -191,7 +187,7 @@ const CallLogsPage = () => {
             
             {/* Status */}
             <select
-              className="bg-zinc-900 border border-zinc-800 rounded-xl h-10 px-4 text-sm font-semibold text-zinc-200 outline-none focus:border-emerald-500 transition-all cursor-pointer"
+              className="bg-zinc-900/40 border border-zinc-800 rounded-xl h-10 px-4 text-sm font-medium text-zinc-200 outline-none focus:border-primary/40 transition-all cursor-pointer"
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
             >
@@ -206,7 +202,7 @@ const CallLogsPage = () => {
           {(directionFilter || statusFilter || searchQuery) && (
             <button
               onClick={() => { setDirectionFilter(''); setStatusFilter(''); setSearchQuery(''); }}
-              className="mt-3 text-[10px] text-zinc-500 font-bold uppercase tracking-wider hover:text-zinc-300 transition-colors flex items-center gap-1"
+              className="mt-3 text-[10px] text-zinc-500 font-medium uppercase tracking-wider hover:text-zinc-300 transition-colors flex items-center gap-1"
             >
               <X size={10} /> Clear All Filters
             </button>
@@ -223,7 +219,7 @@ const CallLogsPage = () => {
         ) : filteredCalls.length === 0 ? (
           <div className="py-16 text-center border border-dashed border-zinc-800 rounded-3xl bg-zinc-950/20">
             <History className="mx-auto mb-4 text-zinc-700" size={40} />
-            <p className="text-sm font-semibold text-zinc-500 uppercase tracking-wider">No Call Records Found</p>
+            <p className="text-sm font-medium text-zinc-500 uppercase tracking-wider">No Call Records Found</p>
             <p className="text-xs text-zinc-600 mt-2">Make your first call from the Telephony Bridge</p>
           </div>
         ) : (
@@ -237,10 +233,10 @@ const CallLogsPage = () => {
                 {/* Call Row */}
                 <div
                   onClick={() => handleExpandCall(call.id)}
-                  className={`flex items-center justify-between p-5 border rounded-2xl cursor-pointer transition-all duration-300 ${
+                  className={`flex items-center justify-between p-5 cursor-pointer relative overflow-hidden transition-all duration-300 ${
                     isExpanded
-                      ? 'bg-zinc-900/60 border-zinc-700 shadow-lg'
-                      : 'bg-zinc-950/20 border-zinc-900 hover:border-zinc-800 hover:-translate-y-0.5 hover:shadow-md'
+                      ? 'bg-zinc-900/60 border border-zinc-700 rounded-3xl'
+                      : 'card-premium'
                   }`}
                 >
                   <div className="flex items-center gap-4 min-w-0">
@@ -259,7 +255,7 @@ const CallLogsPage = () => {
                         <p className="font-mono text-sm font-semibold text-zinc-100 truncate">
                           {call.direction === 'outbound' ? call.to_number : call.from_number || 'Unknown'}
                         </p>
-                        <span className="text-[9px] font-bold uppercase tracking-wider text-zinc-500 bg-zinc-900 border border-zinc-850 px-1.5 py-0.5 rounded shrink-0">
+                        <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 bg-zinc-900/40 border border-zinc-800 px-1.5 py-0.5 rounded shrink-0">
                           {call.direction}
                         </span>
                       </div>
@@ -279,19 +275,19 @@ const CallLogsPage = () => {
                     {/* Duration */}
                     <div className="hidden sm:flex items-center gap-1.5 text-zinc-500">
                       <Clock size={12} />
-                      <span className="text-[10px] font-mono font-bold">{formatDuration(call.duration_seconds)}</span>
+                      <span className="text-[10px] font-mono font-medium">{formatDuration(call.duration_seconds)}</span>
                     </div>
 
                     {/* Transcript Count */}
                     {call.transcript_count > 0 && (
                       <div className="hidden sm:flex items-center gap-1.5 text-zinc-500">
                         <MessageSquare size={12} />
-                        <span className="text-[10px] font-mono font-bold">{call.transcript_count}</span>
+                        <span className="text-[10px] font-mono font-medium">{call.transcript_count}</span>
                       </div>
                     )}
 
                     {/* Status Badge */}
-                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider ${statusCfg.color} ${statusCfg.bg} border ${statusCfg.border}`}>
+                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium uppercase tracking-wider ${statusCfg.color} ${statusCfg.bg} border ${statusCfg.border}`}>
                       <StatusIcon size={10} />
                       {call.status}
                     </span>

@@ -127,16 +127,18 @@ async def entrypoint(ctx: JobContext):
                     logger.info(f"--- [HMS DEBUG] Manually subscribing to track: {pub.sid} ---")
                     pub.set_subscribed(True)
     
-    # Parse Metadata for configuration
+    # ── CONFIG RESOLUTION (Priority: dispatch metadata > dynamic SIP lookup > defaults) ──
     config = {}
+    
+    # PRIORITY 1: Job metadata from dispatch rule (set during trunk provisioning or outbound call)
     if ctx.job.metadata:
         try:
             config = json.loads(ctx.job.metadata)
-            logger.info(f"--- [HMS DEBUG] Parsed Config: {json.dumps({k: ('***' if k == 'apiKey' else v) for k, v in config.items()})} ---")
+            logger.info(f"--- [HMS CONFIG] Loaded config from dispatch metadata: agent={config.get('agentName', 'N/A')}, lang={config.get('language', 'N/A')} ---")
         except Exception as e:
-            logger.warning(f"Failed to parse metadata: {e}")
+            logger.warning(f"Failed to parse job metadata: {e}")
 
-    # Dynamic SIP routing fallback (no pre-dispatch metadata available)
+    # PRIORITY 2: Dynamic SIP routing fallback (when dispatch metadata is empty/missing)
     if not config:
         participant = next(iter(ctx.room.remote_participants.values()), None)
         dialed_number = None
@@ -151,19 +153,18 @@ async def entrypoint(ctx: JobContext):
             room_name = participant.attributes.get("sip.roomName") or ctx.room.name
             
         if dialed_number:
-            logger.info(f"--- [HMS DEBUG] Dynamic SIP call detected on: {dialed_number} from {caller_number} (Agent={agent_id}, Room={room_name}). Resolving agent config... ---")
+            logger.info(f"--- [HMS CONFIG] Dynamic SIP call detected on: {dialed_number} from {caller_number} (Agent={agent_id}, Room={room_name}). Resolving agent config... ---")
             try:
                 url = f"{BACKEND_URL}/api/v1/numbers/inbound-config?number={dialed_number}&caller_number={caller_number or ''}&room_name={room_name}&agent_id={agent_id or ''}"
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url) as resp:
                         if resp.status == 200:
                             config = await resp.json()
-                            logger.info(f"--- [HMS DEBUG] Dynamic config loaded successfully: {json.dumps(config)} ---")
+                            logger.info(f"--- [HMS CONFIG] Dynamic config loaded successfully: agent={config.get('agentName', 'N/A')} ---")
                         else:
                             logger.warning(f"Backend inbound-config returned non-200 status: {resp.status}")
             except Exception as e:
                 logger.error(f"Error fetching dynamic inbound-config from backend: {e}")
-
 
     # Initialize components
     data = create_components(config)
@@ -230,11 +231,24 @@ async def entrypoint(ctx: JobContext):
     logger.info("Starting Agent Session...")
     await session.start(agent, room=ctx.room, room_input_options=RoomInputOptions(close_on_disconnect=False))
     
-    # Greet the user with a delay to ensure Twilio SIP handshake finishes
-    logger.info("Waiting 5 seconds for Twilio SIP handshake to complete before greeting...")
-    await asyncio.sleep(5)
-    logger.info("Agent session started. Sending greeting...")
-    await session.say("Hello me apki kese help kr skta hu?", allow_interruptions=True)
+    # Configurable greeting from agent config, with smart delay for outbound pickup
+    is_outbound = ctx.room.name.startswith("outbound_") or "outbound" in ctx.room.name.lower() or "twilio" in ctx.room.name.lower()
+    sip_delay = 7.5 if is_outbound else 2.5
+    logger.info(f"Outbound call detected={is_outbound}. Waiting {sip_delay}s for user to answer before greeting...")
+    await asyncio.sleep(sip_delay)
+    
+    # Use configurable greeting from agent config or fallback
+    greeting = config.get("greeting")
+    if not greeting:
+        stt_lang = config.get("language") or "en"
+        agent_name = config.get("agentName", "")
+        if stt_lang == "hi-IN":
+            greeting = f"Namaste! Main {agent_name} hu, aapki kese madad kr sakta hu?" if agent_name else "Namaste! Aapki kya madad kr sakta hu?"
+        else:
+            greeting = f"Hello! I'm {agent_name}, how can I help you today?" if agent_name else "Hello! How can I help you today?"
+    
+    logger.info(f"Agent session started. Sending greeting: {greeting[:50]}...")
+    await session.say(greeting, allow_interruptions=True)
 
     # Keep alive while connected
     while ctx.room.connection_state == rtc.ConnectionState.CONN_CONNECTED:

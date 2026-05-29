@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 # pyrefly: ignore [missing-import]
 from app.db.session import get_db
 # pyrefly: ignore [missing-import]
-from app.models.orm import CallORM, AgentORM, CallDirection, UserORM, TranscriptORM
+from app.models.orm import AgentORM, UserORM, TranscriptORM, CallORM, CallDirection
 # pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
 import uuid
@@ -49,15 +49,18 @@ class TranscriptLogRequest(BaseModel):
 async def trigger_outbound_call(request: OutboundCallRequest, db: AsyncSession = Depends(get_db)):
     """
     Triggers an outbound mobile call.
-    1. Fetch agent config.
+    1. Fetch agent with preloaded tools.
     2. Call LiveKit SIP Service.
     3. Log the call in DB.
     """
     # pyrefly: ignore [missing-import]
     from app.services.sip_service import sip_service
+    from sqlalchemy.orm import selectinload
     
     # 1. Verify Agent
-    result = await db.execute(select(AgentORM).where(AgentORM.id == request.agent_id))
+    result = await db.execute(
+        select(AgentORM).options(selectinload(AgentORM.tools)).where(AgentORM.id == request.agent_id)
+    )
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
@@ -66,8 +69,9 @@ async def trigger_outbound_call(request: OutboundCallRequest, db: AsyncSession =
     try:
         sip_result = await sip_service.create_outbound_call(
             to_number=request.to_number,
-            from_number=request.from_number,
-            agent_config=agent.config
+            agent=agent,
+            db=db,
+            from_number=request.from_number
         )
         
         # 3. Log Call

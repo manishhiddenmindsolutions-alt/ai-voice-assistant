@@ -63,6 +63,7 @@ export const numbersApi = {
   list: () => api.get('/numbers/'),
   create: (data: any) => api.post('/numbers/', data),
   update: (id: string, data: any) => api.put(`/numbers/${id}`, data),
+  delete: (id: string) => api.delete(`/numbers/${id}`),
 };
 
 export const callsApi = {
@@ -94,16 +95,32 @@ export const telephonyApi = {
     auth_password: string;
     phone_numbers: string[];
     trunk_name?: string;
+    provider?: string;
   }) => api.post('/telephony/trunks', data),
   listTrunks: () => api.get('/telephony/trunks'),
   deleteTrunk: (id: string) => api.delete(`/telephony/trunks/${id}`),
+  updateTrunkAgent: (trunkId: string, agentId: string) =>
+    api.put(`/telephony/trunks/${trunkId}/agent`, { agent_id: agentId }),
   
-  // Outbound Calls
+  // Dispatch Rules
+  listDispatchRules: () => api.get('/telephony/dispatch-rules'),
+  
+  // Outbound Calls (native LiveKit SIP)
   outbound: (data: { to_number: string; agent_id: string }) =>
     api.post('/telephony/outbound', data),
   
+  // LiveKit Phone Numbers
+  searchNumbers: (countryCode?: string, areaCode?: string) =>
+    api.get('/telephony/lk-numbers/search', { params: { country_code: countryCode, area_code: areaCode } }),
+  getSipUri: () => api.get('/telephony/lk-numbers/sip-uri'),
+  
   // Status & Diagnostics
   status: () => api.get('/telephony/status'),
+};
+
+export const twilioApi = {
+  outbound: (data: { to_number: string; agent_id: string }) =>
+    api.post('/telephony/twilio/outbound', data),
 };
 
 export const freeswitchApi = {

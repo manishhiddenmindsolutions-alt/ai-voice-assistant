@@ -12,7 +12,7 @@ import {
   Command,
   Monitor
 } from 'lucide-react';
-import api, { agentApi, sessionApi, toolApi } from '../services/api';
+import api, { agentApi, sessionApi, toolApi, numbersApi } from '../services/api';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
