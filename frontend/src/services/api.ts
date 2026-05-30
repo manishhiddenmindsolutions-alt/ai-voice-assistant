@@ -1,8 +1,19 @@
 import axios from 'axios';
 import { useAuthStore } from '../store/useAuthStore';
 
+const getApiBaseURL = () => {
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL;
+  }
+  // Automatically fallback to window origin if accessed via ngrok or non-localhost
+  if (typeof window !== 'undefined' && (window.location.hostname.includes('ngrok') || window.location.hostname !== 'localhost')) {
+    return `${window.location.origin}/api/v1`;
+  }
+  return 'http://localhost:8000/api/v1';
+};
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:8000/api/v1',
+  baseURL: getApiBaseURL(),
 });
 
 // REQUEST INTERCEPTOR: Inject JWT Token

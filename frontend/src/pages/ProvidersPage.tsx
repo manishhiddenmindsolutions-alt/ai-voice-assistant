@@ -447,12 +447,12 @@ const ProvidersPage: React.FC = () => {
             <p className="text-xs text-[var(--text-muted)] mt-2 max-w-xs mx-auto leading-relaxed font-semibold">
               Connect OpenAI, Groq, OpenRouter or other platforms to enable voice agent LLMs.
             </p>
-            <button
+            {/* <button
               onClick={startAddFlow}
               className="mt-5 btn-primary shadow-sm"
             >
               Connect Provider
-            </button>
+            </button> */}
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
