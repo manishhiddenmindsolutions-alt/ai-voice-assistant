@@ -37,51 +37,42 @@ interface ProviderConnection {
 }
 
 import {
-  SiOpenrouter,
+  SiOpenai,
   SiAnthropic,
+  SiGoogle,
   SiDeepgram,
   SiElevenlabs,
-} from "@icons-pack/react-simple-icons";
+} from "react-icons/si";
 
 const OpenAILogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M21.7 10.7a4.9 4.9 0 0 0-.4-2.4 5 5 0 0 0-2.4-2.4c-.2-.1-.5-.2-.8-.2a4.9 4.9 0 0 0-4-1.9 5 5 0 0 0-4.3 2.5h-.2c-.3 0-.6 0-.8.1a4.9 4.9 0 0 0-3.3 3.3c-.1.3-.1.6-.1.8A4.9 4.9 0 0 0 3 14.5a5 5 0 0 0 2.4 2.4c.2.1.5.2.8.2a4.9 4.9 0 0 0 4 1.9 5 5 0 0 0 4.3-2.5h.2c.3 0 .6 0 .8-.1a4.9 4.9 0 0 0 3.3-3.3c.1-.3.1-.6.1-.8a4.9 4.9 0 0 0 2.8-4.6zm-1.8 0c0 .4-.1.8-.3 1.2l-4.5-2.6c0-.1.1-.3.1-.4v-5.2a3.1 3.1 0 0 1 2.3 2.1c.4 1.1.4 2.2.4 4.9zm-7.6-6.2a3.1 3.1 0 0 1 2.2 0L19 7.1c0 .1 0 .2.1.4H8.7l4.4-2.6v.4-.4zM5.5 8.3a3.1 3.1 0 0 1 2.3-2.1v5.2c0 .1.1.3.1.4l-4.5 2.6c-.2-.4-.3-.8-.3-1.2 0-2.7 0-3.8 2.4-4.9zm-.9 6.2c0-.4.1-.8.3-1.2l4.5 2.6c0 .1-.1.3-.1.4v5.2a3.1 3.1 0 0 1-2.3-2.1c-.4-1.1-.4-2.2-.4-4.9zm7.6 6.2a3.1 3.1 0 0 1-2.2 0L5 18.1c0-.1 0-.2-.1-.4h10.4l-4.4 2.6-.1-.1zM18.5 17a3.1 3.1 0 0 1-2.3 2.1v-5.2c0-.1-.1-.3-.1-.4l4.5-2.6c.2.4.3.8.3 1.2 0 2.7 0 3.8-2.4 4.9zm-4.3-2.6l-2.2-1.3-2.2 1.3V11.8l2.2-1.3 2.2 1.3v2.6z" fill="#10a37f"/>
-  </svg>
+  <SiOpenai color="#10A37F" size={20} className="shrink-0" />
 );
 
 const OpenRouterLogo = () => (
-  <SiOpenrouter color="default" size={20} className="shrink-0" />
+  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M12 2L2 22h20L12 2zm0 4.5L18.5 19H5.5L12 6.5zm-2 5h4v2h-4v-2z" fill="#7C3AED" />
+  </svg>
 );
 
 const AnthropicLogo = () => (
-  <SiAnthropic color="default" size={20} className="shrink-0" />
+  <SiAnthropic color="#E0D5C1" size={20} className="shrink-0 bg-[#191919] p-0.5 rounded" />
 );
 
 const GroqLogo = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 10.9 21.1 10 20 10H12V14H18C17.5 16.3 15.4 18 12 18C8.7 18 6 15.3 6 12C6 8.7 8.7 6 12 6C14.3 6 16.3 7.3 17.3 9.3L20.9 7.7C19.2 4.3 15.9 2 12 2Z" fill="#F97316" />
+    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 10.9 21.1 10 20 10H12V14H18C17.5 16.3 15.4 18 12 18C8.7 18 6 15.3 6 12C6 8.7 8.7 6 12 6C14.3 6 16.3 7.3 17.3 9.3L20.9 7.7C19.2 4.3 15.9 2 12 2Z" fill="#F55036" />
   </svg>
 );
 
 const GeminiLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C12 2 12.5 7.5 15.5 10.5C18.5 13.5 24 14 24 14C24 14 18.5 14.5 15.5 17.5C12.5 20.5 12 26 12 26C12 26 11.5 20.5 8.5 17.5C5.5 14.5 0 14 0 14C0 14 5.5 13.5 8.5 10.5C11.5 7.5 12 2 12 2Z" fill="url(#geminiGrad)" />
-    <circle cx="18.5" cy="5.5" r="1.5" fill="#9CC3E6" />
-    <defs>
-      <linearGradient id="geminiGrad" x1="0" y1="14" x2="24" y2="14" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#1A73E8" />
-        <stop offset="50%" stopColor="#7B1FA2" />
-        <stop offset="100%" stopColor="#E040FB" />
-      </linearGradient>
-    </defs>
-  </svg>
+  <SiGoogle color="#4285F4" size={20} className="shrink-0" />
 );
 
 const DeepSeekLogo = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" fill="#0D6EFD" />
+    <circle cx="12" cy="12" r="10" fill="#0054FF" />
     <path d="M7.5 12.5C7.5 10 9.5 8 12 8C14.5 8 16.5 10 16.5 12.5C16.5 15 14.5 17 12 17H7.5V12.5Z" fill="white" />
-    <path d="M10 12.5C10 11.4 10.9 10.5 12 10.5C13.1 10.5 14 11.4 14 12.5C14 13.6 13.1 14.5 12 14.5H10V12.5Z" fill="#0D6EFD" />
+    <path d="M10 12.5C10 11.4 10.9 10.5 12 10.5C13.1 10.5 14 11.4 14 12.5C14 13.6 13.1 14.5 12 14.5H10V12.5Z" fill="#0054FF" />
   </svg>
 );
 
@@ -90,9 +81,8 @@ const TogetherLogo = () => (
     <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="url(#togetherGrad)" />
     <defs>
       <linearGradient id="togetherGrad" x1="2" y1="12" x2="22" y2="12" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#EC4899" />
-        <stop offset="50%" stopColor="#8B5CF6" />
-        <stop offset="100%" stopColor="#3B82F6" />
+        <stop offset="0%" stopColor="#4F46E5" />
+        <stop offset="100%" stopColor="#EC4899" />
       </linearGradient>
     </defs>
   </svg>
@@ -100,30 +90,27 @@ const TogetherLogo = () => (
 
 const SarvamLogo = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="4" y="10" width="2" height="4" rx="1" fill="#F97316"/>
-    <rect x="8" y="7" width="2" height="10" rx="1" fill="#F97316"/>
-    <rect x="12" y="4" width="2" height="16" rx="1" fill="#EF4444"/>
-    <rect x="16" y="7" width="2" height="10" rx="1" fill="#F97316"/>
-    <rect x="20" y="10" width="2" height="4" rx="1" fill="#F97316"/>
+    <rect x="3" y="9" width="2.5" height="6" rx="1.25" fill="#FF9933"/>
+    <rect x="7.5" y="6" width="2.5" height="12" rx="1.25" fill="#FF9933"/>
+    <rect x="12" y="3" width="2.5" height="18" rx="1.25" fill="#128807"/>
+    <rect x="16.5" y="6" width="2.5" height="12" rx="1.25" fill="#128807"/>
+    <rect x="21" y="9" width="2.5" height="6" rx="1.25" fill="#128807"/>
   </svg>
 );
 
 const DeepgramLogo = () => (
-  <SiDeepgram color="default" size={20} className="shrink-0" />
+  <SiDeepgram color="#13EF95" size={20} className="shrink-0" />
 );
 
 const ElevenLabsLogo = () => (
-  <SiElevenlabs color="default" size={20} className="shrink-0" />
+  <SiElevenlabs color="#D2FF00" size={20} className="shrink-0 bg-[#090A0B] p-0.5 rounded" />
 );
 
 const CartesiaLogo = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="url(#cartesiaGrad)" strokeWidth="2.5" strokeDasharray="4 4" />
+    <circle cx="12" cy="12" r="10" stroke="url(#cartesiaGrad)" strokeWidth="2.5" strokeDasharray="3 3" />
     <circle cx="12" cy="12" r="6" stroke="url(#cartesiaGrad)" strokeWidth="2" />
-    <circle cx="12" cy="12" r="3" fill="#EC4899" />
-    <circle cx="12" cy="4" r="1.5" fill="#3B82F6" />
-    <circle cx="20" cy="12" r="1.5" fill="#10B981" />
-    <circle cx="12" cy="20" r="1.5" fill="#F59E0B" />
+    <circle cx="12" cy="12" r="2.5" fill="#EC4899" />
     <defs>
       <linearGradient id="cartesiaGrad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
         <stop stopColor="#3B82F6"/>
@@ -136,9 +123,9 @@ const CartesiaLogo = () => (
 
 const AssemblyAILogo = () => (
   <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="10" width="3.5" height="4" rx="1.75" fill="#F59E0B" />
+    <rect x="3" y="10" width="3.5" height="4" rx="1.75" fill="#FF6D00" />
     <rect x="8.5" y="6" width="3.5" height="12" rx="1.75" fill="#6366F1" />
-    <rect x="14" y="3" width="3.5" height="18" rx="1.75" fill="#F59E0B" />
+    <rect x="14" y="3" width="3.5" height="18" rx="1.75" fill="#FF6D00" />
     <rect x="19.5" y="8" width="3.5" height="8" rx="1.75" fill="#6366F1" />
   </svg>
 );
