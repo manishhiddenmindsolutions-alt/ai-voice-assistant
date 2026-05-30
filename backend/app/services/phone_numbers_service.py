@@ -11,11 +11,8 @@ from livekit import api
 from app.core.config import settings
 
 logger = logging.getLogger("lk-phone-numbers")
-
-
 class LiveKitPhoneNumbersService:
     """Manages LiveKit Cloud phone numbers."""
-
     def __init__(self):
         self.api_key = settings.LIVEKIT_API_KEY
         self.api_secret = settings.LIVEKIT_API_SECRET

@@ -1,6 +1,8 @@
 from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
 from typing import AsyncGenerator
+# pyrefly: ignore [missing-import]
 from app.core.config import settings
+# pyrefly: ignore [missing-import]
 from app.models.orm import Base
 from sqlalchemy import text
 

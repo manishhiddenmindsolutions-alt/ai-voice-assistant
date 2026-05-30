@@ -53,7 +53,7 @@ const AnalyticsPage = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="animate-spin text-zinc-500" size={32} />
+        <Loader2 className="animate-spin" size={32} style={{ color: 'var(--text-muted)' }} />
       </div>
     );
   }
@@ -61,33 +61,32 @@ const AnalyticsPage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div>
-          <div className="mb-5">
-            <BackButton fallbackPath="/" label="Overview" />
+          <div className="mb-3">
+            <BackButton fallbackPath="/" label="Dashboard" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Analytics
           </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(15,98,254,0.4)] animate-pulse" />
-            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider leading-none">
-              Performance Intelligence
-            </p>
-          </div>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            Performance insights and call metrics
+          </p>
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex bg-zinc-950/60 p-1 rounded-2xl border border-zinc-800 self-start lg:self-auto">
+        <div className="flex p-1 rounded-lg self-start lg:self-auto" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
           {[7, 14, 30].map(d => (
             <button
               key={d}
               onClick={() => setTimeRange(d)}
-              className={`px-4 py-2 rounded-xl text-xs font-medium uppercase tracking-wider transition-all duration-300 ${
-                timeRange === d
-                  ? 'bg-zinc-900/60 text-primary border border-zinc-800 shadow-sm'
-                  : 'text-zinc-500 hover:text-zinc-300'
-              }`}
+              className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200"
+              style={{
+                backgroundColor: timeRange === d ? 'var(--surface)' : 'transparent',
+                color: timeRange === d ? 'var(--primary)' : 'var(--text-muted)',
+                border: timeRange === d ? '1px solid var(--border)' : '1px solid transparent',
+                boxShadow: timeRange === d ? 'var(--card-shadow)' : 'none',
+              }}
             >
               {d}D
             </button>
@@ -95,65 +94,39 @@ const AnalyticsPage = () => {
         </div>
       </div>
 
-      {/* STATS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
-        <StatCard
-          label="Total Calls"
-          value={data?.total_calls?.toLocaleString() || '0'}
-          icon={<Phone size={16} />}
-          iconBg="bg-primary/10 text-primary border-primary/20"
-          trend={`${timeRange}d window`}
-        />
-        <StatCard
-          label="Total Minutes"
-          value={`${data?.total_minutes?.toLocaleString() || '0'}m`}
-          icon={<Clock size={16} />}
-          iconBg="bg-cyan-500/10 text-cyan-400 border-cyan-500/20"
-          trend="Computed time"
-        />
-        <StatCard
-          label="Avg Duration"
-          value={`${Math.round(data?.avg_duration_seconds || 0)}s`}
-          icon={<Activity size={16} />}
-          iconBg="bg-blue-500/10 text-blue-400 border-blue-500/20"
-          trend="Per call"
-        />
-        <StatCard
-          label="Success Rate"
-          value={`${data?.success_rate || 0}%`}
-          icon={<CheckCircle2 size={16} />}
-          iconBg="bg-primary/10 text-primary border-primary/20"
-          trend="Connected calls"
-        />
+      {/* STATS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <StatCard label="Total Calls" value={data?.total_calls?.toLocaleString() || '0'} icon={<Phone size={16} />} color="var(--primary)" trend={`${timeRange}d`} />
+        <StatCard label="Total Minutes" value={`${data?.total_minutes?.toLocaleString() || '0'}m`} icon={<Clock size={16} />} color="#06B6D4" trend="Computed" />
+        <StatCard label="Avg Duration" value={`${Math.round(data?.avg_duration_seconds || 0)}s`} icon={<Activity size={16} />} color="var(--info)" trend="Per call" />
+        <StatCard label="Success Rate" value={`${data?.success_rate || 0}%`} icon={<CheckCircle2 size={16} />} color="var(--success)" trend="Connected" />
       </div>
 
-      {/* MAIN CONTENT GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        {/* CALL VOLUME CHART */}
-        <div className="lg:col-span-2 card-premium p-6">
-          <div className="flex items-center justify-between mb-6">
+      {/* MAIN */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        {/* VOLUME CHART */}
+        <div className="lg:col-span-2 card p-5">
+          <div className="flex items-center justify-between mb-5">
             <div>
-              <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider flex items-center gap-2">
-                <BarChart3 size={15} className="text-primary" />
+              <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+                <BarChart3 size={15} style={{ color: 'var(--primary)' }} />
                 Call Volume
               </h2>
-              <p className="text-[10px] text-zinc-500 mt-1 font-semibold uppercase tracking-wider">
-                Daily call distribution — last {timeRange} days
-              </p>
+              <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Daily distribution — last {timeRange} days</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-sm bg-blue-500/60" />
-                <span className="text-[9px] text-zinc-500 font-bold uppercase">Inbound</span>
+                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'rgba(59,130,246,0.6)' }} />
+                <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Inbound</span>
               </div>
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-sm bg-cyan-500/60" />
-                <span className="text-[9px] text-zinc-500 font-bold uppercase">Outbound</span>
+                <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: 'rgba(6,182,212,0.6)' }} />
+                <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Outbound</span>
               </div>
             </div>
           </div>
 
-          <div className="flex items-end gap-1.5 h-48">
+          <div className="flex items-end gap-1 h-44">
             {(data?.daily_volume || []).map((day, i) => {
               const height = maxVolume > 0 ? (day.count / maxVolume) * 100 : 0;
               const inboundPct = day.count > 0 ? (day.inbound / day.count) * 100 : 0;
@@ -163,16 +136,15 @@ const AnalyticsPage = () => {
                     initial={{ height: 0 }}
                     animate={{ height: `${Math.max(height, 2)}%` }}
                     transition={{ duration: 0.5, delay: i * 0.02 }}
-                    className="w-full rounded-lg overflow-hidden relative border border-zinc-800/50 group-hover/bar:border-zinc-600 transition-all"
+                    className="w-full rounded-md overflow-hidden relative transition-all"
+                    style={{ border: '1px solid var(--border)' }}
                   >
-                    {/* Stacked bars: inbound (blue) on bottom, outbound (orange) on top */}
-                    <div className="absolute bottom-0 left-0 right-0 bg-blue-500/40" style={{ height: `${inboundPct}%` }} />
-                    <div className="absolute top-0 left-0 right-0 bg-cyan-500/30" style={{ height: `${100 - inboundPct}%` }} />
+                    <div className="absolute bottom-0 left-0 right-0" style={{ backgroundColor: 'rgba(59,130,246,0.35)', height: `${inboundPct}%` }} />
+                    <div className="absolute top-0 left-0 right-0" style={{ backgroundColor: 'rgba(6,182,212,0.25)', height: `${100 - inboundPct}%` }} />
                   </motion.div>
-                  {/* Tooltip */}
-                  <div className="invisible group-hover/bar:visible absolute -top-12 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-800 px-2.5 py-1.5 text-[9px] font-mono text-zinc-200 rounded-lg whitespace-nowrap shadow-xl z-10 animate-in fade-in zoom-in duration-200">
-                    <strong className="text-zinc-100">{day.count}</strong> calls
-                    <div className="text-zinc-500">{new Date(day.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</div>
+                  <div className="invisible group-hover/bar:visible absolute -top-10 left-1/2 -translate-x-1/2 px-2 py-1 text-[10px] font-mono rounded-md whitespace-nowrap shadow-md z-10" style={{ backgroundColor: 'var(--card-bg)', border: '1px solid var(--border)', color: 'var(--text-primary)' }}>
+                    <strong>{day.count}</strong> calls
+                    <div style={{ color: 'var(--text-muted)' }}>{new Date(day.date).toLocaleDateString([], { month: 'short', day: 'numeric' })}</div>
                   </div>
                 </div>
               );
@@ -180,35 +152,26 @@ const AnalyticsPage = () => {
           </div>
         </div>
 
-        {/* DIRECTION BREAKDOWN */}
-        <div className="card-premium p-6 flex flex-col">
-          <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-6 flex items-center gap-2">
-            <TrendingUp size={15} className="text-primary" />
+        {/* DIRECTION */}
+        <div className="card p-5 flex flex-col">
+          <h2 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <TrendingUp size={15} style={{ color: 'var(--primary)' }} />
             Direction Breakdown
           </h2>
 
-          <div className="flex-1 flex flex-col justify-center space-y-6">
-            {/* Visual Ring */}
-            <div className="relative w-40 h-40 mx-auto">
+          <div className="flex-1 flex flex-col justify-center space-y-5">
+            <div className="relative w-36 h-36 mx-auto">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 100 100">
-                <circle cx="50" cy="50" r="40" fill="none" stroke="rgb(39, 39, 42)" strokeWidth="8" />
+                <circle cx="50" cy="50" r="40" fill="none" stroke="var(--border)" strokeWidth="8" />
                 {data && data.total_calls > 0 && (
                   <>
-                    <motion.circle
-                      cx="50" cy="50" r="40" fill="none"
-                      stroke="rgb(96, 165, 250)"
-                      strokeWidth="8"
-                      strokeLinecap="round"
+                    <motion.circle cx="50" cy="50" r="40" fill="none" stroke="rgb(96, 165, 250)" strokeWidth="8" strokeLinecap="round"
                       strokeDasharray={`${(data.inbound_count / data.total_calls) * 251.3} 251.3`}
                       initial={{ strokeDasharray: '0 251.3' }}
                       animate={{ strokeDasharray: `${(data.inbound_count / data.total_calls) * 251.3} 251.3` }}
                       transition={{ duration: 1 }}
                     />
-                    <motion.circle
-                      cx="50" cy="50" r="40" fill="none"
-                      stroke="rgb(34, 211, 238)"
-                      strokeWidth="8"
-                      strokeLinecap="round"
+                    <motion.circle cx="50" cy="50" r="40" fill="none" stroke="rgb(6, 182, 212)" strokeWidth="8" strokeLinecap="round"
                       strokeDasharray={`${(data.outbound_count / data.total_calls) * 251.3} 251.3`}
                       strokeDashoffset={`${-(data.inbound_count / data.total_calls) * 251.3}`}
                       initial={{ strokeDasharray: '0 251.3' }}
@@ -219,65 +182,57 @@ const AnalyticsPage = () => {
                 )}
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-2xl font-bold text-zinc-100">{data?.total_calls || 0}</span>
-                <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider">Total</span>
+                <span className="text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>{data?.total_calls || 0}</span>
+                <span className="text-[10px] font-medium" style={{ color: 'var(--text-muted)' }}>Total</span>
               </div>
             </div>
 
-            {/* Legend */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-2">
-                  <PhoneIncoming size={13} className="text-blue-400" />
-                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Inbound</span>
+                  <PhoneIncoming size={13} style={{ color: 'var(--info)' }} />
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Inbound</span>
                 </div>
-                <span className="text-sm font-bold text-zinc-100 font-mono">{data?.inbound_count || 0}</span>
+                <span className="text-sm font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{data?.inbound_count || 0}</span>
               </div>
-              <div className="flex items-center justify-between p-3 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+              <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                 <div className="flex items-center gap-2">
-                  <PhoneOutgoing size={13} className="text-cyan-400" />
-                  <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Outbound</span>
+                  <PhoneOutgoing size={13} style={{ color: '#06B6D4' }} />
+                  <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>Outbound</span>
                 </div>
-                <span className="text-sm font-bold text-zinc-100 font-mono">{data?.outbound_count || 0}</span>
+                <span className="text-sm font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{data?.outbound_count || 0}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* AGENT PERFORMANCE + STATUS BREAKDOWN */}
+      {/* AGENT PERF + STATUS */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* AGENT PERFORMANCE */}
-        <div className="card-premium p-6">
-          <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-            <Users size={15} className="text-primary" />
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <Users size={15} style={{ color: 'var(--primary)' }} />
             Agent Performance
           </h2>
-
           {(data?.agent_stats || []).length === 0 ? (
-            <div className="py-10 text-center text-xs font-semibold text-zinc-600 uppercase tracking-wider border border-dashed border-zinc-800 rounded-2xl">
-              No agent data yet
-            </div>
+            <div className="py-8 text-center text-xs font-medium rounded-lg" style={{ border: '2px dashed var(--border)', color: 'var(--text-muted)' }}>No agent data yet</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {(data?.agent_stats || []).map((agent, i) => {
                 const maxCalls = Math.max(...(data?.agent_stats || []).map(a => a.call_count), 1);
                 const barWidth = (agent.call_count / maxCalls) * 100;
                 return (
-                  <div key={i} className="p-4 bg-zinc-950/30 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all duration-300">
+                  <div key={i} className="p-3 rounded-lg transition-all" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-xs font-bold text-zinc-200">{agent.agent_name}</span>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[10px] text-zinc-500 font-mono font-bold">{agent.call_count} calls</span>
-                        <span className="text-[10px] text-zinc-600 font-mono">{agent.total_minutes}m</span>
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{agent.agent_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] font-mono font-medium" style={{ color: 'var(--text-secondary)' }}>{agent.call_count} calls</span>
+                        <span className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>{agent.total_minutes}m</span>
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${barWidth}%` }}
-                        transition={{ duration: 0.8, delay: i * 0.1 }}
-                        className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 rounded-full"
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${barWidth}%` }} transition={{ duration: 0.8, delay: i * 0.1 }}
+                        className="h-full rounded-full" style={{ background: 'linear-gradient(to right, var(--primary), #06B6D4)' }}
                       />
                     </div>
                   </div>
@@ -287,59 +242,37 @@ const AnalyticsPage = () => {
           )}
         </div>
 
-        {/* STATUS BREAKDOWN */}
-        <div className="card-premium p-6">
-          <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-            <Zap size={15} className="text-primary" />
+        <div className="card p-5">
+          <h2 className="text-sm font-semibold mb-4 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+            <Zap size={15} style={{ color: 'var(--primary)' }} />
             Status Distribution
           </h2>
-
           {Object.keys(data?.status_breakdown || {}).length === 0 ? (
-            <div className="py-10 text-center text-xs font-semibold text-zinc-600 uppercase tracking-wider border border-dashed border-zinc-800 rounded-2xl">
-              No status data yet
-            </div>
+            <div className="py-8 text-center text-xs font-medium rounded-lg" style={{ border: '2px dashed var(--border)', color: 'var(--text-muted)' }}>No status data yet</div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {Object.entries(data?.status_breakdown || {}).map(([status, count], i) => {
                 const totalForStatus = Object.values(data?.status_breakdown || {}).reduce((a, b) => a + b, 0);
                 const pct = totalForStatus > 0 ? Math.round((count / totalForStatus) * 100) : 0;
-                
                 const colorMap: Record<string, string> = {
-                  completed: 'from-emerald-500 to-emerald-600',
-                  active: 'from-blue-500 to-blue-600',
-                  initiated: 'from-amber-500 to-amber-600',
-                  connecting: 'from-yellow-500 to-yellow-600',
-                  failed: 'from-red-500 to-red-600',
-                  ended: 'from-zinc-500 to-zinc-600',
+                  completed: 'var(--success)', active: 'var(--info)', initiated: 'var(--warning)', 
+                  connecting: '#EAB308', failed: 'var(--danger)', ended: 'var(--text-muted)',
                 };
-                
-                const dotColor: Record<string, string> = {
-                  completed: 'bg-emerald-400',
-                  active: 'bg-blue-400',
-                  initiated: 'bg-amber-400',
-                  connecting: 'bg-yellow-400',
-                  failed: 'bg-red-400',
-                  ended: 'bg-zinc-400',
-                };
-
                 return (
-                  <div key={status} className="p-4 bg-zinc-950/30 border border-zinc-900 rounded-xl hover:border-zinc-800 transition-all duration-300">
+                  <div key={status} className="p-3 rounded-lg transition-all" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${dotColor[status] || 'bg-zinc-400'}`} />
-                        <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">{status}</span>
+                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: colorMap[status] || 'var(--text-muted)' }} />
+                        <span className="text-xs font-semibold capitalize" style={{ color: 'var(--text-primary)' }}>{status}</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-bold text-zinc-100 font-mono">{count}</span>
-                        <span className="text-[10px] text-zinc-500 font-mono">({pct}%)</span>
+                        <span className="text-sm font-bold font-mono" style={{ color: 'var(--text-primary)' }}>{count}</span>
+                        <span className="text-[11px] font-mono" style={{ color: 'var(--text-muted)' }}>({pct}%)</span>
                       </div>
                     </div>
-                    <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.8, delay: i * 0.1 }}
-                        className={`h-full bg-gradient-to-r ${colorMap[status] || 'from-zinc-500 to-zinc-600'} rounded-full`}
+                    <div className="w-full h-1.5 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                      <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.8, delay: i * 0.1 }}
+                        className="h-full rounded-full" style={{ backgroundColor: colorMap[status] || 'var(--text-muted)' }}
                       />
                     </div>
                   </div>
@@ -353,19 +286,17 @@ const AnalyticsPage = () => {
   );
 };
 
-const StatCard = ({ label, value, icon, iconBg, trend }: any) => (
-  <div className="card-premium p-5 flex flex-col justify-between min-h-[130px]">
+const StatCard = ({ label, value, icon, color, trend }: any) => (
+  <div className="card p-4 flex flex-col justify-between min-h-[120px]">
     <div className="flex items-center justify-between">
-      <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${iconBg}`}>
+      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}12`, color }}>
         {icon}
       </div>
-      <span className="text-[9px] font-medium text-zinc-500 bg-zinc-900/40 border border-zinc-800 px-2 py-0.5 rounded-lg uppercase tracking-wider">
-        {trend}
-      </span>
+      <span className="badge text-[10px] py-0.5">{trend}</span>
     </div>
-    <div className="space-y-1 mt-3">
-      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{label}</p>
-      <h3 className="text-2xl font-semibold text-zinc-100 tracking-tight">{value}</h3>
+    <div className="mt-3">
+      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <h3 className="text-xl font-bold mt-0.5" style={{ color: 'var(--text-primary)' }}>{value}</h3>
     </div>
   </div>
 );

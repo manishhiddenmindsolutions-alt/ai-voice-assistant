@@ -22,16 +22,16 @@ const PRESETS = [
 ];
 
 const PERMISSIONS = [
-  { name: 'Secure WebRTC Signaling', desc: 'Allow real-time speech signaling over WebRTC gateways.', status: 'Authorized' },
-  { name: 'Model Inference Bypass', desc: 'Allows direct execution of BYOK models per custom router rules.', status: 'Authorized' },
-  { name: 'Tools Execution & Dispatch', desc: 'Read/write permissions for sheets sync, webhooks, and calendar.', status: 'Authorized' },
-  { name: 'Platform Admin Key Rotation', desc: 'Full privileges to encrypt and rotate credentials keys.', status: 'System Default' }
+  { name: 'WebRTC Signaling', desc: 'Allow real-time speech signaling over WebRTC gateways.', status: 'Authorized' },
+  { name: 'Model Inference', desc: 'Execute models per custom router rules.', status: 'Authorized' },
+  { name: 'Tools Execution', desc: 'Read/write permissions for sheets, webhooks, and calendar.', status: 'Authorized' },
+  { name: 'Admin Key Rotation', desc: 'Full privileges to rotate credentials and keys.', status: 'Default' }
 ];
 
 const ProfileStat = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="flex justify-between items-center">
-    <span className="text-sm text-zinc-500">{label}</span>
-    <span className="text-sm font-semibold text-zinc-100">{value}</span>
+  <div className="flex justify-between items-center py-2" style={{ borderBottom: '1px solid var(--border)' }}>
+    <span className="text-sm" style={{ color: 'var(--text-muted)' }}>{label}</span>
+    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{value}</span>
   </div>
 );
 
@@ -43,7 +43,6 @@ export const ProfilePage = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [showToken, setShowToken] = useState(false);
   
-  // Sync state when user object loads/updates
   useEffect(() => {
     if (user) {
       setFullName(user.full_name || '');
@@ -51,15 +50,9 @@ export const ProfilePage = () => {
     }
   }, [user]);
   
-  // Asset Metrics
-  const [metrics, setMetrics] = useState({
-    agents: 0,
-    tools: 0,
-    numbers: 0
-  });
+  const [metrics, setMetrics] = useState({ agents: 0, tools: 0, numbers: 0 });
 
   useEffect(() => {
-    // Load asset counts to showcase on profile
     const loadMetrics = async () => {
       try {
         const [agentsRes, toolsRes, numbersRes] = await Promise.all([
@@ -83,19 +76,12 @@ export const ProfilePage = () => {
     e.preventDefault();
     setIsUpdating(true);
     try {
-      const res = await authApi.updateProfile({
-        full_name: fullName,
-        avatar_url: avatarUrl
-      });
-      // Update local storage via auth store
+      const res = await authApi.updateProfile({ full_name: fullName, avatar_url: avatarUrl });
       const token = useAuthStore.getState().token;
-      if (token) {
-        setAuth(token, res.data);
-      }
+      if (token) setAuth(token, res.data);
       toast.success('Profile updated successfully!');
     } catch (err: any) {
-      console.error(err);
-      toast.error(err.response?.data?.detail || 'Failed to update registry details.');
+      toast.error(err.response?.data?.detail || 'Failed to update profile.');
     } finally {
       setIsUpdating(false);
     }
@@ -103,18 +89,13 @@ export const ProfilePage = () => {
 
   const handleLogout = () => {
     logout();
-    toast.success('Session terminated.');
+    toast.success('Logged out successfully.');
     navigate('/login');
   };
 
   const formatDate = (dateString?: string) => {
-    if (!dateString) return 'Active Operator';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const initials = user?.full_name
@@ -123,310 +104,144 @@ export const ProfilePage = () => {
 
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
-
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
-
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div>
-          <div className="mb-5">
-            <BackButton fallbackPath="/" label="Overview" />
+          <div className="mb-3">
+            <BackButton fallbackPath="/" label="Dashboard" />
           </div>
-
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Account Settings
           </h1>
-
-          <p className="text-sm text-zinc-500 mt-2">
-            Manage your profile, workspace access and developer credentials.
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            Manage your profile and workspace access.
           </p>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="h-11 px-5 rounded-xl border border-red-500/20 bg-red-500/5 text-red-400 hover:bg-red-500 hover:text-white text-sm font-medium transition flex items-center gap-2"
-        >
+        <button onClick={handleLogout} className="btn-danger self-start lg:self-auto">
           <LogOut size={15} />
           Logout
         </button>
       </div>
 
-      {/* MAIN GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-8">
-
-        {/* SIDEBAR PROFILE */}
-        <div className="space-y-6">
-
+      {/* GRID */}
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
+        
+        {/* LEFT SIDEBAR */}
+        <div className="space-y-4">
           {/* PROFILE CARD */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-
+          <div className="card p-6">
             <div className="flex flex-col items-center text-center">
-
-              {/* AVATAR */}
-              <div className="relative mb-5">
-
-                <div className="w-24 h-24 rounded-2xl overflow-hidden bg-zinc-800 border border-zinc-700 flex items-center justify-center">
-
+              <div className="relative mb-4">
+                <div 
+                  className="w-20 h-20 rounded-xl overflow-hidden flex items-center justify-center"
+                  style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}
+                >
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="avatar"
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-2xl font-semibold text-zinc-100">
-                      {initials}
-                    </span>
+                    <span className="text-xl font-semibold" style={{ color: 'var(--text-primary)' }}>{initials}</span>
                   )}
                 </div>
-
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-emerald-500 border-2 border-zinc-950" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-md border-2" style={{ backgroundColor: 'var(--success)', borderColor: 'var(--card-bg)' }} />
               </div>
-
-              {/* NAME */}
-              <h2 className="text-xl font-semibold text-zinc-100">
-                {user?.full_name || 'Operator'}
-              </h2>
-
-              <p className="text-sm text-zinc-500 mt-1">
-                {user?.email}
-              </p>
-
-              {/* BADGE */}
-              <div className="mt-4 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
-                Pro Workspace
-              </div>
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>{user?.full_name || 'User'}</h2>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>{user?.email}</p>
+              <div className="mt-3 badge-primary text-xs">Pro Workspace</div>
             </div>
-
-            {/* INFO */}
-            <div className="mt-8 space-y-5">
-
-              <ProfileStat
-                label="Agents"
-                value={metrics.agents}
-              />
-
-              <ProfileStat
-                label="Tools"
-                value={metrics.tools}
-              />
-
-              <ProfileStat
-                label="Phone Numbers"
-                value={metrics.numbers}
-              />
-
-              <ProfileStat
-                label="Joined"
-                value={formatDate(user?.created_at)}
-              />
+            <div className="mt-6 space-y-0">
+              <ProfileStat label="Agents" value={metrics.agents} />
+              <ProfileStat label="Tools" value={metrics.tools} />
+              <ProfileStat label="Phone Numbers" value={metrics.numbers} />
+              <ProfileStat label="Joined" value={formatDate(user?.created_at)} />
             </div>
           </div>
 
           {/* TOKEN CARD */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-
-            <div className="flex items-center justify-between mb-5">
-
+          <div className="card p-6">
+            <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="text-base font-semibold text-zinc-100">
-                  API Token
-                </h3>
-
-                <p className="text-sm text-zinc-500 mt-1">
-                  Used for external requests.
-                </p>
+                <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>API Token</h3>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>For external requests.</p>
               </div>
-
-              <div className="w-10 h-10 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-300">
+              <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>
                 <Key size={16} />
               </div>
             </div>
-
-            <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-950 flex items-center justify-between gap-3">
-
-              <p className="text-xs font-mono text-zinc-400 break-all select-all flex-1">
-                {showToken ? (useAuthStore.getState().token || 'No token') : '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••'}
+            <div className="p-3 rounded-lg flex items-center gap-2" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
+              <p className="text-xs font-mono break-all select-all flex-1" style={{ color: 'var(--text-secondary)' }}>
+                {showToken ? (useAuthStore.getState().token || 'No token') : '••••••••••••••••••••••••••'}
               </p>
-
-              <button
-                type="button"
-                onClick={() => setShowToken(!showToken)}
-                className="w-8 h-8 rounded-lg border border-zinc-800 bg-zinc-900/50 text-zinc-405 hover:text-zinc-200 transition flex items-center justify-center shrink-0"
-                title={showToken ? "Hide token" : "Show token"}
-              >
-                {showToken ? <EyeOff size={14} /> : <Eye size={14} />}
+              <button onClick={() => setShowToken(!showToken)} className="w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition" style={{ border: '1px solid var(--border)', backgroundColor: 'var(--surface)', color: 'var(--text-muted)' }}>
+                {showToken ? <EyeOff size={13} /> : <Eye size={13} />}
               </button>
             </div>
-
             <button
               onClick={() => {
                 const token = useAuthStore.getState().token;
-
-                if (token) {
-                  navigator.clipboard.writeText(token);
-                  toast.success('Token copied');
-                }
+                if (token) { navigator.clipboard.writeText(token); toast.success('Token copied'); }
               }}
-              className="mt-4 w-full h-10 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-200 hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+              className="btn-outline w-full mt-3 text-xs h-9"
             >
-              <Copy size={14} />
+              <Copy size={13} />
               Copy Token
             </button>
           </div>
         </div>
 
-        {/* RIGHT SETTINGS */}
-        <div className="space-y-8">
-
+        {/* RIGHT CONTENT */}
+        <div className="space-y-6">
           {/* PROFILE FORM */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-
-            <div className="mb-6">
-
-              <h2 className="text-xl font-semibold text-zinc-100">
-                Profile Details
-              </h2>
-
-              <p className="text-sm text-zinc-500 mt-1">
-                Update your personal information and avatar.
-              </p>
+          <div className="card p-6">
+            <div className="mb-5">
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Profile Details</h2>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Update your personal information.</p>
             </div>
-
-            <form
-              onSubmit={handleUpdateProfile}
-              className="space-y-6"
-            >
-
-              {/* NAME */}
-              <div className="space-y-2">
-
-                <label className="text-sm font-medium text-zinc-300">
-                  Full Name
-                </label>
-
+            <form onSubmit={handleUpdateProfile} className="space-y-5">
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Full Name</label>
                 <div className="relative">
-
-                  <UserIcon
-                    size={16}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"
-                  />
-
-                  <input
-                    type="text"
-                    value={fullName}
-                    onChange={(e) =>
-                      setFullName(e.target.value)
-                    }
-                    className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 pl-12 pr-4 text-sm outline-none focus:border-primary transition"
-                    placeholder="Your name"
-                  />
+                  <UserIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
+                  <input type="text" value={fullName} onChange={(e) => setFullName(e.target.value)} className="input-field pl-10" placeholder="Your name" />
                 </div>
               </div>
-
-              {/* AVATAR URL */}
-              <div className="space-y-2">
-
-                <label className="text-sm font-medium text-zinc-300">
-                  Avatar URL
-                </label>
-
-                <input
-                  type="url"
-                  value={avatarUrl}
-                  onChange={(e) =>
-                    setAvatarUrl(e.target.value)
-                  }
-                  className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition"
-                  placeholder="https://..."
-                />
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Avatar URL</label>
+                <input type="url" value={avatarUrl} onChange={(e) => setAvatarUrl(e.target.value)} className="input-field" placeholder="https://..." />
               </div>
-
-              {/* PRESETS */}
-              <div className="space-y-3">
-
-                <label className="text-sm font-medium text-zinc-300">
-                  Presets
-                </label>
-
-                <div className="flex flex-wrap gap-3">
-
+              <div className="space-y-2">
+                <label className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Presets</label>
+                <div className="flex flex-wrap gap-2">
                   {PRESETS.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => setAvatarUrl(preset)}
-                      className={`w-14 h-14 rounded-2xl overflow-hidden border transition ${
-                        avatarUrl === preset
-                          ? 'border-primary'
-                          : 'border-zinc-800 hover:border-zinc-700'
-                      }`}
+                    <button key={idx} type="button" onClick={() => setAvatarUrl(preset)}
+                      className="w-12 h-12 rounded-lg overflow-hidden transition-all"
+                      style={{ border: avatarUrl === preset ? '2px solid var(--primary)' : '1px solid var(--border)' }}
                     >
-                      <img
-                        src={preset}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
+                      <img src={preset} alt="" className="w-full h-full object-cover" />
                     </button>
                   ))}
                 </div>
               </div>
-
-              {/* SAVE */}
-              <button
-                type="submit"
-                disabled={isUpdating}
-                className="h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2"
-              >
-                {isUpdating ? (
-                  <>
-                    <Loader2
-                      size={15}
-                      className="animate-spin"
-                    />
-                    Saving...
-                  </>
-                ) : (
-                  'Save Changes'
-                )}
+              <button type="submit" disabled={isUpdating} className="btn-primary h-10">
+                {isUpdating ? (<><Loader2 size={15} className="animate-spin" /> Saving...</>) : 'Save Changes'}
               </button>
             </form>
           </div>
 
           {/* PERMISSIONS */}
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
-
-            <div className="mb-6">
-
-              <h2 className="text-xl font-semibold text-zinc-100">
-                Permissions
-              </h2>
-
-              <p className="text-sm text-zinc-550 mt-1">
-                Workspace access and capabilities.
-              </p>
+          <div className="card p-6">
+            <div className="mb-5">
+              <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Permissions</h2>
+              <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Workspace access and capabilities.</p>
             </div>
-
-            <div className="space-y-4">
-
+            <div className="space-y-3">
               {PERMISSIONS.map((perm, idx) => (
-                <div
-                  key={idx}
-                  className="rounded-xl border border-zinc-800 bg-zinc-950 p-5 flex items-start justify-between gap-4"
-                >
-
+                <div key={idx} className="p-4 rounded-lg flex items-start justify-between gap-3" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                   <div>
-                    <h4 className="text-sm font-medium text-zinc-100">
-                      {perm.name}
-                    </h4>
-
-                    <p className="text-sm text-zinc-500 mt-1 leading-relaxed">
-                      {perm.desc}
-                    </p>
+                    <h4 className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{perm.name}</h4>
+                    <p className="text-xs mt-0.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{perm.desc}</p>
                   </div>
-
-                  <span className="px-3 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium whitespace-nowrap">
-                    {perm.status}
-                  </span>
+                  <span className="badge-success text-[11px] py-0.5 shrink-0">{perm.status}</span>
                 </div>
               ))}
             </div>

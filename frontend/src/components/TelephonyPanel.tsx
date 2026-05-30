@@ -3,7 +3,6 @@ import {
   Phone, 
   PhoneOutgoing, 
   History, 
-  MoreVertical, 
   Plus, 
   Trash2, 
   Smartphone, 
@@ -185,7 +184,6 @@ export const TelephonyPanel: React.FC = () => {
     
     setLoading(true);
     try {
-      // ALWAYS route outbound calls via Twilio REST API + LiveKit SIP Bridge for 100% trial-safe reliability
       await twilioApi.outbound({
         to_number: targetNumber,
         agent_id: selectedAgentId
@@ -210,7 +208,6 @@ export const TelephonyPanel: React.FC = () => {
       return;
     }
     
-    // Collect phone numbers from the PSTN registry
     const phoneNumbers = numbers.map(n => n.number);
     if (phoneNumbers.length === 0) {
       toast.error('Register at least one phone number in the PSTN Registry first');
@@ -254,7 +251,6 @@ export const TelephonyPanel: React.FC = () => {
     setTimeout(() => setCopiedText(null), 2000);
   };
 
-  // Helper to dynamically resolve public Twilio webhooks in local & production environment
   const resolveWebhookUrl = (path: string) => {
     const origin = window.location.origin;
     const backendBase = origin.includes('localhost') || origin.includes('127.0.0.1')
@@ -264,92 +260,82 @@ export const TelephonyPanel: React.FC = () => {
   };
 
   return (
-    <div className="animate-in fade-in duration-500 space-y-8 font-sans">
+    <div className="animate-in fade-in duration-500 space-y-6 font-sans text-[var(--text-primary)]">
       {/* HEADER SECTION */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
         <div>
-          <div className="mb-5">
+          <div className="mb-4">
             <BackButton fallbackPath="/" label="Overview" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
             Telephony Hub
           </h1>
-          <div className="flex items-center gap-2 mt-2">
+          <div className="flex items-center gap-2 mt-1">
             <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]"></span>
             </span>
-            <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Enterprise Inbound & Outbound Calling</p>
+            <p className="text-[var(--text-secondary)] text-xs font-medium uppercase tracking-wider">Enterprise Inbound & Outbound Calling</p>
           </div>
         </div>
 
         {/* HIGH-END NAVIGATION TABS */}
-        <div className="flex bg-zinc-950 p-1.5 rounded-2xl border border-zinc-900/80 self-start lg:self-auto shadow-inner relative">
+        <div className="flex bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] self-start lg:self-auto shadow-sm">
           <button
             onClick={() => setActiveTab('gateways')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 relative z-10 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
               activeTab === 'gateways'
-                ? 'bg-gradient-to-r from-zinc-900 to-zinc-900/80 text-red-500 border border-zinc-800/80'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <Server size={13} className={activeTab === 'gateways' ? 'text-red-500' : 'text-zinc-500'} />
+            <Server size={13} />
             Call Center
           </button>
           <button
             onClick={() => setActiveTab('twilio')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 relative z-10 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
               activeTab === 'twilio'
-                ? 'bg-gradient-to-r from-zinc-900 to-zinc-900/80 text-red-500 border border-zinc-800/80'
-                : 'text-zinc-500 hover:text-zinc-300'
+                ? 'bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
-            <Key size={13} className={activeTab === 'twilio' ? 'text-red-500' : 'text-zinc-500'} />
+            <Key size={13} />
             SIP Gateways
           </button>
         </div>
       </div>
 
       {activeTab === 'gateways' ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Outbound Dialer Column */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="relative overflow-hidden rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6 transition-all duration-300 hover:border-zinc-800/40 group">
-              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
-              <div className="absolute -right-20 -top-20 w-40 h-40 bg-red-500/5 rounded-full blur-3xl pointer-events-none transition-all duration-500 group-hover:bg-red-500/10" />
-              
-              <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-3">
-                <div className="p-2.5 bg-red-500/10 rounded-xl text-red-400 border border-red-500/10">
-                  <PhoneOutgoing size={15} />
-                </div>
+          <div className="lg:col-span-2 space-y-6">
+            <div className="card space-y-5">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border)] pb-3">
+                <PhoneOutgoing size={16} className="text-[var(--primary)]" />
                 Outbound Dispatch Control
               </h2>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Target Persona</label>
-                    <div className="relative">
-                      <select 
-                        className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm font-semibold text-zinc-200 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all cursor-pointer appearance-none"
-                        value={selectedAgentId}
-                        onChange={e => setSelectedAgentId(e.target.value)}
-                      >
-                        <option value="" className="bg-zinc-950 text-zinc-400">Select Voice Agent...</option>
-                        {agents.map(a => (
-                          <option key={a.id} value={a.id} className="bg-zinc-950 text-zinc-200">{a.agentName}</option>
-                        ))}
-                      </select>
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-500">
-                        <MoreVertical size={14} />
-                      </div>
-                    </div>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Target Persona</label>
+                    <select 
+                      className="input-field cursor-pointer font-medium"
+                      value={selectedAgentId}
+                      onChange={e => setSelectedAgentId(e.target.value)}
+                    >
+                      <option value="">Select Voice Agent...</option>
+                      {agents.map(a => (
+                        <option key={a.id} value={a.id}>{a.agentName}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Destination Number (PSTN Node)</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Destination Number</label>
                     <input 
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm font-mono text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700"
-                      placeholder="+91 XXXXX XXXXX"
+                      className="input-field font-mono"
+                      placeholder="+1XXXXXXXXXX"
                       value={targetNumber}
                       onChange={e => setTargetNumber(e.target.value)}
                     />
@@ -357,25 +343,21 @@ export const TelephonyPanel: React.FC = () => {
                 </div>
 
                 {/* Highly Reassuring Status Banner */}
-                <div className="flex items-center gap-3.5 p-4 bg-zinc-950/80 border border-zinc-900/60 rounded-2xl shadow-inner">
+                <div className="flex items-center gap-3 p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl">
                   {telephonyStatus?.outbound_active ? (
                     <>
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25">
-                        <CheckCircle2 size={12} strokeWidth={2.5} />
-                      </div>
+                      <CheckCircle2 size={16} className="text-[var(--success)] shrink-0" />
                       <div className="space-y-0.5">
-                        <p className="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">Outbound Bridge Active</p>
-                        <p className="text-[9px] text-zinc-500 leading-tight">Ready for highly reliable Twilio & LiveKit hybrid call dispatch.</p>
+                        <p className="text-[10px] font-bold text-[var(--success)] uppercase tracking-wider">Outbound Bridge Active</p>
+                        <p className="text-[9px] text-[var(--text-secondary)] leading-tight">Ready for high-reliability Twilio & LiveKit call dispatch.</p>
                       </div>
                     </>
                   ) : (
                     <>
-                      <div className="flex h-5 w-5 items-center justify-center rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25">
-                        <AlertCircle size={12} strokeWidth={2.5} />
-                      </div>
+                      <AlertCircle size={16} className="text-[var(--primary)] shrink-0 animate-pulse" />
                       <div className="space-y-0.5">
-                        <p className="text-[10px] font-bold text-amber-400 uppercase tracking-wider">REST Outbound Active</p>
-                        <p className="text-[9px] text-zinc-500 leading-tight">Standard Twilio REST Direct Dialer active for trial number testing.</p>
+                        <p className="text-[10px] font-bold text-[var(--primary)] uppercase tracking-wider">REST Outbound Active</p>
+                        <p className="text-[9px] text-[var(--text-secondary)] leading-tight">Standard Twilio REST Direct Dialer active for trial testing.</p>
                       </div>
                     </>
                   )}
@@ -384,13 +366,13 @@ export const TelephonyPanel: React.FC = () => {
                 <button 
                   onClick={handleTriggerCall}
                   disabled={loading}
-                  className="w-full bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold h-12 rounded-xl shadow-[0_4px_20px_rgba(220,38,38,0.15)] hover:shadow-[0_4px_25px_rgba(220,38,38,0.25)] transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2.5 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+                  className="btn-primary w-full shadow-lg shadow-blue-500/10 hover:shadow-blue-500/20 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
                 >
                   {loading ? (
                     <Loader2 className="animate-spin" size={16} />
                   ) : (
                     <>
-                      <Smartphone size={15} strokeWidth={2.5} />
+                      <Smartphone size={15} />
                       Execute Outbound Dispatch
                     </>
                   )}
@@ -399,47 +381,42 @@ export const TelephonyPanel: React.FC = () => {
             </div>
 
             {/* Calls log */}
-            <div className="rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6">
-              <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-3">
-                 <div className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-xl text-zinc-400">
-                  <History size={15} />
-                </div>
+            <div className="card">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-4 flex items-center gap-2 border-b border-[var(--border)] pb-3">
+                <History size={16} className="text-[var(--text-secondary)]" />
                 Dispatch Node Logs
               </h2>
-              <div className="space-y-3.5 max-h-[420px] overflow-y-auto pr-1">
+              <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
                 {calls.length === 0 ? (
-                  <div className="py-12 text-center text-xs font-semibold text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-900 rounded-2xl bg-zinc-950/10">
+                  <div className="py-10 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-widest border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)]">
                     No Active Node History
                   </div>
                 ) : calls.map(call => {
                   const statusColors: Record<string, string> = {
-                    initiated: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-                    failed: 'bg-red-500/10 text-red-400 border-red-500/20',
-                    connecting: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+                    initiated: 'bg-[var(--success)]/10 text-[var(--success)] border-[var(--success)]/20',
+                    failed: 'bg-[var(--danger)]/10 text-[var(--danger)] border-[var(--danger)]/20',
+                    connecting: 'bg-[var(--primary)]/10 text-[var(--primary)] border-[var(--primary)]/20',
                   };
-                  const statusColor = statusColors[call.status.toLowerCase()] || 'bg-zinc-800 text-zinc-400 border-zinc-700';
+                  const statusColor = statusColors[call.status.toLowerCase()] || 'bg-[var(--surface-secondary)] text-[var(--text-secondary)] border-[var(--border)]';
                   
                   return (
-                    <div key={call.id} className="flex items-center justify-between p-4.5 bg-zinc-950/60 border border-zinc-900/60 rounded-2xl hover:border-zinc-800 hover:bg-zinc-950 transition-all duration-300 group">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 bg-zinc-900 rounded-xl text-red-500 border border-zinc-800/80 group-hover:bg-red-500 group-hover:text-white group-hover:border-red-500 transition-all duration-300">
-                          <Phone size={15} />
+                    <div key={call.id} className="flex items-center justify-between p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl hover:border-[var(--border-hover)] transition-all duration-200 group">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 bg-[var(--surface)] border border-[var(--border)] rounded-lg text-[var(--primary)] group-hover:bg-[var(--primary)] group-hover:text-white transition-all duration-200">
+                          <Phone size={14} />
                         </div>
-                        <div className="space-y-1">
-                          <p className="font-mono text-sm font-bold text-zinc-200 tracking-wide leading-none">{call.to_number}</p>
-                          <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-wider leading-none mt-1">
+                        <div className="space-y-0.5">
+                          <p className="font-mono text-xs font-semibold text-[var(--text-primary)] tracking-wide">{call.to_number}</p>
+                          <p className="text-[9px] text-[var(--text-muted)] font-medium mt-0.5">
                             {new Date(call.started_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className={`px-2.5 py-1 border text-[9px] rounded-lg font-bold uppercase tracking-wider flex items-center gap-1.5 ${statusColor}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full ${call.status.toLowerCase() === 'initiated' ? 'bg-emerald-400 animate-pulse' : 'bg-current'}`} />
+                      <div className="flex items-center gap-3">
+                        <span className={`px-2 py-0.5 border text-[9px] rounded font-bold uppercase tracking-wider flex items-center gap-1 ${statusColor}`}>
+                          <span className={`w-1 h-1 rounded-full ${call.status.toLowerCase() === 'initiated' ? 'bg-[var(--success)] animate-pulse' : 'bg-current'}`} />
                           {call.status}
                         </span>
-                        <button className="text-zinc-650 hover:text-zinc-400 transition-colors">
-                          <MoreVertical size={15} />
-                        </button>
                       </div>
                     </div>
                   );
@@ -449,54 +426,54 @@ export const TelephonyPanel: React.FC = () => {
           </div>
 
           {/* Numbers list Column */}
-          <div className="space-y-8">
-             <div className="rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest">PSTN Registry</h2>
+          <div className="space-y-6">
+             <div className="card">
+                <div className="flex justify-between items-center mb-4 border-b border-[var(--border)] pb-3">
+                  <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">PSTN Registry</h2>
                   <button 
                       onClick={() => setIsAdding(true)}
-                      className="p-2 bg-zinc-900 hover:bg-zinc-800 text-zinc-200 hover:text-zinc-100 border border-zinc-850 rounded-xl transition-all"
+                      className="p-1.5 bg-[var(--surface-secondary)] hover:bg-[var(--border)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg transition-all"
                       title="Link Phone Number"
                   >
-                      <Plus size={15} strokeWidth={2.5} />
+                      <Plus size={14} />
                   </button>
                 </div>
-                <div className="space-y-3.5 max-h-[580px] overflow-y-auto pr-1">
+                <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                   {numbers.length === 0 ? (
-                    <div className="py-12 text-center text-xs font-semibold text-zinc-600 uppercase tracking-widest border border-dashed border-zinc-900 rounded-2xl bg-zinc-950/10">
+                    <div className="py-10 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-widest border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)]">
                       No Registered Numbers
                     </div>
                   ) : numbers.map(num => {
                     const assignedAgent = agents.find(a => a.id === num.agent_id);
                     return (
-                      <div key={num.id} className="p-4.5 bg-zinc-950/60 rounded-2xl border border-zinc-900 flex justify-between items-center group hover:border-zinc-800/80 hover:bg-zinc-950/80 transition-all duration-300">
-                        <div className="space-y-2">
-                          <p className="font-mono font-bold text-zinc-200 tracking-wider text-sm">{num.number}</p>
-                          <div className="flex flex-wrap items-center gap-1.5">
-                            <span className="text-[8px] text-zinc-500 font-extrabold uppercase tracking-widest bg-zinc-900 border border-zinc-800/60 px-2 py-0.5 rounded-md">
+                      <div key={num.id} className="p-3 bg-[var(--surface-secondary)] rounded-xl border border-[var(--border)] flex justify-between items-center group hover:border-[var(--border-hover)] transition-all duration-200">
+                        <div className="space-y-1.5 min-w-0">
+                          <p className="font-mono font-semibold text-[var(--text-primary)] tracking-wide text-xs truncate">{num.number}</p>
+                          <div className="flex flex-wrap items-center gap-1">
+                            <span className="text-[8px] text-[var(--text-secondary)] font-bold uppercase tracking-widest bg-[var(--surface)] border border-[var(--border)] px-1.5 py-0.5 rounded">
                               {num.provider}
                             </span>
                             {assignedAgent && (
-                              <span className="text-[8px] text-red-400 font-extrabold uppercase tracking-widest bg-red-500/5 border border-red-500/10 px-2 py-0.5 rounded-md">
+                              <span className="text-[8px] text-[var(--primary)] font-bold uppercase tracking-widest bg-blue-500/5 border border-blue-500/10 px-1.5 py-0.5 rounded">
                                 → {assignedAgent.agentName}
                               </span>
                             )}
                             {num.sip_trunk_id ? (
-                              <span className="text-[8px] text-emerald-400 font-extrabold uppercase tracking-widest bg-emerald-500/5 border border-emerald-500/10 px-2 py-0.5 rounded-md">
-                                SIP ACTIVE
+                              <span className="text-[8px] text-[var(--success)] font-bold uppercase tracking-widest bg-emerald-500/5 border border-emerald-500/10 px-1.5 py-0.5 rounded">
+                                SIP
                               </span>
                             ) : (
-                              <span className="text-[8px] text-zinc-650 font-extrabold uppercase tracking-widest bg-zinc-900/40 border border-zinc-850 px-2 py-0.5 rounded-md">
-                                NO TRUNK
+                              <span className="text-[8px] text-[var(--text-muted)] font-bold uppercase tracking-widest bg-[var(--surface)] border border-[var(--border)] px-1.5 py-0.5 rounded">
+                                PSTN
                               </span>
                             )}
                           </div>
                         </div>
                         <button 
                           onClick={() => handleDeleteNumber(num.id)}
-                          className="text-zinc-650 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200 p-1.5 hover:bg-red-500/5 rounded-lg border border-transparent hover:border-red-500/10"
+                          className="text-[var(--text-muted)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 hover:bg-red-500/5 rounded border border-transparent hover:border-red-500/10"
                         >
-                          <Trash2 size={14} />
+                          <Trash2 size={13} />
                         </button>
                       </div>
                     );
@@ -507,80 +484,76 @@ export const TelephonyPanel: React.FC = () => {
         </div>
       ) : (
         /* LIVEKIT SIP TRUNK CONFIGURATION HUB */
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-300">
-          <div className="lg:col-span-2 space-y-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-in fade-in duration-200">
+          <div className="lg:col-span-2 space-y-6">
             {/* LiveKit SIP Trunk Provisioning */}
-            <div className="relative overflow-hidden rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6">
-              <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/10 to-transparent" />
-              
-              <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-3">
-                <div className="p-2.5 bg-red-500/10 rounded-xl text-red-400 border border-red-500/10">
-                  <Zap size={15} />
-                </div>
+            <div className="card space-y-5">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border)] pb-3">
+                <Zap size={16} className="text-[var(--primary)] animate-pulse" />
                 LiveKit SIP Trunk Manager
               </h2>
 
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio SIP Termination URI</label>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio SIP Termination URI</label>
                     <input 
                       type="text"
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm font-mono text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700"
-                      placeholder="e.g. my-trunk.pstn.twilio.com"
+                      className="input-field font-mono"
+                      placeholder="my-trunk.pstn.twilio.com"
                       value={sipConfig.termination_uri}
                       onChange={e => setSipConfig({...sipConfig, termination_uri: e.target.value})}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Trunk Identifier Name</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Trunk Identifier Name</label>
                     <input 
                       type="text"
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700"
-                      placeholder="e.g. twilio-outbound-trunk"
+                      className="input-field font-medium"
+                      placeholder="twilio-outbound-trunk"
                       value={sipConfig.trunk_name}
                       onChange={e => setSipConfig({...sipConfig, trunk_name: e.target.value})}
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">SIP Registration Username</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">SIP Username</label>
                     <input 
                       type="text"
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700"
-                      placeholder="e.g. twilio-trunk-user"
+                      className="input-field"
+                      placeholder="twilio-trunk-user"
                       value={sipConfig.auth_username}
                       onChange={e => setSipConfig({...sipConfig, auth_username: e.target.value})}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">SIP Registration Password</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">SIP Password</label>
                     <input 
                       type="password"
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700"
-                      placeholder="e.g. twilio-secure-password"
+                      className="input-field font-mono"
+                      placeholder="••••••••••••••"
                       value={sipConfig.auth_password}
                       onChange={e => setSipConfig({...sipConfig, auth_password: e.target.value})}
                     />
                   </div>
                 </div>
 
-                <p className="text-[10px] text-zinc-500 leading-relaxed font-semibold">
+                <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
                   Registered E.164 numbers ({numbers.length} active nodes) will route through this gateway configuration dynamically on the SIP network.
                 </p>
 
                 <button 
                   onClick={handleProvisionTrunks}
                   disabled={provisioningTrunks}
-                  className="w-full bg-gradient-to-r from-zinc-900 to-zinc-950 text-zinc-100 hover:text-white border border-zinc-800/80 hover:border-red-500/30 font-bold h-12 rounded-xl shadow-md transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2 mt-2 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+                  className="btn-primary w-full hover:shadow-lg transition-all duration-200 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none mt-2"
                 >
                   {provisioningTrunks ? (
                     <Loader2 className="animate-spin" size={16} />
                   ) : (
                     <>
-                      <Zap size={14} strokeWidth={2.5} className="text-red-400 animate-pulse" />
+                      <Zap size={14} />
                       Provision Native SIP Gateways
                     </>
                   )}
@@ -590,37 +563,32 @@ export const TelephonyPanel: React.FC = () => {
 
             {/* Active Gateways List */}
             {trunks.length > 0 && (
-              <div className="rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6 shadow-2xl">
-                <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-3">
-                  <div className="p-2.5 bg-zinc-900 border border-zinc-800/80 rounded-xl text-zinc-400">
-                    <Link2 size={15} />
-                  </div>
+              <div className="card space-y-4">
+                <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border)] pb-3">
+                  <Link2 size={16} className="text-[var(--primary)]" />
                   Provisioned Endpoints
                 </h2>
-                <div className="space-y-3.5">
+                <div className="space-y-2">
                   {trunks.map(trunk => (
-                    <div key={trunk.id} className="p-4 bg-zinc-950/60 border border-zinc-900 rounded-2xl flex justify-between items-center group hover:border-zinc-800/80 transition-all duration-300 shadow-sm">
-                      <div className="space-y-2">
+                    <div key={trunk.id} className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl flex justify-between items-center group hover:border-[var(--border-hover)] transition-all duration-200">
+                      <div className="space-y-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2">
-                          <p className="font-mono text-sm font-bold text-zinc-100 leading-tight">{trunk.name}</p>
-                          <span className={`text-[8px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded ${
+                          <p className="font-mono text-xs font-semibold text-[var(--text-primary)] truncate">{trunk.name}</p>
+                          <span className={`text-[8px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded ${
                             trunk.trunk_type === 'inbound' 
-                              ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                              ? 'bg-blue-500/10 text-[var(--primary)] border border-blue-500/20'
+                              : 'bg-emerald-500/10 text-[var(--success)] border border-emerald-500/20'
                           }`}>
                             {trunk.trunk_type}
                           </span>
-                          <span className="text-[8px] font-extrabold uppercase tracking-widest px-2 py-0.5 rounded bg-emerald-500/5 text-emerald-400 border border-emerald-500/10">
-                            Registered
-                          </span>
                         </div>
-                        <p className="text-[9px] text-zinc-650 font-mono leading-none">{trunk.livekit_trunk_id || trunk.id}</p>
+                        <p className="text-[9px] text-[var(--text-muted)] font-mono leading-none truncate">{trunk.livekit_trunk_id || trunk.id}</p>
                       </div>
                       <button 
                         onClick={() => handleDeleteTrunk(trunk.id)}
-                        className="text-zinc-650 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all duration-200 p-2 hover:bg-red-500/5 border border-transparent hover:border-red-500/10 rounded-xl"
+                        className="text-[var(--text-muted)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 hover:bg-red-500/5 rounded border border-transparent hover:border-red-500/10"
                       >
-                        <Trash2 size={14} />
+                        <Trash2 size={13} />
                       </button>
                     </div>
                   ))}
@@ -629,43 +597,41 @@ export const TelephonyPanel: React.FC = () => {
             )}
 
             {/* Primary Twilio REST API Credentials */}
-            <div className="rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6 shadow-2xl">
-              <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-3">
-                <div className="p-2.5 bg-red-500/10 rounded-xl text-red-400 border border-red-500/10">
-                  <Key size={15} />
-                </div>
+            <div className="card space-y-5">
+              <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border)] pb-3">
+                <Key size={16} className="text-[var(--primary)]" />
                 Twilio Account Credentials (REST)
               </h3>
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio Account SID</label>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio Account SID</label>
                     <input 
                       type="text" 
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700" 
+                      className="input-field" 
                       placeholder="ACXXXXXXXX" 
                       value={twilioKeys.twilio_account_sid} 
                       onChange={e => setTwilioKeys({...twilioKeys, twilio_account_sid: e.target.value})} 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio Assigned Number</label>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio Assigned Number</label>
                     <input 
                       type="text" 
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm font-mono text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700" 
-                      placeholder="+1234567890" 
+                      className="input-field font-mono" 
+                      placeholder="+1XXXXXXXXXX" 
                       value={twilioKeys.twilio_phone_number} 
                       onChange={e => setTwilioKeys({...twilioKeys, twilio_phone_number: e.target.value})} 
                     />
                   </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio Auth Token</label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio Auth Token</label>
                     <input 
                       type="password" 
-                      className="w-full bg-zinc-950/60 border border-zinc-900 rounded-xl h-12 px-4 text-sm text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/20 transition-all placeholder:text-zinc-700" 
-                      placeholder="vaulted auth token" 
+                      className="input-field font-mono" 
+                      placeholder="••••••••••••••••••••••••••••••••" 
                       value={twilioKeys.twilio_auth_token} 
                       onChange={e => setTwilioKeys({...twilioKeys, twilio_auth_token: e.target.value})} 
                     />
@@ -674,9 +640,9 @@ export const TelephonyPanel: React.FC = () => {
                 <button 
                   onClick={handleSaveTwilioKeys} 
                   disabled={savingKeys} 
-                  className="w-full bg-gradient-to-r from-zinc-900 to-zinc-950 text-zinc-100 hover:text-white border border-zinc-800/80 hover:border-red-500/30 font-bold h-12 rounded-xl shadow-md transition-all duration-300 uppercase tracking-widest text-xs flex items-center justify-center gap-2 mt-2 active:scale-[0.99] disabled:opacity-50 disabled:pointer-events-none"
+                  className="btn-outline w-full hover:shadow transition-all duration-200 mt-2"
                 >
-                  {savingKeys ? <Loader2 className="animate-spin" size={16} /> : <><ShieldCheck size={14} strokeWidth={2.5} /> Sync Twilio Profile</>}
+                  {savingKeys ? <Loader2 className="animate-spin" size={16} /> : <><ShieldCheck size={14} className="text-[var(--success)]" /> Sync Twilio Profile</>}
                 </button>
               </div>
             </div>
@@ -684,67 +650,63 @@ export const TelephonyPanel: React.FC = () => {
 
           {/* SETUP INSTRUCTIONS SIDEBAR */}
           <div className="space-y-6">
-            <div className="rounded-3xl border border-zinc-900/80 bg-zinc-950/40 backdrop-blur-xl p-6 shadow-2xl">
-              <h2 className="text-sm font-bold text-zinc-100 uppercase tracking-widest mb-6 flex items-center gap-3">
-                <div className="p-2.5 bg-red-500/10 rounded-xl text-red-400 border border-red-500/10">
-                  <ToggleLeft size={15} />
-                </div>
+            <div className="card space-y-5">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider flex items-center gap-2 border-b border-[var(--border)] pb-3">
+                <ToggleLeft size={16} className="text-[var(--primary)]" />
                 SIP Routing Hook
               </h2>
-              <p className="text-xs text-zinc-400 leading-relaxed mb-6">
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed font-medium">
                 Direct your incoming Twilio traffic to our LiveKit SIP bridge gateway to answer dynamically:
               </p>
 
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest block mb-1">Twilio Inbound Webhook</span>
-                  <div className="flex bg-zinc-950/60 rounded-xl border border-zinc-900/80 p-3.5 items-center justify-between shadow-inner">
-                    <span className="font-mono text-[9px] text-zinc-400 truncate max-w-[200px]">
+              <div className="space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[9px] text-[var(--text-secondary)] font-extrabold uppercase tracking-widest block mb-1">Twilio Inbound Webhook</span>
+                  <div className="flex bg-[var(--surface-secondary)] rounded-xl border border-[var(--border)] p-3 items-center justify-between shadow-sm min-w-0">
+                    <span className="font-mono text-[9px] text-[var(--text-secondary)] truncate flex-1 min-w-0 mr-2">
                       {resolveWebhookUrl('/inbound')}
                     </span>
                     <button
                       onClick={() => handleCopy(resolveWebhookUrl('/inbound'), 'Twilio Webhook')}
-                      className="text-zinc-500 hover:text-zinc-200 transition-colors shrink-0 ml-2"
+                      className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
                     >
-                      {copiedText === 'Twilio Webhook' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      {copiedText === 'Twilio Webhook' ? <Check size={13} className="text-[var(--success)]" /> : <Copy size={13} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <span className="text-[9px] text-zinc-500 font-extrabold uppercase tracking-widest block mb-1">LiveKit SIP Origination URI</span>
-                  <div className="flex bg-zinc-950/60 rounded-xl border border-zinc-900/80 p-3.5 items-center justify-between shadow-inner">
-                    <span className="font-mono text-[9px] text-zinc-400 truncate max-w-[200px]">
+                <div className="space-y-1">
+                  <span className="text-[9px] text-[var(--text-secondary)] font-extrabold uppercase tracking-widest block mb-1">LiveKit SIP Origination URI</span>
+                  <div className="flex bg-[var(--surface-secondary)] rounded-xl border border-[var(--border)] p-3 items-center justify-between shadow-sm min-w-0">
+                    <span className="font-mono text-[9px] text-[var(--text-secondary)] truncate flex-1 min-w-0 mr-2">
                       {telephonyStatus?.setup_instructions?.origination_uri || 'sip:70gad9nw.sip.livekit.cloud;transport=tcp'}
                     </span>
                     <button
                       onClick={() => handleCopy(telephonyStatus?.setup_instructions?.origination_uri || 'sip:70gad9nw.sip.livekit.cloud;transport=tcp', 'Origination URI')}
-                      className="text-zinc-500 hover:text-zinc-200 transition-colors shrink-0 ml-2"
+                      className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
                     >
-                      {copiedText === 'Origination URI' ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+                      {copiedText === 'Origination URI' ? <Check size={13} className="text-[var(--success)]" /> : <Copy size={13} />}
                     </button>
                   </div>
                 </div>
 
-                <div className="border-t border-zinc-900/80 pt-6">
-                  <div className="text-[10px] text-zinc-450 leading-relaxed space-y-4 font-semibold">
-                    <strong className="text-zinc-200 uppercase tracking-widest text-[9px] block mb-2">Instructions:</strong>
-                    <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
-                      <strong className="text-red-400 block mb-1">Method A: Webhook routing (Fastest)</strong>
-                      <p className="text-zinc-500 leading-normal text-[9px]">
-                        1. Copy the webhook URL above.<br />
-                        2. Paste it in your Twilio Console under Phone Number &rarr; Voice Config &rarr; Webhook.<br />
-                        3. Test inbound calling immediately!
-                      </p>
-                    </div>
-                    <div className="p-3 bg-zinc-950/40 border border-zinc-900 rounded-2xl">
-                      <strong className="text-emerald-400 block mb-1">Method B: SIP Trunking (Trunk Core)</strong>
-                      <p className="text-zinc-500 leading-normal text-[9px]">
-                        1. Copy the LiveKit SIP Origination URI.<br />
-                        2. Paste it in your Twilio Elastic SIP Trunk Origination.<br />
-                        3. Add SIP Gateways on the left to verify active auth handshakes.
-                      </p>
-                    </div>
+                <div className="border-t border-[var(--border)] pt-4 space-y-3">
+                  <strong className="text-[var(--text-primary)] uppercase tracking-wider text-[10px] block">Instructions:</strong>
+                  <div className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-[9px] leading-relaxed font-semibold">
+                    <strong className="text-[var(--primary)] block mb-1">Method A: Webhook routing (Fastest)</strong>
+                    <p className="text-[var(--text-secondary)]">
+                      1. Copy the webhook URL above.<br />
+                      2. Paste it in your Twilio Console under Phone Number &rarr; Voice Config &rarr; Webhook.<br />
+                      3. Test inbound calling immediately!
+                    </p>
+                  </div>
+                  <div className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl text-[9px] leading-relaxed font-semibold">
+                    <strong className="text-[var(--success)] block mb-1">Method B: SIP Trunking (Trunk Core)</strong>
+                    <p className="text-[var(--text-secondary)]">
+                      1. Copy the LiveKit SIP Origination URI.<br />
+                      2. Paste it in your Twilio Elastic SIP Trunk Origination.<br />
+                      3. Add SIP Gateways on the left to verify active auth handshakes.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -755,71 +717,60 @@ export const TelephonyPanel: React.FC = () => {
 
       {/* LINK PHONE NUMBER MODAL */}
       {isAdding && (
-        <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
-          <div className="bg-zinc-950 border border-zinc-900 w-full max-w-[390px] rounded-3xl p-7 shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest">Link PSTN Endpoint</h2>
-              <button onClick={() => setIsAdding(false)} className="text-zinc-500 hover:text-zinc-250 p-1.5 hover:bg-zinc-900 rounded-xl transition-all">
-                <X size={16} />
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
+          <div className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-[390px] rounded-2xl p-6 shadow-xl relative overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="flex justify-between items-center mb-5 border-b border-[var(--border)] pb-3">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">Link PSTN Endpoint</h2>
+              <button onClick={() => setIsAdding(false)} className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 hover:bg-[var(--surface-secondary)] rounded-lg transition-all">
+                <X size={15} />
               </button>
             </div>
             
-            <div className="space-y-5">
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">E.164 Phone Number</label>
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">E.164 Phone Number</label>
                 <input 
-                  className="w-full h-11 bg-zinc-900/60 border border-zinc-850 rounded-xl px-4 text-sm font-mono text-zinc-100 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/10 placeholder:text-zinc-700 transition-all"
-                  placeholder="+1..."
+                  className="input-field font-mono"
+                  placeholder="+1XXXXXXXXXX"
                   value={newNumber.number}
                   onChange={e => setNewNumber({...newNumber, number: e.target.value})}
                 />
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Provider Node Gateway</label>
-                <div className="relative">
-                  <select 
-                    className="w-full bg-zinc-900/60 border border-zinc-850 rounded-xl h-11 px-4 text-sm font-semibold text-zinc-200 outline-none focus:border-red-500/60 transition-all cursor-pointer appearance-none"
-                    value={newNumber.provider}
-                    onChange={e => setNewNumber({...newNumber, provider: e.target.value})}
-                  >
-                    <option value="twilio" className="bg-zinc-950 text-zinc-200">Twilio Node Gateway</option>
-                    <option value="custom" className="bg-zinc-950 text-zinc-200">Generic Custom SIP Node</option>
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-500">
-                    <MoreVertical size={13} />
-                  </div>
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Provider Node Gateway</label>
+                <select 
+                  className="input-field cursor-pointer font-semibold"
+                  value={newNumber.provider}
+                  onChange={e => setNewNumber({...newNumber, provider: e.target.value})}
+                >
+                  <option value="twilio">Twilio Node Gateway</option>
+                  <option value="custom">Generic Custom SIP Node</option>
+                </select>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Assigned Voice Agent (Inbound)</label>
-                <div className="relative">
-                  <select 
-                    className="w-full bg-zinc-900/60 border border-zinc-850 rounded-xl h-11 px-4 text-sm font-semibold text-zinc-200 outline-none focus:border-red-500/60 transition-all cursor-pointer appearance-none"
-                    value={newNumber.agent_id}
-                    onChange={e => setNewNumber({...newNumber, agent_id: e.target.value})}
-                  >
-                    <option value="" className="bg-zinc-950 text-zinc-400">No Agent (Disable Inbound)</option>
-                    {agents.map(a => (
-                      <option key={a.id} value={a.id} className="bg-zinc-950 text-zinc-200">{a.agentName}</option>
-                    ))}
-                  </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-zinc-500">
-                    <MoreVertical size={13} />
-                  </div>
-                </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Assigned Voice Agent</label>
+                <select 
+                  className="input-field cursor-pointer font-semibold"
+                  value={newNumber.agent_id}
+                  onChange={e => setNewNumber({...newNumber, agent_id: e.target.value})}
+                >
+                  <option value="">No Agent (Disable Inbound)</option>
+                  {agents.map(a => (
+                    <option key={a.id} value={a.id}>{a.agentName}</option>
+                  ))}
+                </select>
               </div>
 
               <button 
                 onClick={handleAddNumber}
                 disabled={loading}
-                className="w-full bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold h-11 rounded-xl transition-all duration-300 uppercase tracking-wider text-[10px] flex items-center justify-center gap-2 mt-2 disabled:opacity-50 disabled:pointer-events-none"
+                className="btn-primary w-full mt-2"
               >
                 {loading ? <Loader2 className="animate-spin" size={16} /> : (
                   <>
-                    <Smartphone size={14} strokeWidth={2.5} />
+                    <Smartphone size={14} />
                     Register PSTN Node
                   </>
                 )}

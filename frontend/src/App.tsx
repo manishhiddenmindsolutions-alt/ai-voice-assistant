@@ -8,7 +8,7 @@ import {
 } from 'react-router-dom';
 
 import { Toaster } from 'react-hot-toast';
-import { Menu, Sun, Moon } from 'lucide-react';
+import { Menu, Sun, Moon, Bell } from 'lucide-react';
 
 import { useAgentStore } from './store/useAgentStore';
 import { useAuthStore } from './store/useAuthStore';
@@ -51,25 +51,21 @@ const ProtectedRoute = ({
 
 const App = () => {
   const { theme } = useThemeStore();
-  const isLight = theme === 'light';
 
   return (
     <Router>
       <Toaster
         position="top-right"
         toastOptions={{
-          className: '!rounded-2xl !p-4 !shadow-2xl border',
+          className: '!rounded-lg !p-4 !shadow-lg',
           duration: 4000,
           style: {
-            background: isLight ? 'rgba(255, 255, 255, 0.88)' : 'rgba(9, 9, 11, 0.88)',
-            backdropFilter: 'blur(16px)',
-            color: isLight ? '#09090b' : '#ffffff',
-            borderColor: isLight ? 'rgba(9, 9, 11, 0.08)' : 'rgba(255, 255, 255, 0.08)',
-            fontFamily: 'ui-monospace, "Cascadia Code", monospace',
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            fontSize: '11px',
-            fontWeight: 'bold',
+            background: theme === 'light' ? '#FFFFFF' : '#1E293B',
+            color: theme === 'light' ? '#0F172A' : '#F1F5F9',
+            border: `1px solid ${theme === 'light' ? '#E2E8F0' : '#293548'}`,
+            fontFamily: '"Inter", sans-serif',
+            fontSize: '13px',
+            fontWeight: '500',
           }
         }}
       />
@@ -116,7 +112,7 @@ const AppLayout = () => {
   }, [theme]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background text-foreground antialiased">
+    <div className="flex h-screen overflow-hidden antialiased" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
 
       {/* SIDEBAR */}
       <Sidebar
@@ -128,42 +124,102 @@ const AppLayout = () => {
       <main className="flex flex-1 flex-col overflow-hidden">
 
         {/* HEADER */}
-        <header className="sticky top-0 z-50 h-16 shrink-0 border-b border-zinc-800/80 bg-zinc-950/70 backdrop-blur-xl">
-
+        <header 
+          className="sticky top-0 z-50 h-16 shrink-0 glass"
+          style={{ 
+            backgroundColor: 'var(--header-bg)',
+            borderBottom: '1px solid var(--header-border)' 
+          }}
+        >
           <div className="flex h-full items-center justify-between px-4 lg:px-6">
 
             {/* LEFT */}
-            <div className="flex items-center gap-4 min-w-0">
+            <div className="flex items-center gap-3 min-w-0">
 
               {/* MOBILE MENU */}
               <button
                 onClick={() => setIsSidebarOpen(true)}
-                className="lg:hidden flex items-center justify-center w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-900/70 text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 transition-all duration-200"
+                className="lg:hidden flex items-center justify-center w-9 h-9 rounded-lg transition-all duration-200"
+                style={{ 
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'var(--surface)',
+                  color: 'var(--text-secondary)' 
+                }}
               >
                 <Menu size={18} />
               </button>
 
+              {/* PAGE BREADCRUMB */}
+              <div className="hidden md:flex items-center gap-2">
+                <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>
+                  HMS Platform
+                </span>
+                <span style={{ color: 'var(--text-muted)' }}>/</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>
+                  Workspace
+                </span>
+              </div>
+            </div>
+
+            {/* RIGHT */}
+            <div className="flex items-center gap-2">
+
               {/* STATUS */}
-              <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full border border-emerald-500/20 bg-emerald-500/10">
-
-                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-emerald-300 whitespace-nowrap">
-                  System Online
+              <div 
+                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg"
+                style={{ 
+                  backgroundColor: 'rgba(16,185,129,0.06)',
+                  border: '1px solid rgba(16,185,129,0.15)' 
+                }}
+              >
+                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
+                <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>
+                  Online
                 </span>
               </div>
 
-              {/* DIVIDER */}
-              <div className="hidden md:block h-5 w-px bg-zinc-800" />
+              {/* NOTIFICATION */}
+              <button
+                className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-200"
+                style={{ 
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'var(--surface)',
+                  color: 'var(--text-secondary)' 
+                }}
+              >
+                <Bell size={16} />
+              </button>
 
-              {/* USER */}
+              {/* THEME TOGGLE */}
+              <button
+                onClick={toggleTheme}
+                className="w-9 h-9 rounded-lg flex items-center justify-center active:scale-95 transition-all duration-200"
+                style={{ 
+                  border: '1px solid var(--border)',
+                  backgroundColor: 'var(--surface)',
+                  color: 'var(--text-secondary)' 
+                }}
+              >
+                {theme === 'light' ? (
+                  <Moon size={16} />
+                ) : (
+                  <Sun size={16} />
+                )}
+              </button>
+
+              {/* USER AVATAR */}
               <button
                 onClick={() => navigate('/profile')}
-                className="group flex items-center gap-3 min-w-0"
+                className="flex items-center gap-2.5 ml-1 group"
               >
-                {/* AVATAR */}
-                <div className="w-9 h-9 rounded-xl overflow-hidden border border-zinc-800 bg-zinc-900 flex items-center justify-center text-sm font-bold text-zinc-100 transition-all duration-200 group-hover:border-primary/40">
-
+                <div 
+                  className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center text-xs font-semibold transition-all duration-200"
+                  style={{ 
+                    border: '1px solid var(--border)',
+                    backgroundColor: 'var(--surface)',
+                    color: 'var(--text-primary)' 
+                  }}
+                >
                   {user?.avatar_url ? (
                     <img
                       src={user.avatar_url}
@@ -178,57 +234,22 @@ const AppLayout = () => {
                   )}
                 </div>
 
-                {/* INFO */}
+                {/* NAME (hidden on small screens) */}
                 <div className="hidden sm:flex flex-col items-start min-w-0">
-
-                  <span className="text-sm font-semibold text-zinc-100 truncate max-w-[180px]">
+                  <span className="text-sm font-medium truncate max-w-[160px]" style={{ color: 'var(--text-primary)' }}>
                     {user?.full_name || 'User'}
                   </span>
-
-                  <span className="text-xs text-zinc-500 truncate max-w-[180px]">
+                  <span className="text-xs truncate max-w-[160px]" style={{ color: 'var(--text-muted)' }}>
                     {user?.email}
                   </span>
                 </div>
-              </button>
-            </div>
-
-            {/* RIGHT */}
-            <div className="flex items-center gap-3">
-
-              {/* LIVE NODES */}
-              <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl border border-zinc-800 bg-zinc-900/60">
-
-                <div className="flex -space-x-2">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="w-6 h-6 rounded-full border-2 border-zinc-950 bg-zinc-700"
-                    />
-                  ))}
-                </div>
-
-                <span className="text-xs font-medium text-zinc-400 whitespace-nowrap">
-                  14 Nodes Live
-                </span>
-              </div>
-
-              {/* THEME TOGGLE */}
-              <button
-                onClick={toggleTheme}
-                className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-900/70 flex items-center justify-center text-zinc-400 hover:text-zinc-100 hover:border-zinc-700 active:scale-95 transition-all duration-200"
-              >
-                {theme === 'light' ? (
-                  <Moon size={17} />
-                ) : (
-                  <Sun size={17} />
-                )}
               </button>
             </div>
           </div>
         </header>
 
         {/* PAGE CONTENT */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar" style={{ backgroundColor: 'var(--background)' }}>
 
           <div className="px-4 py-6 md:px-6 lg:px-8">
 

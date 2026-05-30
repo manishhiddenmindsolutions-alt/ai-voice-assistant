@@ -25,49 +25,47 @@ interface Integration {
     created_at: string;
 }
 
+import {
+  SiN8n,
+} from "@icons-pack/react-simple-icons";
+
 const GoogleIcon = ({ size = 22 }: { size?: number }) => (
-  <img 
-    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/google.svg" 
-    alt="Google Workspace" 
-    style={{ width: size, height: size }}
-    className="object-contain" 
-  />
+  <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0 animate-fade-in" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
+    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
+    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05" />
+    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335" />
+  </svg>
 );
 
 const MicrosoftIcon = ({ size = 22 }: { size?: number }) => (
-  <img 
-    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/microsoft.svg" 
-    alt="Microsoft 365" 
-    style={{ width: size, height: size }}
-    className="object-contain" 
-  />
+  <svg viewBox="0 0 23 23" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="11" height="11" fill="#F25022" />
+    <rect x="12" y="0" width="11" height="11" fill="#7FBA00" />
+    <rect x="0" y="12" width="11" height="11" fill="#00A4EF" />
+    <rect x="12" y="12" width="11" height="11" fill="#FFB900" />
+  </svg>
 );
 
 const TwilioIcon = ({ size = 22 }: { size?: number }) => (
-  <img 
-    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/twilio.svg" 
-    alt="Twilio" 
-    style={{ width: size, height: size }}
-    className="object-contain" 
-  />
+  <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#F22F46" />
+    <circle cx="9" cy="9" r="2" fill="white" />
+    <circle cx="15" cy="9" r="2" fill="white" />
+    <circle cx="9" cy="15" r="2" fill="white" />
+    <circle cx="15" cy="15" r="2" fill="white" />
+  </svg>
 );
 
 const N8nIcon = ({ size = 22 }: { size?: number }) => (
-  <img 
-    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/n8n.svg" 
-    alt="n8n" 
-    style={{ width: size, height: size }}
-    className="object-contain" 
-  />
+  <SiN8n color="default" size={size} className="shrink-0" />
 );
 
 const MakeIcon = ({ size = 22 }: { size?: number }) => (
-  <img 
-    src="https://unpkg.com/@lobehub/icons-static-svg@latest/icons/make.svg" 
-    alt="Make.com" 
-    style={{ width: size, height: size }}
-    className="object-contain" 
-  />
+  <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="10" fill="#EA2B8C" opacity="0.15"/>
+    <path d="M12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6ZM14.5 13H9.5V11H14.5V13Z" fill="#EA2B8C"/>
+  </svg>
 );
 
 export const IntegrationsPage: React.FC = () => {
@@ -103,26 +101,20 @@ export const IntegrationsPage: React.FC = () => {
         {
             id: 'google',
             name: 'Google Workspace',
-            description: 'Calendar & Sheets sync.',
+            description: 'Link your Google Account to authorize Sheets, Calendar, and automated workflows.',
             icon: GoogleIcon,
-            bg: 'bg-zinc-950/40 dark:bg-zinc-950/50',
-            border: 'border-zinc-800'
         },
         {
             id: 'microsoft',
             name: 'Microsoft 365',
             description: 'Outlook & Excel tasks.',
             icon: MicrosoftIcon,
-            bg: 'bg-zinc-950/40 dark:bg-zinc-950/50',
-            border: 'border-zinc-800'
         },
         {
             id: 'twilio',
             name: 'Twilio Telephony',
             description: 'Direct cellular calls & inbound routing.',
             icon: TwilioIcon,
-            bg: 'bg-red-500/5',
-            border: 'border-red-500/10'
         }
     ];
 
@@ -141,12 +133,11 @@ export const IntegrationsPage: React.FC = () => {
                 twilio_phone_number: keys.twilio_phone_number || ''
             });
             
-            // Active if SID and phone number exist
             setHasTwilio(!!keys.twilio_account_sid && !!keys.twilio_phone_number);
         } catch (err) {
             console.error('Failed to fetch integrations or secrets profile', err);
         } finally {
-            setTimeout(() => setLoading(false), 800);
+            setTimeout(() => setLoading(false), 500);
         }
     };
 
@@ -231,7 +222,6 @@ export const IntegrationsPage: React.FC = () => {
         setTimeout(() => setCopiedText(null), 2000);
     };
 
-    // Helper to check standard provider oauth status
     const getStatus = (provider: string) => {
         return userIntegrations.find(i => i.provider === provider);
     };
@@ -245,29 +235,29 @@ export const IntegrationsPage: React.FC = () => {
     };
 
     return (
-        <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-500 font-sans">
+        <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)]">
 
             {/* HEADER SECTION */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
                 <div>
-                    <div className="mb-5">
-                        <BackButton fallbackPath="/" label="Overview" />
+                    <div className="mb-4">
+                        <BackButton fallbackPath="/" label="Back" />
                     </div>
-                    <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+                    <h1 className="text-2xl font-bold tracking-tight">
                         Integrations Hub
                     </h1>
-                    <div className="flex items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 mt-1">
                         <span className="relative flex h-2 w-2">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]"></span>
                         </span>
-                        <p className="text-zinc-500 text-xs font-semibold uppercase tracking-wider">Configure Enterprise Connected Accounts</p>
+                        <p className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">Configure Enterprise Connected Accounts</p>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-3.5 self-start lg:self-auto">
-                    <div className="h-11 px-4 border border-zinc-800 bg-zinc-950/40 rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
-                        <ShieldCheck size={14} className="text-emerald-400 animate-pulse" />
+                    <div className="h-10 px-4 border border-[var(--border)] bg-[var(--surface-secondary)] rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--success)] shadow-sm">
+                        <ShieldCheck size={14} className="text-[var(--success)] animate-pulse" />
                         <span>Vault Encrypted</span>
                     </div>
                 </div>
@@ -275,13 +265,13 @@ export const IntegrationsPage: React.FC = () => {
 
             {/* INTEGRATION GRID */}
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
-                        <div key={i} className="h-68 rounded-3xl border border-zinc-900 bg-zinc-950/20 animate-pulse" />
+                        <div key={i} className="h-60 card animate-pulse bg-[var(--surface-secondary)]/50" />
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {integrationsMetadata.map((int) => {
                         const isTwilio = int.id === 'twilio';
                         const isN8n = int.id === 'n8n';
@@ -300,23 +290,21 @@ export const IntegrationsPage: React.FC = () => {
                         return (
                             <div 
                                 key={int.id}
-                                className="rounded-3xl border border-zinc-900 bg-zinc-950/40 backdrop-blur-xl p-6 hover:border-zinc-800 hover:bg-zinc-950 transition-all duration-300 flex flex-col justify-between min-h-[280px] group cursor-pointer relative overflow-hidden"
+                                className="card flex flex-col justify-between min-h-[250px] relative overflow-hidden group cursor-default"
                             >
-                                <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-800/10 to-transparent" />
-                                
                                 <div>
                                     {/* TOP BRAND ICON & STATUS */}
-                                    <div className="flex items-start justify-between mb-6">
-                                        <div className={`w-13 h-13 rounded-2xl ${int.bg} ${int.border} border flex items-center justify-center shadow-md`}>
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="w-12 h-12 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center shadow-sm">
                                             <int.icon size={22} />
                                         </div>
-
-                                        <span className={`px-2.5 py-1 border text-[9px] rounded-lg font-bold uppercase tracking-wider flex items-center gap-1.5 ${
+ 
+                                        <span className={`px-2.5 py-0.5 border text-[9px] rounded font-bold uppercase tracking-wider flex items-center gap-1 ${
                                             isConnected 
-                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
-                                                : 'bg-zinc-950 border-zinc-900 text-zinc-600'
+                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-[var(--success)]' 
+                                                : 'bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--text-muted)]'
                                         }`}>
-                                            <span className={`w-1 h-1 rounded-full ${isConnected ? 'bg-emerald-400 animate-pulse' : 'bg-current'}`} />
+                                            <span className={`w-1 h-1 rounded-full ${isConnected ? 'bg-[var(--success)] animate-pulse' : 'bg-current'}`} />
                                             {isTwilio 
                                                 ? (hasTwilio ? 'Active Node' : 'Offline')
                                                 : isN8n 
@@ -327,30 +315,30 @@ export const IntegrationsPage: React.FC = () => {
                                             }
                                         </span>
                                     </div>
-
+ 
                                     {/* INFO TEXT */}
-                                    <div className="space-y-2 mb-6">
-                                        <h3 className="text-base font-extrabold text-zinc-200 tracking-wide group-hover:text-zinc-100 transition-colors duration-300">
+                                    <div className="space-y-1 mb-4">
+                                        <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">
                                             {int.name}
                                         </h3>
-                                        <p className="text-zinc-550 text-xs leading-relaxed font-semibold">
+                                        <p className="text-[var(--text-secondary)] text-xs font-medium leading-relaxed">
                                             {int.description}
                                         </p>
                                     </div>
                                 </div>
-
+ 
                                 {/* CONTEXT ACTION BUTTONS */}
                                 <div>
                                     {isTwilio ? (
                                         <button 
                                             onClick={() => setShowTwilioModal(true)}
-                                            className="w-full flex items-center justify-between px-4.5 h-11 bg-zinc-900 hover:bg-red-550 border border-zinc-855 hover:border-red-500/30 text-zinc-300 hover:text-white rounded-xl transition-all duration-300 text-xs font-bold uppercase tracking-wider"
+                                            className="btn-outline w-full flex items-center justify-between px-4 text-xs font-semibold uppercase tracking-wider h-10"
                                         >
                                             <span>{hasTwilio ? 'Edit Credentials' : 'Link Twilio Trunk'}</span>
                                             <ArrowRight size={13} />
                                         </button>
                                     ) : (isN8n || isMake) ? (
-                                        <div className="space-y-2.5">
+                                        <div className="space-y-2">
                                             {isConnected ? (
                                                 <button 
                                                     onClick={() => {
@@ -358,7 +346,7 @@ export const IntegrationsPage: React.FC = () => {
                                                         else { setHasMake(false); setMakeWebhookUrl(''); }
                                                         toast.success(`${int.name} disconnected`);
                                                     }}
-                                                    className="w-full flex items-center justify-center gap-2 h-11 bg-red-500/5 hover:bg-red-650 border border-red-500/10 hover:border-red-600 text-red-400 hover:text-white rounded-xl transition-all duration-300 text-xs font-bold uppercase tracking-wider"
+                                                    className="btn-danger w-full flex items-center justify-center gap-1.5 h-10"
                                                 >
                                                     <Trash2 size={13} />
                                                     Disconnect
@@ -370,7 +358,7 @@ export const IntegrationsPage: React.FC = () => {
                                                         setAutomationInput(int.id === 'n8n' ? n8nWebhookUrl : makeWebhookUrl);
                                                         setShowAutomationModal(true);
                                                     }}
-                                                    className="w-full flex items-center justify-between px-4.5 h-11 bg-zinc-900 hover:bg-blue-650 border border-zinc-855 hover:border-blue-600 text-zinc-300 hover:text-white rounded-xl transition-all duration-300 text-xs font-bold uppercase tracking-wider"
+                                                    className="btn-outline w-full flex items-center justify-between px-4 text-xs font-semibold uppercase tracking-wider h-10"
                                                 >
                                                     <span>{`Link ${int.name}`}</span>
                                                     <ArrowRight size={13} />
@@ -380,28 +368,19 @@ export const IntegrationsPage: React.FC = () => {
                                     ) : oauthIntegration ? (
                                         <button 
                                             onClick={() => handleDisconnect(oauthIntegration.id)}
-                                            className="w-full flex items-center justify-center gap-2 h-11 bg-red-500/5 hover:bg-red-650 border border-red-500/10 hover:border-red-600 text-red-400 hover:text-white rounded-xl transition-all duration-300 text-xs font-bold uppercase tracking-wider"
+                                            className="btn-danger w-full flex items-center justify-center gap-1.5 h-10"
                                         >
                                             <Trash2 size={13} />
                                             Disconnect Server
                                         </button>
                                     ) : (
-                                        <div className="space-y-2.5">
-                                            <button 
-                                                onClick={() => handleConnect(int.id)}
-                                                className="w-full flex items-center justify-between px-4.5 h-11 bg-zinc-900 hover:bg-blue-650 border border-zinc-855 hover:border-blue-600 text-zinc-300 hover:text-white rounded-xl transition-all duration-300 text-xs font-bold uppercase tracking-wider"
-                                            >
-                                                <span>OAuth Gateway Login</span>
-                                                <ArrowRight size={13} />
-                                            </button>
-                                            <button 
-                                                onClick={() => { if (int.id === 'google') setShowKeyModal(true); else toast('Microsoft JSON keys supported soon', { icon: '🛡️' }); }}
-                                                className="w-full flex items-center justify-between px-4.5 h-11 bg-zinc-950 hover:bg-zinc-900 border border-zinc-900/60 hover:border-zinc-800 text-zinc-500 hover:text-zinc-300 rounded-xl transition-all duration-300 text-xs font-bold uppercase tracking-wider"
-                                            >
-                                                <span>Direct JSON Key Input</span>
-                                                <FileJson size={13} />
-                                            </button>
-                                        </div>
+                                        <button 
+                                            onClick={() => handleConnect(int.id)}
+                                            className="btn-primary w-full flex items-center justify-between px-4 text-xs font-semibold uppercase tracking-wider h-10 shadow-sm"
+                                        >
+                                            <span>OAuth Gateway Login</span>
+                                            <ArrowRight size={13} />
+                                        </button>
                                     )}
                                 </div>
                             </div>
@@ -409,14 +388,14 @@ export const IntegrationsPage: React.FC = () => {
                     })}
 
                     {/* NEURAL ADVISORY TIP */}
-                    <div className="xl:col-span-3 p-5 bg-red-500/5 border border-dashed border-red-500/10 rounded-3xl flex flex-col md:flex-row items-center gap-4 mt-2 shadow-sm">
-                        <div className="w-11 h-11 rounded-2xl bg-red-500/10 flex items-center justify-center shrink-0 border border-red-500/10">
-                            <Zap size={18} className="text-red-400 animate-pulse" />
+                    <div className="xl:col-span-3 p-4 bg-[var(--surface-secondary)] border border-dashed border-[var(--border)] rounded-2xl flex flex-col md:flex-row items-center gap-3 mt-2 shadow-sm">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/5 flex items-center justify-center shrink-0 border border-blue-500/10">
+                            <Zap size={15} className="text-[var(--primary)] animate-pulse" />
                         </div>
-                        <div className="flex-1 space-y-1">
-                            <h4 className="text-zinc-200 text-xs font-bold uppercase tracking-wider leading-none">Gateway Configuration Advisory</h4>
-                            <p className="text-zinc-500 text-xs leading-relaxed font-semibold">
-                                The <span className="text-red-400 font-bold">Twilio Telephony Integration</span> connects real virtual numbers to AI voice agents, dispatching automated conversations dynamically through local SIP gateways.
+                        <div className="flex-1 space-y-0.5">
+                            <h4 className="text-[var(--text-primary)] text-xs font-bold uppercase tracking-wider">Gateway Configuration Advisory</h4>
+                            <p className="text-[var(--text-secondary)] text-[11px] leading-relaxed font-semibold">
+                                The <span className="text-[var(--primary)] font-bold">Twilio Telephony Integration</span> connects real virtual numbers to AI voice agents, dispatching automated conversations dynamically through local SIP gateways.
                             </p>
                         </div>
                     </div>
@@ -425,42 +404,38 @@ export const IntegrationsPage: React.FC = () => {
 
             {/* GOOGLE SERVICE ACCOUNT MODAL */}
             {showKeyModal && (
-                <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
-                    <div className="bg-zinc-950 border border-zinc-900 w-full max-w-lg rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-200 flex flex-col">
-                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
-                        
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-900">
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                                    <FileJson className="text-blue-500" size={18} />
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-md rounded-2xl overflow-hidden shadow-xl animate-in zoom-in-95 duration-200 flex flex-col">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-blue-500/5 border border-blue-500/10 flex items-center justify-center">
+                                    <FileJson className="text-[var(--primary)]" size={15} />
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest leading-none">Google Service Account</h2>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Direct credential configuration</p>
+                                    <h2 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider leading-none">Google Service Account</h2>
+                                    <p className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider mt-1">Direct credential configuration</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowKeyModal(false)}
-                                className="w-10 h-10 rounded-xl border border-zinc-850 flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition"
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
                             >
-                                <X size={18} />
+                                <X size={15} />
                             </button>
                         </div>
 
-                        <div className="p-8 space-y-6">
-                            <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex gap-3">
-                                <Info size={16} className="text-blue-400 shrink-0 mt-0.5" />
-                                <div className="space-y-1.5">
-                                    <p className="text-zinc-400 text-xs leading-relaxed font-semibold">
-                                        Paste the complete credentials JSON object of your <span className="text-blue-455 font-bold">Google Cloud Service Account key</span> file here.
-                                    </p>
-                                </div>
+                        <div className="p-6 space-y-4">
+                            <div className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl flex gap-2.5">
+                                <Info size={15} className="text-[var(--primary)] shrink-0 mt-0.5" />
+                                <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
+                                    Paste the complete credentials JSON object of your <span className="text-[var(--primary)] font-bold">Google Cloud Service Account key</span> file here.
+                                </p>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">JSON Key Content</label>
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">JSON Key Content</label>
                                 <textarea 
-                                    className="w-full h-44 rounded-2xl border border-zinc-900 bg-zinc-950/60 p-4 font-mono text-xs text-blue-400/90 outline-none focus:border-blue-500/60 focus:ring-1 focus:ring-blue-500/10 transition resize-none leading-relaxed"
+                                    className="w-full h-32 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] p-3 font-mono text-[10px] text-[var(--primary)] outline-none focus:border-[var(--border-focus)] transition resize-none leading-relaxed"
                                     placeholder='{ "type": "service_account", ... }'
                                     value={jsonKey}
                                     onChange={(e) => setJsonKey(e.target.value)}
@@ -470,7 +445,7 @@ export const IntegrationsPage: React.FC = () => {
                             <button 
                                 onClick={handleServiceAccountSubmit}
                                 disabled={isSubmitting}
-                                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-xl flex items-center justify-center shadow-lg active:scale-98 disabled:opacity-50"
+                                className="btn-primary w-full h-11"
                             >
                                 {isSubmitting ? 'Verifying Link...' : 'Sync Service Credentials'}
                             </button>
@@ -481,57 +456,55 @@ export const IntegrationsPage: React.FC = () => {
 
             {/* TWILIO GATEWAY CONFIGURATION MODAL */}
             {showTwilioModal && (
-                <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
-                    <div className="bg-zinc-950 border border-zinc-900 w-full max-w-[590px] rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-200 flex flex-col relative">
-                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
-                        
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-900">
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-                                    <Phone className="text-red-500" size={18} />
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-[500px] rounded-2xl overflow-hidden shadow-xl animate-in zoom-in-95 duration-200 flex flex-col relative">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-red-500/5 border border-red-500/10 flex items-center justify-center">
+                                    <Phone className="text-[var(--primary)]" size={15} />
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest leading-none">Twilio Node</h2>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">Configure Vault Telephony secrets</p>
+                                    <h2 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider leading-none">Twilio Connection</h2>
+                                    <p className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider mt-1">Configure Vault Telephony secrets</p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => setShowTwilioModal(false)}
-                                className="w-10 h-10 rounded-xl border border-zinc-850 flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition"
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
                             >
-                                <X size={18} />
+                                <X size={15} />
                             </button>
                         </div>
 
-                        <div className="p-8 space-y-6 max-h-[75vh] overflow-y-auto custom-scrollbar">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio Account SID</label>
+                        <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio Account SID</label>
                                     <input 
-                                        className="w-full h-12 bg-zinc-900/60 border border-zinc-900 rounded-xl px-4 text-sm text-zinc-200 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/10 placeholder:text-zinc-700 transition-all font-semibold"
-                                        placeholder="e.g. ACXXXXXXXXXXXXXXXX"
+                                        className="input-field"
+                                        placeholder="ACXXXXXXXXXXXXXXXX"
                                         value={twilioKeys.twilio_account_sid}
                                         onChange={e => setTwilioKeys({...twilioKeys, twilio_account_sid: e.target.value})}
                                     />
                                 </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio Assigned Number</label>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio Phone Number</label>
                                     <input 
-                                        className="w-full h-12 bg-zinc-900/60 border border-zinc-900 rounded-xl px-4 text-sm font-mono text-zinc-200 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/10 placeholder:text-zinc-700 transition-all"
-                                        placeholder="e.g. +1234567890"
+                                        className="input-field font-mono"
+                                        placeholder="+1XXXXXXXXXX"
                                         value={twilioKeys.twilio_phone_number}
                                         onChange={e => setTwilioKeys({...twilioKeys, twilio_phone_number: e.target.value})}
                                     />
                                 </div>
                             </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">Twilio Auth Token</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Twilio Auth Token</label>
                                     <input 
                                         type="password"
-                                        className="w-full h-12 bg-zinc-900/60 border border-zinc-900 rounded-xl px-4 text-sm text-zinc-200 outline-none focus:border-red-500/60 focus:ring-1 focus:ring-red-500/10 placeholder:text-zinc-700 transition-all font-mono"
+                                        className="input-field font-mono"
                                         placeholder="Vaulted Secure Token"
                                         value={twilioKeys.twilio_auth_token}
                                         onChange={e => setTwilioKeys({...twilioKeys, twilio_auth_token: e.target.value})}
@@ -540,35 +513,35 @@ export const IntegrationsPage: React.FC = () => {
                             </div>
 
                             {/* WEBHOOK CORNER */}
-                            <div className="border-t border-zinc-900 pt-6 space-y-4">
-                                <h3 className="text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Twilio callback webhooks</h3>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <span className="text-[9px] text-zinc-550 font-extrabold uppercase tracking-widest">Inbound Route Hook</span>
-                                        <div className="flex bg-zinc-950/60 rounded-xl border border-zinc-900/80 p-3.5 items-center justify-between shadow-inner">
-                                            <span className="font-mono text-[9px] text-zinc-450 truncate max-w-[170px]">
+                            <div className="border-t border-[var(--border)] pt-4 space-y-3">
+                                <h3 className="text-[9px] font-bold text-[var(--text-primary)] uppercase tracking-wider">Twilio callback webhooks</h3>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] text-[var(--text-muted)] font-extrabold uppercase tracking-widest">Inbound Route Hook</span>
+                                        <div className="flex bg-[var(--surface-secondary)] rounded-xl border border-[var(--border)] p-2.5 items-center justify-between shadow-sm min-w-0">
+                                            <span className="font-mono text-[8px] text-[var(--text-secondary)] truncate flex-1 min-w-0 mr-1">
                                                 {resolveWebhookUrl('/inbound')}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(resolveWebhookUrl('/inbound'), 'Inbound Hook')}
-                                                className="text-zinc-500 hover:text-zinc-200 transition-colors shrink-0 ml-1"
+                                                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
                                             >
-                                                {copiedText === 'Inbound Hook' ? <Check size={12} className="text-emerald-450" /> : <Copy size={12} />}
+                                                {copiedText === 'Inbound Hook' ? <Check size={11} className="text-[var(--success)]" /> : <Copy size={11} />}
                                             </button>
                                         </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <span className="text-[9px] text-zinc-550 font-extrabold uppercase tracking-widest">Outbound Flow Hook</span>
-                                        <div className="flex bg-zinc-950/60 rounded-xl border border-zinc-900/80 p-3.5 items-center justify-between shadow-inner">
-                                            <span className="font-mono text-[9px] text-zinc-455 truncate max-w-[170px]">
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] text-[var(--text-muted)] font-extrabold uppercase tracking-widest">Outbound Flow Hook</span>
+                                        <div className="flex bg-[var(--surface-secondary)] rounded-xl border border-[var(--border)] p-2.5 items-center justify-between shadow-sm min-w-0">
+                                            <span className="font-mono text-[8px] text-[var(--text-secondary)] truncate flex-1 min-w-0 mr-1">
                                                 {resolveWebhookUrl('/flow')}
                                             </span>
                                             <button
                                                 onClick={() => handleCopy(resolveWebhookUrl('/flow'), 'Outbound Flow Hook')}
-                                                className="text-zinc-500 hover:text-zinc-200 transition-colors shrink-0 ml-1"
+                                                className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors shrink-0"
                                             >
-                                                {copiedText === 'Outbound Flow Hook' ? <Check size={12} className="text-emerald-450" /> : <Copy size={12} />}
+                                                {copiedText === 'Outbound Flow Hook' ? <Check size={11} className="text-[var(--success)]" /> : <Copy size={11} />}
                                             </button>
                                         </div>
                                     </div>
@@ -578,13 +551,13 @@ export const IntegrationsPage: React.FC = () => {
                             <button 
                                 onClick={handleSaveTwilioKeys}
                                 disabled={isSubmitting}
-                                className="w-full bg-gradient-to-r from-red-650 to-amber-650 hover:from-red-550 hover:to-amber-550 text-white rounded-xl transition-all duration-300 font-bold uppercase tracking-widest text-[10px] gap-2 h-12 flex items-center justify-center disabled:opacity-50"
+                                className="btn-primary w-full h-11 flex items-center justify-center mt-2"
                             >
                                 {isSubmitting ? (
                                     <Loader2 className="animate-spin" size={16} />
                                 ) : (
                                     <>
-                                        <Smartphone size={15} strokeWidth={2.5} />
+                                        <Smartphone size={14} />
                                         Sync Twilio Profile
                                     </>
                                 )}
@@ -595,49 +568,45 @@ export const IntegrationsPage: React.FC = () => {
             )}
             {/* AUTOMATION MODAL (n8n / Make.com) */}
             {showAutomationModal && automationProvider && (
-                <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
-                    <div className="bg-zinc-950 border border-zinc-900 w-full max-w-lg rounded-3xl overflow-hidden shadow-[0_0_50px_rgba(0,0,0,0.8)] animate-in zoom-in-95 duration-200 flex flex-col relative">
-                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/20 to-transparent" />
-                        
-                        <div className="flex items-center justify-between px-8 py-6 border-b border-zinc-900">
-                            <div className="flex items-center gap-3.5">
-                                <div className="w-10 h-10 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center p-1.5">
-                                    {automationProvider === 'n8n' ? <N8nIcon size={20} /> : <MakeIcon size={20} />}
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-6 z-[100] animate-in fade-in duration-200">
+                    <div className="bg-[var(--surface)] border border-[var(--border)] w-full max-w-md rounded-2xl overflow-hidden shadow-xl animate-in zoom-in-95 duration-200 flex flex-col relative">
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border)]">
+                            <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center p-1">
+                                    {automationProvider === 'n8n' ? <N8nIcon size={16} /> : <MakeIcon size={16} />}
                                 </div>
                                 <div>
-                                    <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-widest leading-none">
+                                    <h2 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider leading-none">
                                         {automationProvider === 'n8n' ? 'n8n Automation' : 'Make.com Flow'}
                                     </h2>
-                                    <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-1">
+                                    <p className="text-[9px] text-[var(--text-muted)] font-bold uppercase tracking-wider mt-1">
                                         Link Voice Transcripts & Webhooks
                                     </p>
                                 </div>
                             </div>
                             <button
                                 onClick={() => { setShowAutomationModal(false); setAutomationInput(''); }}
-                                className="w-10 h-10 rounded-xl border border-zinc-850 flex items-center justify-center text-zinc-500 hover:text-zinc-200 transition"
+                                className="w-8 h-8 rounded-lg border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
                             >
-                                <X size={18} />
+                                <X size={15} />
                             </button>
                         </div>
 
-                        <div className="p-8 space-y-6">
-                            <div className="p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex gap-3">
-                                <Info size={16} className="text-blue-400 shrink-0 mt-0.5" />
-                                <div className="space-y-1.5">
-                                    <p className="text-zinc-400 text-xs leading-relaxed font-semibold">
-                                        Enter your workflow webhook URL. When a call completes, a payload containing transcripts, caller intelligence, and duration will automatically dispatch.
-                                    </p>
-                                </div>
+                        <div className="p-6 space-y-4">
+                            <div className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl flex gap-2.5">
+                                <Info size={15} className="text-[var(--primary)] shrink-0 mt-0.5" />
+                                <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
+                                    Enter your workflow webhook URL. When a call completes, a payload containing transcripts, caller intelligence, and duration will automatically dispatch.
+                                </p>
                             </div>
 
-                            <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider ml-1">
+                            <div className="space-y-1">
+                                <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">
                                     {automationProvider === 'n8n' ? 'n8n Webhook URL' : 'Make Custom Webhook URL'}
                                 </label>
                                 <input 
-                                    className="w-full h-12 bg-zinc-900/60 border border-zinc-900 rounded-xl px-4 text-sm text-zinc-200 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/10 placeholder:text-zinc-700 transition-all font-semibold"
-                                    placeholder={automationProvider === 'n8n' ? "e.g. https://n8n.yourdomain.com/webhook/..." : "e.g. https://hook.us1.make.com/..."}
+                                    className="input-field"
+                                    placeholder={automationProvider === 'n8n' ? "https://n8n.yourdomain.com/webhook/..." : "https://hook.us1.make.com/..."}
                                     value={automationInput}
                                     onChange={e => setAutomationInput(e.target.value)}
                                 />
@@ -659,7 +628,7 @@ export const IntegrationsPage: React.FC = () => {
                                     setShowAutomationModal(false);
                                     toast.success(`${automationProvider === 'n8n' ? 'n8n' : 'Make.com'} automation linked successfully!`);
                                 }}
-                                className="w-full h-12 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-xl flex items-center justify-center shadow-lg active:scale-98"
+                                className="btn-primary w-full h-11"
                             >
                                 Link Workflow
                             </button>

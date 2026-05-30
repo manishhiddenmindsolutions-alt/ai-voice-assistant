@@ -104,47 +104,45 @@ const SettingsPage = () => {
   };
 
   const sections = [
-    { id: 'telephony' as const, label: 'Telephony', icon: Phone, color: 'text-orange-400' },
-    { id: 'general' as const, label: 'General', icon: Globe, color: 'text-blue-400' },
-    { id: 'account' as const, label: 'Account', icon: User, color: 'text-violet-400' },
+    { id: 'telephony' as const, label: 'Telephony', icon: Phone },
+    { id: 'general' as const, label: 'General', icon: Globe },
+    { id: 'account' as const, label: 'Account', icon: User },
   ];
 
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div>
-          <div className="mb-5">
-            <BackButton fallbackPath="/" label="Overview" />
+          <div className="mb-3">
+            <BackButton fallbackPath="/" label="Dashboard" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Settings
           </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-zinc-500" />
-            <p className="text-zinc-550 text-xs font-bold uppercase tracking-wider leading-none">
-              System Configuration
-            </p>
-          </div>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            System configuration and preferences
+          </p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* SIDEBAR NAV */}
         <div className="lg:col-span-1">
-          <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-3 sticky top-24">
+          <div className="card p-2 sticky top-24">
             <nav className="space-y-1">
               {sections.map(s => (
                 <button
                   key={s.id}
                   onClick={() => setActiveSection(s.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-bold uppercase tracking-wider transition-all duration-300 ${
-                    activeSection === s.id
-                      ? 'bg-blue-500/10 text-blue-450 border border-blue-500/20'
-                      : 'text-zinc-500 hover:text-zinc-300 hover:bg-zinc-800/20 border border-transparent'
-                  }`}
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200"
+                  style={{
+                    backgroundColor: activeSection === s.id ? 'var(--sidebar-item-active-bg)' : 'transparent',
+                    color: activeSection === s.id ? 'var(--sidebar-item-active-text)' : 'var(--text-secondary)',
+                    border: activeSection === s.id ? '1px solid var(--sidebar-item-active-border)' : '1px solid transparent',
+                  }}
                 >
-                  <s.icon size={15} className={activeSection === s.id ? 'text-blue-400' : 'text-zinc-600'} />
+                  <s.icon size={16} />
                   {s.label}
                 </button>
               ))}
@@ -154,70 +152,44 @@ const SettingsPage = () => {
 
         {/* MAIN CONTENT */}
         <div className="lg:col-span-3 space-y-6">
-          {/* ─── TELEPHONY SECTION ──────────────────────────────────────── */}
+          {/* TELEPHONY SECTION */}
           {activeSection === 'telephony' && (
-            <div className="animate-in fade-in duration-300 space-y-6">
+            <div className="animate-in fade-in duration-300 space-y-4">
               {/* SIP Trunk Status */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <Server size={15} className="text-orange-400" />
+              <div className="card p-6">
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <Server size={15} style={{ color: 'var(--warning)' }} />
                   SIP Trunk Status
                 </h2>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      {telephony.has_sip_trunks ? (
-                        <CheckCircle2 size={14} className="text-emerald-400" />
-                      ) : (
-                        <AlertCircle size={14} className="text-amber-400" />
-                      )}
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Provisioned</span>
-                    </div>
-                    <span className={`text-lg font-bold ${telephony.has_sip_trunks ? 'text-emerald-400' : 'text-amber-400'}`}>
-                      {telephony.trunk_count} Trunks
-                    </span>
-                  </div>
-                  
-                  <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      {telephony.inbound_active ? (
-                        <CheckCircle2 size={14} className="text-emerald-400" />
-                      ) : (
-                        <AlertCircle size={14} className="text-zinc-600" />
-                      )}
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Inbound</span>
-                    </div>
-                    <span className={`text-lg font-bold ${telephony.inbound_active ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                      {telephony.inbound_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
-                  
-                  <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      {telephony.outbound_active ? (
-                        <CheckCircle2 size={14} className="text-emerald-400" />
-                      ) : (
-                        <AlertCircle size={14} className="text-zinc-600" />
-                      )}
-                      <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider">Outbound</span>
-                    </div>
-                    <span className={`text-lg font-bold ${telephony.outbound_active ? 'text-emerald-400' : 'text-zinc-600'}`}>
-                      {telephony.outbound_active ? 'Active' : 'Inactive'}
-                    </span>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <StatusBox 
+                    label="Provisioned" 
+                    value={`${telephony.trunk_count} Trunks`} 
+                    isActive={telephony.has_sip_trunks} 
+                  />
+                  <StatusBox 
+                    label="Inbound" 
+                    value={telephony.inbound_active ? 'Active' : 'Inactive'} 
+                    isActive={telephony.inbound_active} 
+                  />
+                  <StatusBox 
+                    label="Outbound" 
+                    value={telephony.outbound_active ? 'Active' : 'Inactive'} 
+                    isActive={telephony.outbound_active} 
+                  />
                 </div>
               </div>
 
               {/* Twilio Credentials */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <Key size={15} className="text-amber-400" />
+              <div className="card p-6">
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <Key size={15} style={{ color: 'var(--warning)' }} />
                   Twilio Credentials
                 </h2>
 
-                <div className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <InputField
                       label="Account SID"
                       value={telephony.twilio_account_sid}
@@ -238,7 +210,7 @@ const SettingsPage = () => {
                     label="Auth Token"
                     value={telephony.twilio_auth_token}
                     onChange={(v: string) => setTelephony({ ...telephony, twilio_auth_token: v })}
-                    placeholder="Vaulted token"
+                    placeholder="Secure token"
                     icon={<Shield size={13} />}
                     type="password"
                   />
@@ -246,7 +218,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSaveTelephony}
                     disabled={savingTelephony}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold h-11 rounded-xl transition-all duration-300 uppercase tracking-wider text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+                    className="btn-primary w-full h-11 disabled:opacity-50"
                   >
                     {savingTelephony ? <Loader2 className="animate-spin" size={16} /> : (
                       <>
@@ -260,24 +232,24 @@ const SettingsPage = () => {
             </div>
           )}
 
-          {/* ─── GENERAL SECTION ────────────────────────────────────────── */}
+          {/* GENERAL SECTION */}
           {activeSection === 'general' && (
-            <div className="animate-in fade-in duration-300 space-y-6">
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <Globe size={15} className="text-blue-400" />
+            <div className="animate-in fade-in duration-300 space-y-4">
+              <div className="card p-6">
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <Globe size={15} style={{ color: 'var(--primary)' }} />
                   Preferences
                 </h2>
 
-                <div className="space-y-5">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Timezone */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
                         <Clock size={12} /> Timezone
                       </label>
                       <select
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-4 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-all cursor-pointer"
+                        className="input-field cursor-pointer"
                         value={general.timezone}
                         onChange={e => setGeneral({ ...general, timezone: e.target.value })}
                       >
@@ -293,12 +265,12 @@ const SettingsPage = () => {
                     </div>
 
                     {/* Default Language */}
-                    <div className="space-y-2">
-                      <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
                         <Languages size={12} /> Default Language
                       </label>
                       <select
-                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-4 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-all cursor-pointer"
+                        className="input-field cursor-pointer"
                         value={general.default_language}
                         onChange={e => setGeneral({ ...general, default_language: e.target.value })}
                       >
@@ -313,13 +285,13 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Auto-disconnect Timer */}
-                  <div className="space-y-2">
-                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
                       <Timer size={12} /> Auto-Disconnect Timer (seconds)
                     </label>
                     <input
                       type="number"
-                      className="w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-4 text-sm font-mono text-zinc-200 outline-none focus:border-blue-500 transition-all"
+                      className="input-field font-mono"
                       value={general.auto_disconnect_seconds}
                       onChange={e => setGeneral({ ...general, auto_disconnect_seconds: parseInt(e.target.value) || 300 })}
                       min={30}
@@ -328,22 +300,21 @@ const SettingsPage = () => {
                   </div>
 
                   {/* Notifications Toggle */}
-                  <div className="flex items-center justify-between p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
+                  <div className="flex items-center justify-between p-4 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center gap-3">
-                      <Bell size={15} className="text-zinc-400" />
+                      <Bell size={15} style={{ color: 'var(--text-muted)' }} />
                       <div>
-                        <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider block">Notifications</span>
-                        <span className="text-[10px] text-zinc-500">Receive alerts for call events</span>
+                        <span className="text-sm font-medium block" style={{ color: 'var(--text-primary)' }}>Notifications</span>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Receive alerts for call events</span>
                       </div>
                     </div>
                     <button
                       onClick={() => setGeneral({ ...general, notifications_enabled: !general.notifications_enabled })}
-                      className={`w-12 h-6 rounded-full transition-all duration-300 relative ${
-                        general.notifications_enabled ? 'bg-emerald-500' : 'bg-zinc-700'
-                      }`}
+                      className="w-11 h-6 rounded-full transition-all duration-300 relative"
+                      style={{ backgroundColor: general.notifications_enabled ? 'var(--success)' : 'var(--border)' }}
                     >
                       <div className={`w-5 h-5 rounded-full bg-white shadow-md absolute top-0.5 transition-all duration-300 ${
-                        general.notifications_enabled ? 'left-6' : 'left-0.5'
+                        general.notifications_enabled ? 'left-5.5' : 'left-0.5'
                       }`} />
                     </button>
                   </div>
@@ -351,7 +322,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSaveGeneral}
                     disabled={savingGeneral}
-                    className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold h-11 rounded-xl transition-all duration-300 uppercase tracking-wider text-xs flex items-center justify-center gap-2 disabled:opacity-50 disabled:pointer-events-none"
+                    className="btn-primary w-full h-11 disabled:opacity-50"
                   >
                     {savingGeneral ? <Loader2 className="animate-spin" size={16} /> : (
                       <>
@@ -365,16 +336,16 @@ const SettingsPage = () => {
             </div>
           )}
 
-          {/* ─── ACCOUNT SECTION ────────────────────────────────────────── */}
+          {/* ACCOUNT SECTION */}
           {activeSection === 'account' && (
-            <div className="animate-in fade-in duration-300 space-y-6">
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <User size={15} className="text-violet-400" />
+            <div className="animate-in fade-in duration-300 space-y-4">
+              <div className="card p-6">
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <User size={15} style={{ color: '#8B5CF6' }} />
                   Account Information
                 </h2>
 
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <InfoRow icon={<User size={13} />} label="Full Name" value={account?.full_name || user?.full_name || '—'} />
                   <InfoRow icon={<Mail size={13} />} label="Email" value={account?.email || user?.email || '—'} />
                   <InfoRow icon={<Calendar size={13} />} label="Member Since" value={account?.created_at ? new Date(account.created_at).toLocaleDateString() : '—'} />
@@ -383,28 +354,28 @@ const SettingsPage = () => {
                 </div>
               </div>
 
-              {/* API Key Display */}
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6">
-                <h2 className="text-sm font-bold text-zinc-200 uppercase tracking-wider mb-5 flex items-center gap-2">
-                  <Key size={15} className="text-amber-400" />
+              {/* API Key */}
+              <div className="card p-6">
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-4" style={{ color: 'var(--text-primary)' }}>
+                  <Key size={15} style={{ color: 'var(--warning)' }} />
                   API Access
                 </h2>
-                <div className="p-4 bg-zinc-950/40 border border-zinc-900 rounded-xl">
-                  <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block mb-2">User ID</span>
-                  <code className="text-xs text-zinc-400 font-mono break-all">{account?.user_id || '—'}</code>
+                <div className="p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
+                  <span className="text-[11px] font-semibold block mb-1" style={{ color: 'var(--text-muted)' }}>User ID</span>
+                  <code className="text-xs font-mono break-all" style={{ color: 'var(--text-secondary)' }}>{account?.user_id || '—'}</code>
                 </div>
               </div>
 
               {/* Danger Zone */}
-              <div className="rounded-2xl border border-red-500/20 bg-red-500/5 p-6">
-                <h2 className="text-sm font-bold text-red-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+              <div className="p-6 rounded-xl" style={{ backgroundColor: 'rgba(239,68,68,0.04)', border: '1px solid rgba(239,68,68,0.15)' }}>
+                <h2 className="text-sm font-semibold flex items-center gap-2 mb-2" style={{ color: 'var(--danger)' }}>
                   <AlertCircle size={15} />
                   Danger Zone
                 </h2>
-                <p className="text-xs text-zinc-500 mb-4">
+                <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
                   Irreversible actions. Proceed with caution.
                 </p>
-                <button className="px-4 py-2.5 border border-red-500/30 text-red-400 rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-red-500/10 transition-all">
+                <button className="btn-danger text-xs h-9">
                   Delete All Call Data
                 </button>
               </div>
@@ -418,14 +389,30 @@ const SettingsPage = () => {
 
 // ─── Reusable Components ─────────────────────────────────────────────────────
 
+const StatusBox = ({ label, value, isActive }: { label: string; value: string; isActive: boolean }) => (
+  <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
+    <div className="flex items-center gap-2 mb-2">
+      {isActive ? (
+        <CheckCircle2 size={14} style={{ color: 'var(--success)' }} />
+      ) : (
+        <AlertCircle size={14} style={{ color: 'var(--warning)' }} />
+      )}
+      <span className="text-[11px] font-semibold" style={{ color: 'var(--text-muted)' }}>{label}</span>
+    </div>
+    <span className="text-lg font-bold" style={{ color: isActive ? 'var(--success)' : 'var(--text-muted)' }}>
+      {value}
+    </span>
+  </div>
+);
+
 const InputField = ({ label, value, onChange, placeholder, icon, type = 'text', mono = false }: any) => (
-  <div className="space-y-2">
-    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider ml-1 flex items-center gap-1.5">
-      {icon} {label}
+  <div className="space-y-1.5">
+    <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
+      <span style={{ color: 'var(--text-muted)' }}>{icon}</span> {label}
     </label>
     <input
       type={type}
-      className={`w-full bg-zinc-950 border border-zinc-800 rounded-xl h-11 px-4 text-sm text-zinc-200 outline-none focus:border-blue-500 transition-all placeholder:text-zinc-700 ${mono ? 'font-mono' : ''}`}
+      className={`input-field ${mono ? 'font-mono' : ''}`}
       placeholder={placeholder}
       value={value}
       onChange={e => onChange(e.target.value)}
@@ -434,12 +421,12 @@ const InputField = ({ label, value, onChange, placeholder, icon, type = 'text', 
 );
 
 const InfoRow = ({ icon, label, value }: any) => (
-  <div className="flex items-center justify-between p-4 bg-zinc-950/30 border border-zinc-900 rounded-xl">
+  <div className="flex items-center justify-between p-3 rounded-lg" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
     <div className="flex items-center gap-2.5">
-      <span className="text-zinc-500">{icon}</span>
-      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">{label}</span>
+      <span style={{ color: 'var(--text-muted)' }}>{icon}</span>
+      <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
     </div>
-    <span className="text-sm font-semibold text-zinc-200">{value}</span>
+    <span className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{value}</span>
   </div>
 );
 

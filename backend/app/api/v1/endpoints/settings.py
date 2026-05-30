@@ -9,9 +9,13 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
+# pyrefly: ignore [missing-import]
 from app.db.session import get_db
+# pyrefly: ignore [missing-import]
 from app.models.orm import UserORM, SIPTrunkORM, PhoneNumberORM, AgentORM
+# pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
+# pyrefly: ignore [missing-import]
 from app.core.security import vault
 
 logger = logging.getLogger("settings")

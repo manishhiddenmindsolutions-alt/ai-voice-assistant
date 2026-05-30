@@ -30,7 +30,7 @@ export const BackButton: React.FC<BackButtonProps> = ({
       title={`Go back to ${label}`}
     >
       <ArrowLeft size={14} className="transition-transform duration-200 group-hover:-translate-x-1" />
-      <span>{label}</span>
+      <span>Back</span>
     </button>
   );
 };

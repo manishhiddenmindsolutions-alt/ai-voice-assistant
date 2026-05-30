@@ -4,8 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
+# pyrefly: ignore [missing-import]
 from app.db.session import get_db
+# pyrefly: ignore [missing-import]
 from app.models.orm import PhoneNumberORM, UserORM
+# pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
 
 router = APIRouter()
@@ -115,8 +118,10 @@ async def get_inbound_config(
     Internal endpoint to resolve agent config for a dialed phone number.
     Called dynamically by the LiveKit Agent worker when a call arrives.
     """
+    # pyrefly: ignore [missing-import]
     from app.models.orm import AgentORM, CallORM, CallDirection, ProviderConnectionORM
     from sqlalchemy.orm import selectinload
+    # pyrefly: ignore [missing-import]
     from app.core.security import vault
     import logging
     logger = logging.getLogger("inbound-config")

@@ -50,7 +50,7 @@ const AgentsPage = () => {
             fetchNumbers();
         } catch (err) {
             console.error('Fetch failed', err);
-            toast.error('Failed to sync assistants');
+            toast.error('Failed to sync agents');
         } finally {
             setIsLoading(false);
             setIsRefreshing(false);
@@ -102,185 +102,215 @@ const AgentsPage = () => {
         setIsDeleting(true);
         const { id, name } = decommissioningItem;
 
-        const toastId = toast.loading(`Decommissioning ${name}...`);
+        const toastId = toast.loading(`Deleting ${name}...`);
         try {
             await agentApi.delete(id);
-            toast.success(`${name} decommissioned`, { id: toastId });
+            toast.success(`${name} deleted`, { id: toastId });
             setDecommissioningItem(null);
             fetchAgents(true);
         } catch (err) {
             console.error('Delete failed:', err);
-            toast.error('Failed to delete assistant', { id: toastId });
+            toast.error('Failed to delete agent', { id: toastId });
         } finally {
             setIsDeleting(false);
         }
     };
 
     const filteredAgents = (agents || []).filter(a =>
-        (a.agentName || 'Unnamed Assistant').toLowerCase().includes(searchTerm.toLowerCase())
+        (a.agentName || 'Unnamed').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
         <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
 
             {/* HEADER */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
                 <div>
-                    <div className="mb-5">
-                        <BackButton fallbackPath="/" label="Overview" />
+                    <div className="mb-3">
+                        <BackButton fallbackPath="/" label="Dashboard" />
                     </div>
-                    <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
-                        Assistants Registry
+                    <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+                        Agents
                     </h1>
-                    <p className="text-sm text-zinc-500 mt-2 font-normal">
-                        Deploy, monitor and orchestrate your autonomous AI voice agents.
+                    <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                        Deploy, monitor and manage your AI voice agents.
                     </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <button
                         onClick={() => fetchAgents(true)}
-                        className={`w-11 h-11 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/50 text-zinc-400 hover:text-zinc-200 hover:border-zinc-700 transition-all ${isRefreshing ? 'animate-spin' : ''}`}
-                        title="Sync Registry"
+                        className={`w-10 h-10 flex items-center justify-center rounded-lg transition-all ${isRefreshing ? 'animate-spin' : ''}`}
+                        style={{ 
+                            border: '1px solid var(--border)',
+                            backgroundColor: 'var(--surface)',
+                            color: 'var(--text-secondary)' 
+                        }}
+                        title="Refresh"
                     >
                         <RefreshCw size={16} />
                     </button>
 
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10"
+                        className="btn-primary shadow-sm"
                     >
                         <Plus size={16} />
-                        Register Assistant
+                        Create Agent
                     </button>
                 </div>
             </div>
 
-            {/* FILTERS BAR */}
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-                <div className="relative flex-1 w-full max-w-md group">
-                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500" size={15} />
+            {/* SEARCH & FILTERS */}
+            <div className="flex flex-col md:flex-row items-center justify-between gap-3 mb-6">
+                <div className="relative flex-1 w-full max-w-md">
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--text-muted)' }} />
                     <input
                         type="text"
-                        placeholder="Search HMS registry..."
+                        placeholder="Search agents..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950/40 pl-11 pr-10 text-sm outline-none focus:border-primary/40 transition"
+                        className="input-field pl-10 pr-10"
                     />
                     {searchTerm && (
-                        <button onClick={() => setSearchTerm('')} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-355">
+                        <button onClick={() => setSearchTerm('')} className="absolute right-3.5 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }}>
                             <X size={14} />
                         </button>
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 w-full md:w-auto">
-                    <button className="h-11 px-4 border border-zinc-800 rounded-xl bg-zinc-900/30 text-xs font-medium text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 transition flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full md:w-auto">
+                    <button 
+                        className="btn-outline text-xs"
+                        style={{ height: '40px' }}
+                    >
                         <Filter size={14} />
-                        Filter Operations
+                        Filter
                     </button>
-                    <div className="h-11 px-4 border border-zinc-800 rounded-xl bg-zinc-950/20 flex items-center gap-2 text-zinc-500 text-xs font-medium uppercase tracking-wider">
-                        <Users size={14} className="text-zinc-500" />
-                        <span>{agents.length} Nodes</span>
+                    <div 
+                        className="h-10 px-3 rounded-lg flex items-center gap-2 text-xs font-medium"
+                        style={{ 
+                            border: '1px solid var(--border)',
+                            backgroundColor: 'var(--surface-secondary)',
+                            color: 'var(--text-muted)' 
+                        }}
+                    >
+                        <Users size={14} />
+                        <span>{agents.length} Agents</span>
                     </div>
                 </div>
             </div>
 
-            {/* ASSISTANTS GRID */}
+            {/* AGENTS GRID */}
             {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-64 rounded-2xl border border-zinc-850 bg-zinc-900/20 animate-pulse" />
+                        <div key={i} className="h-64 rounded-lg skeleton" />
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredAgents.map((agent) => {
                         return (
                              <div
                                 key={agent.id}
-                                className="card-premium p-6 flex flex-col justify-between min-h-[290px] group cursor-pointer relative overflow-hidden"
+                                className="card p-5 flex flex-col justify-between min-h-[260px] group cursor-pointer"
                             >
                                 <div>
                                     {/* CARD TOP */}
-                                    <div className="flex items-start justify-between mb-5">
-                                        <div className="flex items-center gap-4">
-                                            <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-2xl" />
+                                    <div className="flex items-start justify-between mb-4">
+                                        <div className="flex items-center gap-3">
+                                            <AgentAvatar name={agent.agentName} agent={agent} className="w-11 h-11 text-xl" />
 
                                             <div>
-                                                <h3 className="text-base font-semibold text-zinc-200 line-clamp-1 leading-tight group-hover:text-primary transition-colors duration-300">
-                                                    {agent.agentName || 'Unnamed Node'}
+                                                <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-[var(--primary)] transition-colors" style={{ color: 'var(--text-primary)' }}>
+                                                    {agent.agentName || 'Unnamed Agent'}
                                                 </h3>
-                                                <div className="flex items-center gap-2 mt-1.5">
-                                                    <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[10px] font-medium uppercase tracking-wider scale-90">
-                                                        <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                                                        <span>Active</span>
-                                                    </div>
+                                                <div className="flex items-center gap-2 mt-1">
+                                                    <span className="badge-success text-[10px] py-0.5 px-2">
+                                                        <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
+                                                        Active
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        {/* TOP CONTROL OVERLAYS */}
-                                        <div className="flex items-center gap-2">
+                                        {/* ACTIONS */}
+                                        <div className="flex items-center gap-1.5">
                                             <button 
                                                 onClick={(e) => handleEdit(agent, e)}
-                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-primary hover:border-primary/20 transition-all shadow-sm"
-                                                title="Configure"
+                                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                                                style={{ 
+                                                    border: '1px solid var(--border)',
+                                                    backgroundColor: 'var(--surface)',
+                                                    color: 'var(--text-muted)' 
+                                                }}
+                                                title="Edit"
                                             >
                                                 <Edit2 size={13} />
                                             </button>
                                             <button 
                                                 onClick={(e) => handleDelete(agent.id, agent.agentName, e)}
-                                                className="w-9 h-9 rounded-xl border border-zinc-800 bg-zinc-950/50 hover:bg-zinc-900 flex items-center justify-center text-zinc-400 hover:text-red-500 hover:border-red-500/20 transition-all shadow-sm"
-                                                title="Decommission"
+                                                className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:text-red-500"
+                                                style={{ 
+                                                    border: '1px solid var(--border)',
+                                                    backgroundColor: 'var(--surface)',
+                                                    color: 'var(--text-muted)' 
+                                                }}
+                                                title="Delete"
                                             >
                                                 <Trash2 size={13} />
                                             </button>
                                         </div>
                                     </div>
 
-                                    {/* PROMPT DESCRIPTION */}
-                                    <p className="text-sm text-zinc-400 leading-relaxed line-clamp-3 min-h-[60px] italic pt-1 font-normal">
-                                        "{agent.prompt || 'Autonomous voice assistant configured and ready for live operation.'}"
+                                    {/* PROMPT */}
+                                    <p className="text-sm leading-relaxed line-clamp-3 min-h-[54px] italic" style={{ color: 'var(--text-secondary)' }}>
+                                        "{agent.prompt || 'Voice assistant ready for operation.'}"
                                     </p>
                                 </div>
 
-                                {/* FOOTER & LAUNCH ACTIONS */}
-                                <div className="mt-5 pt-4 border-t border-zinc-800/40 flex items-center justify-between">
-                                    <div className="flex flex-wrap gap-2 max-w-[70%]">
+                                {/* FOOTER */}
+                                <div className="mt-4 pt-3 flex items-center justify-between" style={{ borderTop: '1px solid var(--border)' }}>
+                                    <div className="flex flex-wrap gap-1.5 max-w-[70%]">
                                         <Badge 
                                             label={agent.language.toUpperCase()} 
-                                            icon={<Globe size={12} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
+                                            icon={<Globe size={11} />} 
                                         />
                                         <Badge 
                                             label={agent.llm?.model ? agent.llm.model.split('/').pop()?.substring(0, 12) || agent.llm.model.substring(0, 12) : 'llama-3.3'} 
-                                            icon={<Cpu size={12} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
+                                            icon={<Cpu size={11} />} 
                                         />
                                         {numbers.filter(n => n.agent_id === agent.id).length > 0 ? (
                                             numbers.filter(n => n.agent_id === agent.id).map(n => (
                                                 <Badge 
                                                     key={n.id}
                                                     label={n.number} 
-                                                    icon={<Phone size={11} className="text-orange-500" />} 
+                                                    icon={<Phone size={10} />} 
                                                     onClick={(e) => { e.stopPropagation(); navigate('/numbers'); }}
-                                                    className="cursor-pointer border-orange-500/20 bg-orange-500/5 hover:bg-orange-500/10 text-orange-400 font-bold"
+                                                    className="cursor-pointer"
                                                 />
                                             ))
                                         ) : (
                                             <Badge 
-                                                label="Link Line" 
-                                                icon={<Plus size={10} className="text-zinc-500 group-hover:text-primary transition-colors" />} 
+                                                label="Link Number" 
+                                                icon={<Plus size={10} />} 
                                                 onClick={(e) => { e.stopPropagation(); navigate('/numbers'); }}
-                                                className="cursor-pointer hover:bg-zinc-800/80 hover:text-zinc-200"
+                                                className="cursor-pointer"
                                             />
                                         )}
                                     </div>
 
                                     <button
                                         onClick={(e) => handleLaunch(agent, e)}
-                                        className="h-9 px-4 rounded-xl bg-zinc-950/50 hover:bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-xs font-semibold text-zinc-400 hover:text-primary transition-all flex items-center gap-2 shadow-sm group/btn"
+                                        className="h-8 px-3 rounded-lg text-xs font-medium flex items-center gap-1.5 transition-all group/btn"
+                                        style={{ 
+                                            border: '1px solid var(--border)',
+                                            backgroundColor: 'var(--surface)',
+                                            color: 'var(--text-secondary)' 
+                                        }}
                                     >
-                                        <Play size={10} fill="currentColor" strokeWidth={0} className="text-emerald-400 group-hover/btn:scale-110 transition-transform" />
+                                        <Play size={10} fill="currentColor" strokeWidth={0} style={{ color: 'var(--success)' }} />
                                         <span>Launch</span>
                                     </button>
                                 </div>
@@ -288,20 +318,30 @@ const AgentsPage = () => {
                         );
                     })}
 
-                    {/* ADD NEW CARD OVERHAUL */}
+                    {/* ADD NEW CARD */}
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="rounded-3xl border-2 border-dashed border-zinc-850/60 hover:border-primary/40 bg-zinc-950/20 hover:bg-zinc-950/40 p-6 flex flex-col items-center justify-center min-h-[290px] transition-all duration-300 group relative overflow-hidden backdrop-blur-md"
+                        className="rounded-xl p-6 flex flex-col items-center justify-center min-h-[260px] transition-all duration-200 group"
+                        style={{ 
+                            border: '2px dashed var(--border)',
+                            backgroundColor: 'transparent' 
+                        }}
                     >
-                        <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-zinc-800/5 to-transparent" />
-                        <div className="w-14 h-14 rounded-2xl bg-zinc-950/50 border border-zinc-850 flex items-center justify-center text-zinc-500 group-hover:text-primary group-hover:border-primary/20 group-hover:bg-zinc-950 transition-all mb-5 group-hover:scale-105">
+                        <div 
+                            className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-105"
+                            style={{ 
+                                border: '1px solid var(--border)',
+                                backgroundColor: 'var(--surface-secondary)',
+                                color: 'var(--text-muted)' 
+                            }}
+                        >
                             <Plus size={20} />
                         </div>
-                        <h3 className="text-sm font-bold text-zinc-300 uppercase tracking-wider group-hover:text-primary transition-colors">
-                            Register Assistant
+                        <h3 className="text-sm font-semibold group-hover:text-[var(--primary)] transition-colors" style={{ color: 'var(--text-primary)' }}>
+                            Create Agent
                         </h3>
-                        <p className="text-[11px] text-zinc-550 mt-2 text-center max-w-[200px] leading-relaxed font-semibold">
-                            Initialize a new connection node for your voice assistant.
+                        <p className="text-xs mt-1 text-center max-w-[200px]" style={{ color: 'var(--text-muted)' }}>
+                            Set up a new AI voice assistant.
                         </p>
                     </button>
                 </div>
@@ -311,7 +351,7 @@ const AgentsPage = () => {
                 isOpen={!!decommissioningItem}
                 onClose={() => setDecommissioningItem(null)}
                 onConfirm={confirmDecommission}
-                title="Decommission Assistant"
+                title="Delete Agent"
                 itemName={decommissioningItem?.name || ''}
                 loading={isDeleting}
             />
@@ -329,7 +369,12 @@ interface BadgeProps {
 const Badge = ({ label, icon, onClick, className }: BadgeProps) => (
     <div 
         onClick={onClick}
-        className={`flex items-center gap-1.5 px-3 py-1 bg-zinc-950/40 border border-zinc-800/60 rounded-lg text-[10px] font-mono text-zinc-400 leading-none transition-all duration-200 select-none ${className || ''}`}
+        className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium leading-none select-none transition-all duration-200 ${className || ''}`}
+        style={{ 
+            backgroundColor: 'var(--badge-bg)',
+            border: '1px solid var(--badge-border)',
+            color: 'var(--badge-text)' 
+        }}
     >
         {icon}
         <span>{label}</span>

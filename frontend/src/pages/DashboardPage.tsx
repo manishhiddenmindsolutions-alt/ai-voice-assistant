@@ -7,7 +7,8 @@ import {
   BarChart3, 
   Activity,
   Phone,
-  ChevronRight
+  ChevronRight,
+  TrendingUp
 } from 'lucide-react';
 import { agentApi, sessionApi, dashboardApi } from '../services/api';
 import toast from 'react-hot-toast';
@@ -71,66 +72,69 @@ const DashboardPage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-500 font-sans">
 
-      {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 pb-6 border-b border-zinc-800 mb-10">
-        <div className="space-y-1">
-          <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-zinc-100 leading-tight">
-            Intelligence Overview
+      {/* HEADER */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Dashboard
           </h1>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Real-time voice compute statistics & registry nodes</p>
-          </div>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            Overview of your voice agents and performance metrics.
+          </p>
         </div>
 
         <button 
           onClick={() => navigate('/agents/create')}
-          className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10 self-start md:self-auto"
+          className="btn-primary self-start md:self-auto shadow-sm"
         >
           <Plus size={16} />
-          Register Assistant
+          Create Agent
         </button>
       </div>
 
       {/* STATS GRID */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatCard 
-          label="Computed Minutes" 
+          label="Total Minutes" 
           value={stats?.computedMinutes?.toLocaleString() || "0"} 
-          trend="+12.5% vs cycle" 
-          icon={<Clock size={16} />} 
+          change="+12.5%"
+          icon={<Clock size={18} />} 
+          color="var(--primary)"
         />
         <StatCard 
           label="Successful Calls" 
           value={stats?.successfulCalls?.toLocaleString() || "0"} 
-          trend="+8.2% conversion" 
-          icon={<Phone size={16} />} 
+          change="+8.2%"
+          icon={<Phone size={18} />} 
+          color="var(--success)"
         />
         <StatCard 
-          label="Call Latency" 
+          label="Avg Latency" 
           value={stats?.callLatency || "0ms"} 
-          trend="-14ms optimized" 
-          icon={<Activity size={16} />} 
+          change="-14ms"
+          icon={<Activity size={18} />} 
+          color="#8B5CF6"
         />
         <StatCard 
-          label="Token Burn" 
+          label="Token Cost" 
           value={stats?.tokenBurn || "$0.00"} 
-          trend="+$2.40 efficiency" 
-          icon={<BarChart3 size={16} />} 
+          change="+$2.40"
+          icon={<BarChart3 size={18} />} 
+          color="#F59E0B"
         />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+      {/* MAIN CONTENT */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        
         {/* ACTIVE AGENTS */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Active Registry Nodes</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Active Agents</h3>
             <button 
               onClick={() => navigate('/agents')} 
-              className="text-xs font-medium text-zinc-500 hover:text-primary transition flex items-center gap-1 uppercase tracking-wider"
+              className="text-xs font-medium flex items-center gap-1 transition-colors"
+              style={{ color: 'var(--primary)' }}
             >
               View all <ChevronRight size={14} />
             </button>
@@ -139,134 +143,160 @@ const DashboardPage = () => {
           <div className="space-y-3">
             {isLoading ? (
               [1, 2, 3].map(i => (
-                <div key={i} className="h-22 rounded-2xl border border-zinc-800 bg-zinc-950/20 animate-pulse" />
+                <div key={i} className="h-20 rounded-lg skeleton" />
               ))
             ) : agents.length > 0 ? (
               agents.slice(0, 4).map(agent => (
                 <div 
                   key={agent.id} 
-                  className="card-premium p-5 flex items-center justify-between group cursor-pointer"
+                  className="card p-4 flex items-center justify-between group cursor-pointer"
                 >
-                  <div className="flex items-center gap-4">
-                    <AgentAvatar name={agent.agentName} agent={agent} className="w-12 h-12 text-xl shadow-sm border border-zinc-800" />
+                  <div className="flex items-center gap-3">
+                    <AgentAvatar name={agent.agentName} agent={agent} className="w-10 h-10 text-lg" />
                     <div>
-                      <h4 className="text-sm font-semibold text-zinc-200 tracking-wide">{agent.agentName}</h4>
-                      <p className="text-[10px] text-zinc-500 mt-1 uppercase font-medium tracking-wider">{agent.llm?.model ? agent.llm.model.substring(0, 16) : 'llama-3.3'} • {agent.language}</p>
+                      <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{agent.agentName}</h4>
+                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+                        {agent.llm?.model ? agent.llm.model.substring(0, 20) : 'Default model'} · {agent.language}
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <div className="hidden sm:flex flex-col items-end">
                       <div className="flex items-center gap-1.5">
-                         <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                         <span className="text-[9px] text-emerald-400 font-semibold uppercase tracking-wider">Online</span>
+                         <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
+                         <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>Active</span>
                       </div>
-                      <span className="text-[9px] text-zinc-500 font-mono mt-0.5 font-medium uppercase tracking-wider">ID: {agent.id.slice(0, 8)}</span>
+                      <span className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>ID: {agent.id.slice(0, 8)}</span>
                     </div>
                     <button 
                       onClick={() => handleQuickLaunch(agent)}
-                      className="w-10 h-10 rounded-xl border border-zinc-800 bg-zinc-950/50 flex items-center justify-center text-zinc-400 hover:text-primary hover:border-primary/20 transition active:scale-95 shadow-sm"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center transition active:scale-95"
+                      style={{ 
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--surface)',
+                        color: 'var(--success)' 
+                      }}
                       title="Launch Session"
                     >
-                      <Play size={12} fill="currentColor" strokeWidth={0} className="text-emerald-400" />
+                      <Play size={12} fill="currentColor" strokeWidth={0} />
                     </button>
                   </div>
                 </div>
               ))
             ) : (
-              <div className="p-10 border border-dashed border-zinc-800 rounded-2xl text-center">
-                <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">No active registry nodes configured.</p>
+              <div 
+                className="p-10 rounded-lg text-center"
+                style={{ border: '2px dashed var(--border)' }}
+              >
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>No agents configured yet.</p>
                 <button 
                   onClick={() => navigate('/agents/create')}
-                  className="mt-4 h-10 px-4 rounded-xl border border-zinc-800 bg-zinc-950/50 text-xs font-medium uppercase tracking-wider text-zinc-400 hover:text-primary hover:border-primary/20 transition active:scale-98 shadow-sm"
+                  className="mt-4 btn-outline text-sm"
                 >
-                  Create New Assistant
+                  Create Your First Agent
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* DISPATCH SIGNALS PANEL */}
+        {/* ACTIVITY LOG */}
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
-            <h3 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Dispatch Signals</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Recent Activity</h3>
             <div className="flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-wider">Live Link</span>
+              <span className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
+              <span className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>Live</span>
             </div>
           </div>
           
-          <div className="card-premium p-5 flex flex-col justify-between min-h-[300px] font-mono text-[10px] leading-relaxed text-zinc-400">
-            <div className="space-y-3.5">
+          <div className="card p-4 flex flex-col justify-between min-h-[300px] font-mono text-xs leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
+            <div className="space-y-3">
               <div className="flex gap-2.5">
-                <span className="text-zinc-500 font-medium">16:59:10</span>
-                <span className="text-primary/60 font-semibold uppercase tracking-wider">[sys]</span>
-                <span className="text-zinc-400">Secured AES-256 connection...</span>
+                <span style={{ color: 'var(--text-muted)' }}>16:59:10</span>
+                <span className="font-semibold" style={{ color: 'var(--primary)' }}>[sys]</span>
+                <span>Secured AES-256 connection...</span>
               </div>
               <div className="flex gap-2.5">
-                <span className="text-zinc-500 font-medium">16:59:12</span>
-                <span className="text-primary/60 font-semibold uppercase tracking-wider">[gate]</span>
-                <span className="text-zinc-400">Sarvam websocket validated.</span>
+                <span style={{ color: 'var(--text-muted)' }}>16:59:12</span>
+                <span className="font-semibold" style={{ color: 'var(--primary)' }}>[gate]</span>
+                <span>Sarvam websocket validated.</span>
               </div>
               <div className="flex gap-2.5">
-                <span className="text-zinc-500 font-medium">16:59:15</span>
-                <span className="text-primary/60 font-semibold uppercase tracking-wider">[route]</span>
-                <span className="text-zinc-400">OpenRouter fallback active.</span>
+                <span style={{ color: 'var(--text-muted)' }}>16:59:15</span>
+                <span className="font-semibold" style={{ color: 'var(--primary)' }}>[route]</span>
+                <span>OpenRouter fallback active.</span>
               </div>
               <div className="flex gap-2.5">
-                <span className="text-zinc-500 font-medium">16:59:22</span>
-                <span className="text-primary/60 font-semibold uppercase tracking-wider">[comp]</span>
-                <span className="text-zinc-500">Burn speed: 0.0031 tok/s</span>
+                <span style={{ color: 'var(--text-muted)' }}>16:59:22</span>
+                <span className="font-semibold" style={{ color: 'var(--primary)' }}>[compute]</span>
+                <span style={{ color: 'var(--text-muted)' }}>Token rate: 0.0031 tok/s</span>
               </div>
               <div className="flex gap-2.5">
-                <span className="text-zinc-500 font-medium">16:59:30</span>
-                <span className="text-primary/60 font-semibold uppercase tracking-wider">[node]</span>
-                <span className="text-emerald-400 font-semibold">Ramu connected successfully</span>
+                <span style={{ color: 'var(--text-muted)' }}>16:59:30</span>
+                <span className="font-semibold" style={{ color: 'var(--primary)' }}>[agent]</span>
+                <span className="font-semibold" style={{ color: 'var(--success)' }}>Connected successfully</span>
               </div>
             </div>
             
-            <div className="pt-4 border-t border-zinc-800 flex items-center justify-between text-[9px] text-zinc-500 font-medium uppercase tracking-wider mt-4">
-              <span>Telemetry Sync</span>
-              <span className="text-zinc-400 animate-pulse">100% Online</span>
+            <div className="pt-3 flex items-center justify-between text-[11px] mt-4" style={{ borderTop: '1px solid var(--border)', color: 'var(--text-muted)' }}>
+              <span>System Status</span>
+              <span className="animate-pulse font-medium" style={{ color: 'var(--success)' }}>All Systems Operational</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* BANDWIDTH CHART */}
-      <div className="card-premium p-6 flex flex-col">
-        <div className="flex items-center justify-between mb-8">
+      {/* CALL VOLUME CHART */}
+      <div className="card p-6 flex flex-col">
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-sm font-semibold text-zinc-200 tracking-wide uppercase">Call Bandwidth Cycle</h2>
-            <p className="text-[10px] text-zinc-500 mt-1 font-medium uppercase tracking-wider">Aggregate agent compute bandwidth in 7-day windows</p>
+            <h2 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>Call Volume</h2>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Weekly agent call bandwidth</p>
           </div>
-          <div className="text-[9px] font-semibold text-zinc-400 px-2.5 py-1 bg-zinc-900/50 border border-zinc-800 rounded-lg uppercase tracking-wider">7d window</div>
+          <span className="badge text-[11px]">7 day window</span>
         </div>
         
-        <div className="flex-1 flex items-end gap-5 h-36 px-2">
+        <div className="flex-1 flex items-end gap-3 h-36 px-2">
           {[40, 65, 30, 85, 45, 78, 55].map((h, i) => (
             <div key={i} className="flex-1 group/bar relative h-full flex items-end">
               <motion.div 
                 initial={{ height: 0 }}
                 animate={{ height: `${h}%` }}
                 transition={{ duration: 0.6, delay: i * 0.03 }}
-                className="w-full bg-primary/10 rounded-xl group-hover/bar:bg-primary/25 transition-all duration-300 relative overflow-hidden border border-primary/10 shadow-sm"
+                className="w-full rounded-md transition-all duration-300 group-hover/bar:opacity-90"
+                style={{ 
+                  backgroundColor: 'var(--primary)',
+                  opacity: 0.15 + (h / 200),
+                  border: '1px solid rgba(59,130,246,0.1)' 
+                }}
               />
-              <div className="invisible group-hover/bar:visible absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-950 border border-zinc-800 px-2 py-1 text-[9px] font-mono text-zinc-300 rounded-lg whitespace-nowrap shadow-md z-10 animate-in fade-in zoom-in duration-200">
-                Day {i + 1}: <strong className="text-zinc-100 font-semibold ml-0.5">{h}m</strong>
+              <div 
+                className="invisible group-hover/bar:visible absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 text-[11px] font-mono rounded-md whitespace-nowrap shadow-md z-10 animate-in fade-in zoom-in duration-200"
+                style={{ 
+                  backgroundColor: 'var(--card-bg)',
+                  border: '1px solid var(--border)',
+                  color: 'var(--text-primary)' 
+                }}
+              >
+                Day {i + 1}: <strong>{h}m</strong>
               </div>
             </div>
           ))}
         </div>
         
-        <div className="mt-8 pt-4 border-t border-zinc-800 flex items-center justify-between">
+        <div className="mt-6 pt-4 flex items-center justify-between" style={{ borderTop: '1px solid var(--border)' }}>
           <div className="flex flex-col">
-            <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-wider">Daily Ingest Ratio</span>
-            <span className="text-base font-semibold text-zinc-200 mt-1 leading-none">54.2m <span className="text-[9px] text-zinc-500 font-mono font-medium uppercase ml-0.5">tokens</span></span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Daily Average</span>
+            <span className="text-base font-semibold mt-0.5" style={{ color: 'var(--text-primary)' }}>
+              54.2m <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>tokens</span>
+            </span>
           </div>
           <div className="flex flex-col items-end">
-            <span className="text-[9px] text-zinc-500 font-medium uppercase tracking-wider">Total Compute Fleet</span>
-            <span className="text-base font-semibold text-zinc-200 mt-1 leading-none">380m <span className="text-[9px] text-zinc-500 font-mono font-medium uppercase ml-0.5">tokens</span></span>
+            <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Total Usage</span>
+            <span className="text-base font-semibold mt-0.5" style={{ color: 'var(--text-primary)' }}>
+              380m <span className="text-xs font-normal" style={{ color: 'var(--text-muted)' }}>tokens</span>
+            </span>
           </div>
         </div>
       </div>
@@ -275,19 +305,28 @@ const DashboardPage = () => {
   );
 };
 
-const StatCard = ({ label, value, trend, icon }: any) => (
-  <div className="card-premium p-6 flex flex-col justify-between min-h-[150px] cursor-pointer group">
+const StatCard = ({ label, value, change, icon, color }: any) => (
+  <div className="card p-5 flex flex-col justify-between min-h-[140px] cursor-pointer group">
     <div className="flex items-center justify-between">
-      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center text-primary shadow-sm">
+      <div 
+        className="w-10 h-10 rounded-lg flex items-center justify-center"
+        style={{ 
+          backgroundColor: `${color}12`,
+          color: color 
+        }}
+      >
         {icon}
       </div>
-      <span className="text-[9px] font-medium text-zinc-500 bg-zinc-900/40 border border-zinc-800 px-2 py-0.5 rounded-lg uppercase tracking-wider">
-        {trend}
-      </span>
+      <div className="flex items-center gap-1">
+        <TrendingUp size={12} style={{ color: 'var(--success)' }} />
+        <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>
+          {change}
+        </span>
+      </div>
     </div>
-    <div className="space-y-1.5 mt-5">
-      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">{label}</p>
-      <h3 className="text-2xl font-semibold text-zinc-100 tracking-tight leading-none">{value}</h3>
+    <div className="mt-4">
+      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <h3 className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{value}</h3>
     </div>
   </div>
 );

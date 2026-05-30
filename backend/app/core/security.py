@@ -3,6 +3,7 @@ from typing import Any, Union
 from jose import jwt
 from passlib.context import CryptContext
 from cryptography.fernet import Fernet
+# pyrefly: ignore [missing-import]
 from app.core.config import settings
 
 # ─── Auth Utilities (Passwords & JWT) ──────────────────────────────────────────

@@ -12,6 +12,8 @@ from app.models.orm import AgentORM, UserORM, TranscriptORM, CallORM, CallDirect
 # pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
 import uuid
+# pyrefly: ignore [missing-import]
+from app.db.session import get_db
 
 router = APIRouter()
 

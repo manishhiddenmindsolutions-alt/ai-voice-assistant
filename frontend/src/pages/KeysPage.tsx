@@ -152,7 +152,7 @@ export const KeysPage: React.FC = () => {
       {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 border-b border-zinc-800 pb-4">
         <div className="flex items-center gap-4">
-          <BackButton fallbackPath="/" label="Overview" />
+          <BackButton fallbackPath="/" label="Back" />
           <div className="space-y-1">
             <h1 className="text-xl md:text-2xl font-bold text-zinc-100 uppercase tracking-wider leading-tight">BYOK Provider Keys</h1>
             <div className="flex items-center gap-2">

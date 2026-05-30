@@ -413,6 +413,7 @@ async def trigger_outbound_call(
     5. Call Twilio Calls API.
     """
     from sqlalchemy.orm import selectinload
+    # pyrefly: ignore [missing-import]
     from app.services.livekit_service import livekit_service
     import httpx
     

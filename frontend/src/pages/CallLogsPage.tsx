@@ -43,13 +43,13 @@ interface Transcript {
   timestamp: string;
 }
 
-const statusConfig: Record<string, { color: string; bg: string; border: string; icon: any }> = {
-  completed: { color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', icon: CheckCircle2 },
-  active: { color: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: Zap },
-  initiated: { color: 'text-amber-400', bg: 'bg-amber-500/10', border: 'border-amber-500/20', icon: Phone },
-  connecting: { color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: Phone },
-  failed: { color: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', icon: XCircle },
-  ended: { color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20', icon: CheckCircle2 },
+const statusConfig: Record<string, { color: string; bgVar: string; icon: any }> = {
+  completed: { color: 'var(--success)', bgVar: 'rgba(16,185,129,0.08)', icon: CheckCircle2 },
+  active: { color: 'var(--info)', bgVar: 'rgba(59,130,246,0.08)', icon: Zap },
+  initiated: { color: 'var(--primary)', bgVar: 'rgba(37,99,235,0.08)', icon: Phone },
+  connecting: { color: 'var(--primary)', bgVar: 'rgba(37,99,235,0.08)', icon: Phone },
+  failed: { color: 'var(--danger)', bgVar: 'rgba(239,68,68,0.08)', icon: XCircle },
+  ended: { color: 'var(--text-muted)', bgVar: 'rgba(100,116,139,0.08)', icon: CheckCircle2 },
 };
 
 const formatDuration = (seconds: number): string => {
@@ -67,7 +67,6 @@ const CallLogsPage = () => {
   const [transcripts, setTranscripts] = useState<Transcript[]>([]);
   const [loadingTranscripts, setLoadingTranscripts] = useState(false);
   
-  // Filters
   const [directionFilter, setDirectionFilter] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -125,58 +124,52 @@ const CallLogsPage = () => {
   return (
     <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div>
-          <div className="mb-5">
-            <BackButton fallbackPath="/" label="Overview" />
+          <div className="mb-3">
+            <BackButton fallbackPath="/" label="Dashboard" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Call Logs
           </h1>
-          <div className="flex items-center gap-2 mt-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" />
-            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider leading-none">
-              {total} Total Records
-            </p>
-          </div>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+            {total} total records
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 self-start lg:self-auto">
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-medium uppercase tracking-wider transition-all duration-300 border ${
-              showFilters
-                ? 'bg-primary/10 text-primary border-primary/20'
-                : 'bg-zinc-950/40 text-zinc-400 border-zinc-800 hover:border-zinc-700'
-            }`}
-          >
-            <Filter size={13} />
-            Filters
-            {(directionFilter || statusFilter) && (
-              <span className="w-2 h-2 rounded-full bg-primary" />
-            )}
-          </button>
-        </div>
+        <button
+          onClick={() => setShowFilters(!showFilters)}
+          className="btn-outline self-start lg:self-auto"
+          style={{
+            backgroundColor: showFilters ? 'rgba(59,130,246,0.08)' : undefined,
+            borderColor: showFilters ? 'rgba(59,130,246,0.2)' : undefined,
+            color: showFilters ? 'var(--primary)' : undefined,
+          }}
+        >
+          <Filter size={14} />
+          Filters
+          {(directionFilter || statusFilter) && (
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary)' }} />
+          )}
+        </button>
       </div>
 
-      {/* FILTERS BAR */}
+      {/* FILTERS */}
       {showFilters && (
-        <div className="mb-6 p-5 card-premium animate-in slide-in-from-top duration-300">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Search */}
+        <div className="mb-6 card p-4 animate-in fade-in duration-200">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600" />
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
               <input
-                className="w-full bg-zinc-900/40 border border-zinc-800 rounded-xl h-10 pl-9 pr-4 text-sm text-zinc-200 outline-none focus:border-primary/40 transition-all placeholder:text-zinc-500"
+                className="input-field pl-9"
                 placeholder="Search numbers, agents..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
             </div>
             
-            {/* Direction */}
             <select
-              className="bg-zinc-900/40 border border-zinc-800 rounded-xl h-10 px-4 text-sm font-medium text-zinc-200 outline-none focus:border-primary/40 transition-all cursor-pointer"
+              className="input-field cursor-pointer"
               value={directionFilter}
               onChange={e => setDirectionFilter(e.target.value)}
             >
@@ -185,9 +178,8 @@ const CallLogsPage = () => {
               <option value="outbound">Outbound</option>
             </select>
             
-            {/* Status */}
             <select
-              className="bg-zinc-900/40 border border-zinc-800 rounded-xl h-10 px-4 text-sm font-medium text-zinc-200 outline-none focus:border-primary/40 transition-all cursor-pointer"
+              className="input-field cursor-pointer"
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}
             >
@@ -202,25 +194,26 @@ const CallLogsPage = () => {
           {(directionFilter || statusFilter || searchQuery) && (
             <button
               onClick={() => { setDirectionFilter(''); setStatusFilter(''); setSearchQuery(''); }}
-              className="mt-3 text-[10px] text-zinc-500 font-medium uppercase tracking-wider hover:text-zinc-300 transition-colors flex items-center gap-1"
+              className="mt-3 text-xs font-medium flex items-center gap-1 transition-colors"
+              style={{ color: 'var(--text-muted)' }}
             >
-              <X size={10} /> Clear All Filters
+              <X size={10} /> Clear All
             </button>
           )}
         </div>
       )}
 
       {/* CALL LIST */}
-      <div className="space-y-3">
+      <div className="space-y-2">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-zinc-500" size={24} />
+            <Loader2 className="animate-spin" size={24} style={{ color: 'var(--text-muted)' }} />
           </div>
         ) : filteredCalls.length === 0 ? (
-          <div className="py-16 text-center border border-dashed border-zinc-800 rounded-3xl bg-zinc-950/20">
-            <History className="mx-auto mb-4 text-zinc-700" size={40} />
-            <p className="text-sm font-medium text-zinc-500 uppercase tracking-wider">No Call Records Found</p>
-            <p className="text-xs text-zinc-600 mt-2">Make your first call from the Telephony Bridge</p>
+          <div className="py-16 text-center rounded-xl" style={{ border: '2px dashed var(--border)', backgroundColor: 'var(--surface-secondary)' }}>
+            <History className="mx-auto mb-3" size={36} style={{ color: 'var(--text-muted)' }} />
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No Call Records Found</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Make your first call to see logs here</p>
           </div>
         ) : (
           filteredCalls.map(call => {
@@ -230,109 +223,115 @@ const CallLogsPage = () => {
 
             return (
               <div key={call.id} className="group">
-                {/* Call Row */}
                 <div
                   onClick={() => handleExpandCall(call.id)}
-                  className={`flex items-center justify-between p-5 cursor-pointer relative overflow-hidden transition-all duration-300 ${
-                    isExpanded
-                      ? 'bg-zinc-900/60 border border-zinc-700 rounded-3xl'
-                      : 'card-premium'
-                  }`}
+                  className="card flex items-center justify-between p-4 cursor-pointer"
+                  style={isExpanded ? { borderColor: 'var(--border-hover)', boxShadow: 'var(--card-hover-shadow)' } : {}}
                 >
-                  <div className="flex items-center gap-4 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
                     {/* Direction Icon */}
-                    <div className={`p-2.5 rounded-xl border transition-all duration-300 shrink-0 ${
-                      call.direction === 'inbound'
-                        ? 'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                        : 'bg-orange-500/10 border-orange-500/20 text-orange-400'
-                    }`}>
+                    <div 
+                      className="p-2 rounded-lg shrink-0"
+                      style={{
+                        backgroundColor: call.direction === 'inbound' ? 'rgba(59,130,246,0.08)' : 'rgba(37,99,235,0.08)',
+                        border: `1px solid ${call.direction === 'inbound' ? 'rgba(59,130,246,0.15)' : 'rgba(37,99,235,0.15)'}`,
+                        color: call.direction === 'inbound' ? 'var(--info)' : 'var(--primary)'
+                      }}
+                    >
                       {call.direction === 'inbound' ? <PhoneIncoming size={16} /> : <PhoneOutgoing size={16} />}
                     </div>
 
                     {/* Call Info */}
                     <div className="min-w-0">
-                      <div className="flex items-center gap-3">
-                        <p className="font-mono text-sm font-semibold text-zinc-100 truncate">
+                      <div className="flex items-center gap-2">
+                        <p className="font-mono text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
                           {call.direction === 'outbound' ? call.to_number : call.from_number || 'Unknown'}
                         </p>
-                        <span className="text-[9px] font-medium uppercase tracking-wider text-zinc-500 bg-zinc-900/40 border border-zinc-800 px-1.5 py-0.5 rounded shrink-0">
-                          {call.direction}
-                        </span>
+                        <span className="badge text-[10px] py-0.5">{call.direction}</span>
                       </div>
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <span className="text-[10px] text-zinc-500 font-semibold">
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
                           {call.agent_name}
                         </span>
-                        <span className="text-zinc-800">•</span>
-                        <span className="text-[10px] text-zinc-600 font-mono">
+                        <span style={{ color: 'var(--text-muted)' }}>·</span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                           {call.started_at ? new Date(call.started_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-4 shrink-0">
-                    {/* Duration */}
-                    <div className="hidden sm:flex items-center gap-1.5 text-zinc-500">
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="hidden sm:flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                       <Clock size={12} />
-                      <span className="text-[10px] font-mono font-medium">{formatDuration(call.duration_seconds)}</span>
+                      <span className="text-xs font-mono">{formatDuration(call.duration_seconds)}</span>
                     </div>
 
-                    {/* Transcript Count */}
                     {call.transcript_count > 0 && (
-                      <div className="hidden sm:flex items-center gap-1.5 text-zinc-500">
+                      <div className="hidden sm:flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
                         <MessageSquare size={12} />
-                        <span className="text-[10px] font-mono font-medium">{call.transcript_count}</span>
+                        <span className="text-xs font-mono">{call.transcript_count}</span>
                       </div>
                     )}
 
-                    {/* Status Badge */}
-                    <span className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-medium uppercase tracking-wider ${statusCfg.color} ${statusCfg.bg} border ${statusCfg.border}`}>
+                    <span 
+                      className="flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium"
+                      style={{ 
+                        backgroundColor: statusCfg.bgVar,
+                        border: `1px solid ${statusCfg.color}20`,
+                        color: statusCfg.color 
+                      }}
+                    >
                       <StatusIcon size={10} />
                       {call.status}
                     </span>
 
-                    {/* Expand Arrow */}
-                    <div className="text-zinc-600">
+                    <div style={{ color: 'var(--text-muted)' }}>
                       {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </div>
                   </div>
                 </div>
 
-                {/* Transcript Expansion */}
+                {/* Transcript */}
                 {isExpanded && (
-                  <div className="mt-1 ml-6 mr-2 p-5 bg-zinc-950/60 border border-zinc-800 rounded-2xl animate-in slide-in-from-top duration-200">
-                    <div className="flex items-center gap-2 mb-4">
-                      <MessageSquare size={13} className="text-zinc-500" />
-                      <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Conversation Transcript</span>
+                  <div className="mt-1 ml-4 mr-1 p-4 rounded-lg animate-in fade-in duration-200" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
+                    <div className="flex items-center gap-2 mb-3">
+                      <MessageSquare size={13} style={{ color: 'var(--text-muted)' }} />
+                      <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>Transcript</span>
                     </div>
 
                     {loadingTranscripts ? (
-                      <div className="flex justify-center py-8">
-                        <Loader2 className="animate-spin text-zinc-600" size={18} />
+                      <div className="flex justify-center py-6">
+                        <Loader2 className="animate-spin" size={18} style={{ color: 'var(--text-muted)' }} />
                       </div>
                     ) : transcripts.length === 0 ? (
-                      <p className="text-xs text-zinc-600 text-center py-6 font-semibold uppercase tracking-wider">
+                      <p className="text-xs text-center py-6" style={{ color: 'var(--text-muted)' }}>
                         No transcript data available
                       </p>
                     ) : (
-                      <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
+                      <div className="space-y-2 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
                         {transcripts.map((t, i) => (
-                          <div key={i} className={`flex gap-3 ${t.role === 'agent' ? '' : 'flex-row-reverse'}`}>
-                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 ${
-                              t.role === 'agent'
-                                ? 'bg-violet-500/10 text-violet-400 border border-violet-500/20'
-                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                            }`}>
+                          <div key={i} className={`flex gap-2 ${t.role === 'agent' ? '' : 'flex-row-reverse'}`}>
+                            <div 
+                              className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                              style={{
+                                backgroundColor: t.role === 'agent' ? 'rgba(139,92,246,0.08)' : 'rgba(59,130,246,0.08)',
+                                border: `1px solid ${t.role === 'agent' ? 'rgba(139,92,246,0.15)' : 'rgba(59,130,246,0.15)'}`,
+                                color: t.role === 'agent' ? '#8B5CF6' : 'var(--info)'
+                              }}
+                            >
                               {t.role === 'agent' ? <Bot size={12} /> : <User size={12} />}
                             </div>
-                            <div className={`max-w-[75%] p-3 rounded-xl text-sm ${
-                              t.role === 'agent'
-                                ? 'bg-zinc-900 border border-zinc-800 text-zinc-300'
-                                : 'bg-blue-500/10 border border-blue-500/15 text-zinc-200'
-                            }`}>
+                            <div 
+                              className="max-w-[75%] p-2.5 rounded-lg text-sm"
+                              style={{
+                                backgroundColor: t.role === 'agent' ? 'var(--surface)' : 'rgba(59,130,246,0.06)',
+                                border: `1px solid ${t.role === 'agent' ? 'var(--border)' : 'rgba(59,130,246,0.1)'}`,
+                                color: 'var(--text-primary)'
+                              }}
+                            >
                               <p className="leading-relaxed">{t.content}</p>
-                              <span className="text-[9px] text-zinc-600 font-mono mt-1 block">
+                              <span className="text-[10px] font-mono mt-1 block" style={{ color: 'var(--text-muted)' }}>
                                 {t.timestamp ? new Date(t.timestamp).toLocaleTimeString() : ''}
                               </span>
                             </div>
@@ -341,23 +340,23 @@ const CallLogsPage = () => {
                       </div>
                     )}
 
-                    {/* Call Metadata */}
-                    <div className="mt-4 pt-4 border-t border-zinc-800/60 grid grid-cols-2 sm:grid-cols-4 gap-4">
+                    {/* Metadata */}
+                    <div className="mt-3 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3" style={{ borderTop: '1px solid var(--border)' }}>
                       <div>
-                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider block">Session</span>
-                        <span className="text-[10px] text-zinc-400 font-mono">{call.session_id}</span>
+                        <span className="text-[10px] font-semibold block" style={{ color: 'var(--text-muted)' }}>Session</span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>{call.session_id}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider block">Duration</span>
-                        <span className="text-[10px] text-zinc-400 font-mono">{formatDuration(call.duration_seconds)}</span>
+                        <span className="text-[10px] font-semibold block" style={{ color: 'var(--text-muted)' }}>Duration</span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>{formatDuration(call.duration_seconds)}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider block">From</span>
-                        <span className="text-[10px] text-zinc-400 font-mono">{call.from_number || '—'}</span>
+                        <span className="text-[10px] font-semibold block" style={{ color: 'var(--text-muted)' }}>From</span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>{call.from_number || '—'}</span>
                       </div>
                       <div>
-                        <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-wider block">To</span>
-                        <span className="text-[10px] text-zinc-400 font-mono">{call.to_number || '—'}</span>
+                        <span className="text-[10px] font-semibold block" style={{ color: 'var(--text-muted)' }}>To</span>
+                        <span className="text-xs font-mono" style={{ color: 'var(--text-secondary)' }}>{call.to_number || '—'}</span>
                       </div>
                     </div>
                   </div>

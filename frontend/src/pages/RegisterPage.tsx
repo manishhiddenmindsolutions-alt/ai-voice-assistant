@@ -17,7 +17,7 @@ const RegisterPage = () => {
     setLoading(true);
     try {
       await authApi.register({ email, password, full_name: fullName });
-      toast.success('Account Registered Successfully');
+      toast.success('Account created successfully');
       navigate('/login');
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Registration failed');
@@ -27,89 +27,116 @@ const RegisterPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-6 bg-[radial-gradient(ellipse_at_top,rgba(0,97,255,0.05),transparent)]">
-      <div className="w-full max-w-[400px] animate-in fade-in slide-in-from-bottom-8 duration-200">
-        <div className="flex flex-col items-center mb-10 text-center">
-          <div className="w-12 h-12 rounded-none overflow-hidden mb-5 group hover:scale-[1.02] transition-all shrink-0">
+    <div 
+      className="min-h-screen flex items-center justify-center p-6"
+      style={{ backgroundColor: 'var(--background)' }}
+    >
+      <div className="w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-8 duration-300">
+        
+        {/* LOGO & HEADER */}
+        <div className="flex flex-col items-center mb-8">
+          <div className="w-12 h-12 rounded-xl overflow-hidden mb-4 shadow-sm" style={{ border: '1px solid var(--border)' }}>
             <img 
               src={hmsLogo} 
               alt="HMS Logo" 
               className="w-full h-full object-cover"
             />
           </div>
-            <h1 className="text-lg font-black text-zinc-100 uppercase tracking-widest leading-none">HMS Registration</h1>
-            <p className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-2 px-8 opacity-60">Register to start building voice agents by HMS</p>
+          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Create your account
+          </h1>
+          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
+            Get started with HMS Voice Agents
+          </p>
         </div>
 
-        <div className="bg-zinc-950/60 border border-border rounded-2xl p-8 backdrop-blur-xl shadow-2xl relative overflow-hidden group">
-          <div className="absolute inset-x-0 top-0 h-[1px] bg-gradient-to-r from-transparent via-primary/30 to-transparent" />
-          <form onSubmit={handleRegister} className="space-y-5 relative z-10">
+        {/* FORM CARD */}
+        <div 
+          className="rounded-xl p-8 shadow-lg"
+          style={{ 
+            backgroundColor: 'var(--card-bg)',
+            border: '1px solid var(--card-border)' 
+          }}
+        >
+          <form onSubmit={handleRegister} className="space-y-5">
+            
+            {/* NAME */}
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest ml-1">Full Name</label>
+              <label className="text-xs font-semibold ml-0.5" style={{ color: 'var(--text-secondary)' }}>
+                Full Name
+              </label>
               <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="text"
                   required
-                  placeholder="Manish Sen"
-                  className="w-full h-11 bg-zinc-950 border border-zinc-900 rounded-xl pl-11 pr-4 text-zinc-100 text-[11px] font-medium placeholder:text-zinc-500 focus:border-primary/40 transition-all outline-none"
+                  placeholder="Your full name"
+                  className="input-field pl-10"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* EMAIL */}
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest ml-1">Email Address</label>
+              <label className="text-xs font-semibold ml-0.5" style={{ color: 'var(--text-secondary)' }}>
+                Email Address
+              </label>
               <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="email"
                   required
-                  placeholder="operator@hiddenmindsolutions.com"
-                  className="w-full h-11 bg-zinc-950 border border-zinc-900 rounded-xl pl-11 pr-4 text-zinc-100 text-[11px] font-medium placeholder:text-zinc-500 focus:border-primary/40 transition-all outline-none"
+                  placeholder="you@company.com"
+                  className="input-field pl-10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* PASSWORD */}
             <div className="space-y-2">
-              <label className="text-[9px] font-black text-zinc-500 uppercase tracking-widest ml-1">Password</label>
+              <label className="text-xs font-semibold ml-0.5" style={{ color: 'var(--text-secondary)' }}>
+                Password
+              </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400" size={16} />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2" size={16} style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="password"
                   required
-                  placeholder="••••••••••••"
-                  className="w-full h-11 bg-zinc-950 border border-zinc-900 rounded-xl pl-11 pr-4 text-zinc-100 text-[11px] font-medium placeholder:text-zinc-500 focus:border-primary/40 transition-all outline-none"
+                  placeholder="••••••••"
+                  className="input-field pl-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </div>
             </div>
 
+            {/* SUBMIT */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-primary hover:bg-primary/90 text-on-primary font-black uppercase tracking-widest text-[10px] rounded-xl flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group/btn pt-0.5"
+              className="w-full btn-primary h-11 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all group/btn"
             >
               {loading ? (
-                <Loader2 className="animate-spin" size={16} />
+                <Loader2 className="animate-spin" size={18} />
               ) : (
                 <>
                   Create Account
-                  <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                  <ArrowRight size={16} className="group-hover/btn:translate-x-0.5 transition-transform" />
                 </>
               )}
             </button>
           </form>
         </div>
 
-        <div className="mt-10 text-center">
-          <p className="text-zinc-600 text-[10px] font-bold uppercase tracking-widest">
+        {/* FOOTER */}
+        <div className="mt-6 text-center">
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
             Already have an account?{' '}
-            <Link to="/login" className="text-primary hover:text-blue-400 transition-colors ml-1">
+            <Link to="/login" className="font-medium transition-colors" style={{ color: 'var(--primary)' }}>
               Sign In
             </Link>
           </p>

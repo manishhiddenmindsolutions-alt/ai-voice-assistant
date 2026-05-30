@@ -6,12 +6,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
 from sqlalchemy.exc import IntegrityError
 from pydantic import BaseModel
+# pyrefly: ignore [missing-import]
 from app.db.session import get_db
 import uuid
 import urllib.parse as urlparse
 from urllib.parse import urlencode
+# pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
+# pyrefly: ignore [missing-import]
 from app.core.security import vault
+# pyrefly: ignore [missing-import]
 from app.models.orm import UserORM, ToolORM, agent_tools
 
 logger = logging.getLogger("tools-diagnostic")

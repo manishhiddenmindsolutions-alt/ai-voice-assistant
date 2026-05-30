@@ -11,7 +11,8 @@ import {
   Package,
   Share2,
   X,
-  Phone
+  Phone,
+  ChevronRight
 } from 'lucide-react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAgentStore } from '../store/useAgentStore';
@@ -42,101 +43,20 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     {
       label: 'Workspace',
       items: [
-        { 
-          id: 'dashboard', 
-          path: '/', 
-          icon: LayoutDashboard, 
-          label: 'Overview',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'agents', 
-          path: '/agents', 
-          icon: Users, 
-          label: 'Agents',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'telephony', 
-          path: '/numbers', 
-          icon: Phone, 
-          label: 'Telephony',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'logs', 
-          path: '/logs', 
-          icon: History, 
-          label: 'Call Logs',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'analytics', 
-          path: '/analytics', 
-          icon: BarChart3, 
-          label: 'Analytics',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
+        { id: 'dashboard', path: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        { id: 'agents', path: '/agents', icon: Users, label: 'Agents' },
+        { id: 'telephony', path: '/numbers', icon: Phone, label: 'Telephony' },
+        { id: 'logs', path: '/logs', icon: History, label: 'Call Logs' },
+        { id: 'analytics', path: '/analytics', icon: BarChart3, label: 'Analytics' },
       ]
     },
     {
-      label: 'Config',
+      label: 'Configuration',
       items: [
-        { 
-          id: 'providers', 
-          path: '/providers', 
-          icon: Key, 
-          label: 'Providers',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'webhooks', 
-          path: '/tools', 
-          icon: Package, 
-          label: 'Webhooks',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'integrations', 
-          path: '/integrations', 
-          icon: Share2, 
-          label: 'Integrations',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
-        { 
-          id: 'settings', 
-          path: '/settings', 
-          icon: Settings, 
-          label: 'Settings',
-          activeClass: 'bg-primary/10 text-primary border border-primary/20 shadow-sm shadow-primary/5', 
-          hoverClass: 'text-zinc-400 hover:text-primary hover:bg-primary/5 hover:border-primary/10 border border-transparent',
-          iconColor: 'text-primary',
-          iconHoverColor: 'group-hover:text-primary'
-        },
+        { id: 'providers', path: '/providers', icon: Key, label: 'Providers' },
+        { id: 'webhooks', path: '/tools', icon: Package, label: 'Tools' },
+        { id: 'integrations', path: '/integrations', icon: Share2, label: 'Integrations' },
+        { id: 'settings', path: '/settings', icon: Settings, label: 'Settings' },
       ]
     }
   ];
@@ -151,19 +71,23 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
       {/* MOBILE OVERLAY */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[90] lg:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-[90] lg:hidden animate-in fade-in duration-200"
+          style={{ backgroundColor: 'var(--overlay-bg)' }}
           onClick={onClose}
         />
       )}
 
-      <aside className={`fixed inset-y-0 left-0 z-[100] w-72 bg-zinc-950 flex flex-col p-6 border-r border-zinc-800/60 transition-transform duration-300 lg:sticky lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} h-screen`}>
-        {/* Background Glow */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20 bg-platform-mesh" />
-
-        {/* LOGO SECTION - FIXED AT THE TOP */}
-        <div className="flex items-center justify-between mb-8 shrink-0 relative z-10">
-          <NavLink to="/" onClick={onClose} className="flex items-center gap-4 px-1 group cursor-pointer">
-            <div className="w-11 h-11 rounded-none flex items-center justify-center overflow-hidden group-hover:scale-[1.02] transition-transform duration-250 shrink-0">
+      <aside 
+        className={`fixed inset-y-0 left-0 z-[100] w-64 flex flex-col border-r transition-transform duration-300 lg:sticky lg:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'} h-screen`}
+        style={{ 
+          backgroundColor: 'var(--sidebar-bg)', 
+          borderColor: 'var(--sidebar-border)' 
+        }}
+      >
+        {/* LOGO SECTION */}
+        <div className="flex items-center justify-between px-5 h-16 shrink-0" style={{ borderBottom: '1px solid var(--border)' }}>
+          <NavLink to="/" onClick={onClose} className="flex items-center gap-3 group cursor-pointer">
+            <div className="w-8 h-8 rounded-lg overflow-hidden shrink-0 group-hover:scale-105 transition-transform">
               <img 
                 src={hmsLogo} 
                 alt="HMS Logo" 
@@ -171,28 +95,30 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
               />
             </div>
             <div className="flex flex-col">
-              <span className="text-lg font-heading font-bold leading-none tracking-[0.12em] text-zinc-100 uppercase mt-0.5">HMS</span>
-              <span className="text-[9px] text-zinc-500 font-semibold tracking-widest uppercase mt-2 opacity-80">HiddenMindSolutions</span>
+              <span className="text-sm font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>HMS</span>
+              <span className="text-[10px] font-medium leading-tight" style={{ color: 'var(--text-muted)' }}>Voice Agent Platform</span>
             </div>
           </NavLink>
 
           <button 
             onClick={onClose}
-            className="p-2 text-zinc-600 hover:text-zinc-100 lg:hidden transition-colors"
+            className="p-1.5 rounded-md lg:hidden transition-colors"
+            style={{ color: 'var(--text-muted)' }}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* SCROLLABLE NAVIGATION LIST */}
-        <div className="flex-1 overflow-y-auto pr-1 py-2 space-y-6 custom-scrollbar relative z-10">
+        {/* NAVIGATION */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 custom-scrollbar">
           {navGroups.map((group) => (
-            <div key={group.label} className="space-y-3">
-              <div className="px-4 text-xs font-semibold uppercase tracking-wider text-zinc-500 flex items-center gap-3">
-                 <div className="h-[1px] w-4 bg-zinc-800" />
-                 {group.label}
-               </div>
-              <nav className="space-y-1">
+            <div key={group.label} className="space-y-1">
+              <div className="px-3 mb-2">
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+                  {group.label}
+                </span>
+              </div>
+              <nav className="space-y-0.5">
                 {group.items.map((item) => {
                   const isLinkActive = isActive(item.path);
                   return (
@@ -200,26 +126,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                       key={item.id}
                       to={item.path}
                       onClick={onClose}
-                      className={`relative w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl transition-all duration-300 group ${
-                        isLinkActive 
-                          ? 'bg-primary/10 text-primary border border-primary/25 shadow-lg shadow-primary/5 pl-6' 
-                          : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/60 hover:pl-5 hover:border-zinc-800 hover:shadow-sm border border-transparent'
-                      }`}
+                      className="relative w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all duration-200 group"
+                      style={{
+                        backgroundColor: isLinkActive ? 'var(--sidebar-item-active-bg)' : 'transparent',
+                        border: isLinkActive ? '1px solid var(--sidebar-item-active-border)' : '1px solid transparent',
+                        color: isLinkActive ? 'var(--sidebar-item-active-text)' : 'var(--text-secondary)',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isLinkActive) {
+                          e.currentTarget.style.backgroundColor = 'var(--sidebar-item-hover)';
+                          e.currentTarget.style.color = 'var(--text-primary)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isLinkActive) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                          e.currentTarget.style.color = 'var(--text-secondary)';
+                        }
+                      }}
                     >
-                      {/* Active Left Indicator Line */}
+                      {/* Active indicator */}
                       {isLinkActive && (
-                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-primary animate-in slide-in-from-left duration-300" />
+                        <div className="absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full" style={{ backgroundColor: 'var(--primary)' }} />
                       )}
 
-                      <item.icon 
-                        size={16} 
-                        className={`${
-                          isLinkActive ? 'text-primary' : `text-zinc-500 ${item.iconHoverColor}`
-                        } transition-all duration-300 shrink-0 group-hover:scale-110`} 
-                      />
-                      <span className="font-medium text-xs tracking-wider uppercase transition-colors duration-300">{item.label}</span>
+                      <item.icon size={16} className="shrink-0" />
+                      <span className="text-sm font-medium">{item.label}</span>
+                      
                       {item.id === 'agents' && (
-                         <span className="ml-auto text-[10px] font-semibold bg-zinc-900/50 border border-zinc-800 px-2 py-0.5 rounded-lg text-zinc-400 transition-colors duration-300">{agents.length}</span>
+                        <span 
+                          className="ml-auto text-[11px] font-semibold px-1.5 py-0.5 rounded-md"
+                          style={{ 
+                            backgroundColor: 'var(--badge-bg)', 
+                            border: '1px solid var(--badge-border)',
+                            color: 'var(--badge-text)' 
+                          }}
+                        >
+                          {agents.length}
+                        </span>
                       )}
                     </NavLink>
                   );
@@ -229,56 +173,65 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           ))}
         </div>
 
-        {/* FOOTER ACTIONS - LOCKED AT THE BOTTOM */}
-        <div className="shrink-0 pt-6 border-t border-zinc-800/50 flex flex-col gap-3 relative z-10 mt-auto">
+        {/* FOOTER */}
+        <div className="shrink-0 px-3 pb-4 pt-3 flex flex-col gap-2 mt-auto" style={{ borderTop: '1px solid var(--border)' }}>
+          {/* Create Agent */}
           <button 
             onClick={handleNewAgent}
-            className={`w-full flex items-center gap-3.5 p-3.5 border rounded-2xl transition-all duration-200 group active:scale-98 hover:shadow-md ${
-              location.pathname === '/agents/create'
-                ? 'bg-primary/10 text-primary border-primary/20 shadow-md shadow-primary/5'
-                : 'bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-700 border-zinc-800/60'
-            }`}
+            className="w-full flex items-center gap-3 p-3 rounded-lg transition-all duration-200 group active:scale-[0.98]"
+            style={{ 
+              backgroundColor: location.pathname === '/agents/create' ? 'var(--sidebar-item-active-bg)' : 'var(--surface-secondary)',
+              border: location.pathname === '/agents/create' ? '1px solid var(--sidebar-item-active-border)' : '1px solid var(--border)',
+            }}
           >
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-              location.pathname === '/agents/create'
-                ? 'bg-primary text-zinc-950 font-bold'
-                : 'bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white'
-            }`}>
-              <PlusCircle size={18} />
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+              style={{ 
+                backgroundColor: location.pathname === '/agents/create' ? 'var(--primary)' : 'rgba(59,130,246,0.1)', 
+                color: location.pathname === '/agents/create' ? 'var(--on-primary)' : 'var(--primary)' 
+              }}
+            >
+              <PlusCircle size={16} />
             </div>
-            <div className="text-left truncate">
-              <p className="text-xs font-semibold text-zinc-300 transition-colors">Create Agent</p>
-              <p className="text-[10px] text-zinc-500 mt-0.5">Initialize agent fleet</p>
+            <div className="text-left">
+              <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>Create Agent</p>
+              <p className="text-[11px]" style={{ color: 'var(--text-muted)' }}>New voice assistant</p>
             </div>
           </button>
 
+          {/* User Profile */}
           <div 
-            onClick={() => {
-              navigate('/profile');
-              onClose();
+            onClick={() => { navigate('/profile'); onClose(); }}
+            className="p-3 rounded-lg flex items-center gap-3 group cursor-pointer transition-all duration-200 active:scale-[0.98]"
+            style={{ 
+              backgroundColor: location.pathname === '/profile' ? 'var(--sidebar-item-active-bg)' : 'var(--surface-secondary)',
+              border: location.pathname === '/profile' ? '1px solid var(--sidebar-item-active-border)' : '1px solid var(--border)',
             }}
-            className={`p-3.5 border rounded-2xl flex items-center gap-3.5 group cursor-pointer transition-all duration-200 active:scale-98 hover:shadow-md ${
-              location.pathname === '/profile'
-                ? 'bg-primary/10 text-primary border-primary/20 shadow-md shadow-primary/5'
-                : 'bg-zinc-900/30 hover:bg-zinc-900 hover:border-zinc-700 border-zinc-800/60'
-            }`}
           >
-            <div className="w-9 h-9 rounded-xl bg-zinc-900/60 border border-zinc-800 flex items-center justify-center overflow-hidden font-medium text-xs text-zinc-400 group-hover:text-primary transition-all shrink-0">
+            <div 
+              className="w-8 h-8 rounded-lg flex items-center justify-center overflow-hidden font-medium text-xs shrink-0"
+              style={{ 
+                backgroundColor: 'var(--surface)', 
+                border: '1px solid var(--border)',
+                color: 'var(--text-secondary)' 
+              }}
+            >
               {user?.avatar_url ? (
                 <img src={user.avatar_url} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 initials
               )}
             </div>
-            <div className="text-left overflow-hidden truncate">
-              <p className="text-xs font-semibold text-zinc-300 transition-colors truncate">
-                {user?.full_name || 'Operator'}
+            <div className="text-left overflow-hidden">
+              <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                {user?.full_name || 'User'}
               </p>
-              <span className="text-[10px] text-zinc-500 mt-0.5 flex items-center gap-1.5 leading-none">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-                Operator Active
+              <span className="text-[11px] flex items-center gap-1.5" style={{ color: 'var(--text-muted)' }}>
+                <span className="w-1.5 h-1.5 rounded-full shrink-0 animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
+                Online
               </span>
             </div>
+            <ChevronRight size={14} className="ml-auto shrink-0" style={{ color: 'var(--text-muted)' }} />
           </div>
         </div>
       </aside>

@@ -50,8 +50,8 @@ const TTS_VOICES = {
   ],
   openai: [
     { id: 'alloy', name: 'Alloy (Neutral)' },
-    { id: 'echo', name: 'Echo (Deep)' },
-    { id: 'shimmer', name: 'Shimmer (High)' }
+    { id: 'echo', name: 'Echo (Male - Deep)' },
+    { id: 'shimmer', name: 'Shimmer (Female - High)' }
   ]
 };
 
@@ -80,15 +80,18 @@ const BLUEPRINTS = [
 ];
 
 const PreviewStat = ({ label, value }: { label: string; value: string | number }) => (
-  <div className="flex justify-between items-center py-2.5 border-b border-zinc-800/40 last:border-none">
-    <span className="text-sm text-zinc-500">{label}</span>
-    <span className="text-sm font-semibold text-zinc-200 truncate max-w-[180px]">{value}</span>
+  <div className="flex justify-between items-center py-2 border-b border-[var(--border)] last:border-none">
+    <span className="text-xs text-[var(--text-secondary)] font-semibold uppercase tracking-wider">{label}</span>
+    <span className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[180px]">{value}</span>
   </div>
 );
 
 const CreateAgentPage = () => {
-  const { editingAgent, setAgents, agents, setActiveSession } = useAgentStore();
+  const { editingAgent, setAgents, setActiveSession } = useAgentStore();
   const [step, setStep] = useState(1);
+  const [wizardStage, setWizardStage] = useState<'select_path' | 'custom_name' | 'custom_goal' | 'configure'>(
+    editingAgent ? 'configure' : 'select_path'
+  );
   const [isLoading, setIsLoading] = useState(true);
   const [availableTools, setAvailableTools] = useState<any[]>([]);
   const [userNumbers, setUserNumbers] = useState<any[]>([]);
@@ -149,11 +152,13 @@ const CreateAgentPage = () => {
                 id: m.model_id,
                 name: m.name || m.model_id
               }));
-              mergedModels[pName as keyof typeof LLM_MODELS] = parsed;
-            }
-            if (!pList.includes(pName)) {
-              pList.push(pName);
-              pLabels.push(labelMapping[pName] || conn.provider.toUpperCase());
+              
+              if (!pList.includes(pName)) {
+                pList.push(pName);
+                pLabels.push(labelMapping[pName] || conn.provider.toUpperCase());
+              }
+              // Merge/Override models lists
+              (mergedModels as any)[pName] = parsed;
             }
           });
 
@@ -162,92 +167,92 @@ const CreateAgentPage = () => {
           setProviderLabels(pLabels);
         }
       } catch (err) {
-        console.error("Failed to load dynamic provider model registries", err);
+        console.error("Failed to load dynamic provider configurations", err);
       }
     };
 
-    // Fetch available tools for selection
-    const fetchTools = async () => {
+    const loadData = async () => {
       try {
-        const res = await toolApi.list();
-        setAvailableTools(res.data);
-      } catch (err) {
-        console.error("Failed to load neural tools", err);
-      }
-    };
-
-    // Fetch user numbers
-    const fetchNumbers = async () => {
-      try {
-        const res = await numbersApi.list();
-        setUserNumbers(res.data || []);
+        const [toolsRes, numRes] = await Promise.all([
+          toolApi.list(),
+          numbersApi.list()
+        ]);
+        setAvailableTools(toolsRes.data || []);
+        
+        const activeNumbers = numRes.data || [];
+        setUserNumbers(activeNumbers);
+        
         if (editingAgent) {
-          const linkedNum = res.data?.find((n: any) => n.agent_id === editingAgent.id);
-          if (linkedNum) {
-            setSelectedNumberId(linkedNum.id);
-          }
+          const bound = activeNumbers.find((n: any) => n.agent_id === editingAgent.id);
+          if (bound) setSelectedNumberId(bound.id);
         }
+        await fetchDynamicProviders();
       } catch (err) {
-        console.error("Failed to load user numbers", err);
+        console.error('Failed initialization', err);
+        toast.error('Failed to index tool registers');
+      } finally {
+        setTimeout(() => setIsLoading(false), 300);
       }
     };
-    
-    Promise.all([fetchDynamicProviders(), fetchTools(), fetchNumbers()]).finally(() => {
-      setIsLoading(false);
-    });
+    loadData();
   }, [editingAgent]);
 
-  const applyBlueprint = (bp: any) => {
+  const applyBlueprint = (bp: typeof BLUEPRINTS[0]) => {
     setFormData({
       ...formData,
-      agentName: bp.name,
       prompt: bp.prompt,
       vad: { ...formData.vad, ...bp.vad },
       llm: { ...formData.llm, ...bp.llm }
     });
-    setStep(1);
-    toast.success(`'${bp.name}' Blueprint Applied`);
+    toast.success(`${bp.name} blueprint configured successfully!`, { icon: '🎯' });
+    setWizardStage('custom_name');
   };
 
-  const handleSave = async (andLaunch = false) => {
-    if (!formData.agentName.trim()) return toast.error('Assistant name is required');
+  const handleSave = async (launchImmediate = false) => {
+    if (!formData.agentName.trim()) return toast.error("Assistant name required");
     
-    const processToast = toast.loading(andLaunch ? 'Deploying & Testing...' : 'Saving Assistant...');
-    
-    try {
-      const res = await agentApi.createOrUpdate(formData);
-      const saved = res.data;
+    const actionText = editingAgent ? 'Modifying Assistant...' : 'Provisioning Assistant...';
+    const processToast = toast.loading(actionText);
 
-      // Link selected tools
-      const selectedToolIds = formData.tools || [];
-      if (selectedToolIds.length > 0) {
-        await Promise.all(
-          selectedToolIds.map((toolId: string) => agentApi.linkTool(saved.id, toolId))
-        );
+    try {
+      let savedAgent;
+      if (editingAgent) {
+        const resp = await agentApi.createOrUpdate({ ...formData, id: editingAgent.id });
+        savedAgent = resp.data;
+      } else {
+        const resp = await agentApi.createOrUpdate(formData);
+        savedAgent = resp.data;
       }
 
-      // Link / Unlink selected phone number
-      await Promise.all(
-        userNumbers.map(async (num: any) => {
-          if (num.id === selectedNumberId) {
-            if (num.agent_id !== saved.id) {
-              await numbersApi.update(num.id, { agent_id: saved.id });
-            }
-          } else if (num.agent_id === saved.id) {
-            await numbersApi.update(num.id, { agent_id: null });
-          }
-        })
-      );
-      
-      const newAgents = [...agents];
-      const idx = newAgents.findIndex((a: any) => a.id === saved.id);
-      if (idx > -1) newAgents[idx] = saved;
-      else newAgents.push(saved);
-      setAgents(newAgents);
+      // Check number assignment state
+      if (selectedNumberId !== 'none') {
+        await numbersApi.update(selectedNumberId, { agent_id: savedAgent.id });
+      } else if (editingAgent) {
+        // If it was editing, let's see if we should detach
+        const bound = userNumbers.find((n: any) => n.agent_id === editingAgent.id);
+        if (bound) {
+          await numbersApi.update(bound.id, { agent_id: null });
+        }
+      }
 
-      if (andLaunch) {
-        const sessionRes = await sessionApi.start(saved);
-        setActiveSession(sessionRes.data);
+      // Re-fetch agents list in state
+      const resList = await agentApi.list();
+      setAgents(resList.data);
+
+      if (launchImmediate) {
+        toast.loading('Starting real-time Voice Gateway...', { id: processToast });
+        const startPayload = {
+          agent_id: savedAgent.id,
+          prompt: savedAgent.prompt,
+          language: savedAgent.language,
+          stt: savedAgent.stt,
+          llm: savedAgent.llm,
+          tts: savedAgent.tts,
+          vad: savedAgent.vad || { provider: 'silero' },
+          tools: savedAgent.tools,
+        };
+        const sessionRes = await sessionApi.start(startPayload);
+        setActiveSession({ ...sessionRes.data, agentName: savedAgent.agentName });
         toast.success('Voice Agent Live', { id: processToast });
       } else {
         toast.success('Assistant Saved successfully', { id: processToast });
@@ -260,69 +265,311 @@ const CreateAgentPage = () => {
   };
 
   const renderStepIndicator = () => (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto mb-10">
+    <div className="max-w-3xl mx-auto mb-10 flex items-center justify-between relative px-4 z-10">
+      {/* Background connecting track line */}
+      <div className="absolute top-[18px] left-8 right-8 h-[2px] bg-[var(--border)] -z-10" />
+      
+      {/* Active connecting track line */}
+      <div 
+        className="absolute top-[18px] left-8 h-[2px] bg-[var(--accent)] -z-10 transition-all duration-300" 
+        style={{ width: `${((step - 1) / 3) * 88}%` }}
+      />
+
       {[
-        { id: 1, label: 'Identity', icon: <Brain size={14} /> },
-        { id: 2, label: 'Vocal', icon: <Mic size={14} /> },
-        { id: 3, label: 'Tools', icon: <Command size={14} /> },
-        { id: 4, label: 'Pro-VAD', icon: <Activity size={14} /> }
-      ].map((s) => (
-        <button
-          key={s.id}
-          type="button"
-          onClick={() => {
-            if (s.id === 1 || formData.agentName.trim()) {
-              setStep(s.id);
-            } else {
-              toast.error("Assistant name required to navigate");
-            }
-          }}
-          className={`p-3 rounded-xl border transition flex items-center gap-3 justify-center ${
-            step === s.id
-              ? 'bg-zinc-900 border-zinc-700 text-zinc-100 shadow-[0_0_15px_rgba(255,255,255,0.01)]'
-              : step > s.id
-                ? 'bg-zinc-900/20 border-zinc-800 text-emerald-400'
-                : 'bg-zinc-950/20 border-zinc-850 text-zinc-500 hover:border-zinc-800'
-          }`}
-        >
-          <div className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-semibold ${
-            step === s.id ? 'bg-zinc-100 text-zinc-950' : step > s.id ? 'bg-emerald-500/10' : 'bg-zinc-900'
-          }`}>
-            {step > s.id ? '✓' : s.id}
-          </div>
-          <span className="text-sm font-semibold tracking-wide">{s.label}</span>
-        </button>
-      ))}
+        { id: 1, label: 'Identity', icon: <Brain size={13} /> },
+        { id: 2, label: 'Voice Profile', icon: <Mic size={13} /> },
+        { id: 3, label: 'Custom Actions', icon: <Command size={13} /> },
+        { id: 4, label: 'Audio Engine', icon: <Activity size={13} /> }
+      ].map((s) => {
+        const isCurrent = step === s.id;
+        const isCompleted = step > s.id;
+        return (
+          <button
+            key={s.id}
+            type="button"
+            onClick={() => {
+              if (s.id === 1 || formData.agentName.trim()) {
+                setStep(s.id);
+              } else {
+                toast.error("Assistant name required to navigate");
+              }
+            }}
+            className="flex flex-col items-center gap-2.5 outline-none cursor-pointer"
+          >
+            <div className={`w-9 h-9 rounded-full flex items-center justify-center border transition-all duration-300 font-mono text-xs font-bold ${
+              isCurrent 
+                ? 'bg-[var(--accent)] text-white border-[var(--accent)] shadow-[0_0_12px_rgba(197,168,128,0.25)] scale-105' 
+                : isCompleted
+                  ? 'bg-[var(--primary)] text-[var(--on-primary)] border-[var(--primary)]'
+                  : 'bg-[var(--surface)] text-[var(--text-muted)] border-[var(--border)] hover:border-[var(--border-hover)] hover:text-[var(--text-primary)]'
+            }`}>
+              {isCompleted ? '✓' : s.id}
+            </div>
+            <span className={`text-[10px] font-bold uppercase tracking-widest transition-colors ${
+              isCurrent ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
+            }`}>
+              {s.label}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 
-  if (isLoading) return <div className="h-full flex items-center justify-center text-lg font-medium text-zinc-400 animate-pulse">Preparing Assistant...</div>;
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[55vh] space-y-4 animate-in fade-in duration-200">
+        <div className="w-6 h-6 rounded-full border-2 border-[var(--border)] border-t-[var(--primary)] animate-spin" />
+        <span className="text-[10px] font-mono text-[var(--text-muted)] tracking-wider">Preparing assistant workspace...</span>
+      </div>
+    );
+  }
 
   const currentProvider = (formData.llm?.provider || 'groq') as keyof typeof LLM_MODELS;
   const currentModels = dynamicModels[currentProvider] || LLM_MODELS.groq;
 
+  if (wizardStage === 'select_path') {
+    return (
+      <div className="max-w-3xl mx-auto mt-6 animate-in fade-in duration-500">
+        <div className="card shadow-xl p-0 overflow-hidden border border-[var(--border)] bg-[var(--card-bg)] flex flex-col">
+          {/* Header Bar */}
+          <div className="px-8 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface-secondary)]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Step 1 of 3 &bull; Path Selection
+            </span>
+            <button
+              onClick={() => navigate('/agents')}
+              className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              Exit Setup
+            </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-8 space-y-8">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
+                Create a Voice Assistant
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] max-w-md mx-auto leading-relaxed">
+                Choose to construct a custom assistant from scratch or jumpstart your agent with a pre-configured industry blueprint.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Custom Assistant */}
+              <button
+                onClick={() => setWizardStage('custom_name')}
+                className="card p-6 flex flex-col justify-between text-left border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_12px_36px_rgba(197,168,128,0.06)] cursor-pointer group transition-all duration-300 min-h-[220px]"
+              >
+                <div>
+                  <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-300">✨</div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2 group-hover:text-[var(--accent)] transition-colors duration-300">Custom Assistant</h3>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                    Build a customizable node. Tailor behavioral rules, pick custom models, and connect your business tools from scratch.
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                  Configure custom &rarr;
+                </span>
+              </button>
+
+              {/* Blueprint Templates suggestion window */}
+              <div className="space-y-3">
+                <span className="text-[10px] font-extrabold text-[var(--text-muted)] uppercase tracking-wider block ml-1">Pre-built Blueprints</span>
+                <div className="grid grid-cols-1 gap-2.5">
+                  {BLUEPRINTS.map(bp => (
+                    <button
+                      key={bp.name}
+                      onClick={() => applyBlueprint(bp)}
+                      className="card p-4 flex items-center gap-3.5 text-left border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_8px_24px_rgba(197,168,128,0.04)] cursor-pointer group transition-all duration-300"
+                    >
+                      <div className="text-2xl transform group-hover:scale-110 transition-transform duration-300">{bp.icon}</div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300">{bp.name}</h4>
+                        <p className="text-[10px] text-[var(--text-muted)] truncate italic mt-0.5">"{bp.prompt}"</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer Bar */}
+          <div className="bg-[var(--surface-secondary)] border-t border-[var(--border)] px-8 py-4 flex items-center justify-between">
+            <button
+              onClick={() => navigate('/agents')}
+              className="btn-outline h-9 px-4 text-[10px] font-bold uppercase tracking-wider"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (wizardStage === 'custom_name') {
+    return (
+      <div className="max-w-2xl mx-auto mt-12 animate-in fade-in duration-300">
+        <div className="card shadow-xl p-0 overflow-hidden border border-[var(--border)] bg-[var(--card-bg)] flex flex-col">
+          {/* Header Bar */}
+          <div className="px-8 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface-secondary)]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Step 2 of 3 &bull; Identity Configuration
+            </span>
+            <button
+              onClick={() => setWizardStage('select_path')}
+              className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              Back to Start
+            </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-12 flex flex-col items-center justify-center space-y-8">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
+                What should we call your Assistant?
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                Choose a clear, distinct name that reflects their voice role or corporate identity.
+              </p>
+            </div>
+
+            <div className="w-full max-w-md pt-4">
+              <input 
+                value={formData.agentName} 
+                onChange={e => setFormData({ ...formData, agentName: e.target.value })}
+                className="w-full text-center text-2xl font-bold bg-transparent border-b-2 border-[var(--border)] focus:border-[var(--accent)] outline-none py-3 text-[var(--text-primary)] transition-all duration-200 placeholder-[var(--text-placeholder)]"
+                placeholder="e.g. Sarah Concierge"
+                autoFocus
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && formData.agentName.trim()) {
+                    setWizardStage('custom_goal');
+                  }
+                }}
+              />
+              <span className="text-[9px] text-[var(--text-muted)] font-mono text-center block mt-3 uppercase tracking-wider">
+                Press Enter to continue
+              </span>
+            </div>
+          </div>
+
+          {/* Footer Bar */}
+          <div className="bg-[var(--surface-secondary)] border-t border-[var(--border)] px-8 py-4 flex items-center justify-between">
+            <button
+              onClick={() => setWizardStage('select_path')}
+              className="btn-outline h-9 px-4 text-[10px] font-bold uppercase tracking-wider"
+            >
+              Previous Step
+            </button>
+            <button
+              disabled={!formData.agentName.trim()}
+              onClick={() => setWizardStage('custom_goal')}
+              className="btn-primary h-9 px-5 text-[10px] font-bold uppercase tracking-wider disabled:opacity-40 disabled:pointer-events-none"
+            >
+              Continue
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (wizardStage === 'custom_goal') {
+    return (
+      <div className="max-w-2xl mx-auto mt-12 animate-in fade-in duration-300">
+        <div className="card shadow-xl p-0 overflow-hidden border border-[var(--border)] bg-[var(--card-bg)] flex flex-col">
+          {/* Header Bar */}
+          <div className="px-8 py-4 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface-secondary)]">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+              Step 3 of 3 &bull; Goal & Objectives
+            </span>
+            <button
+              onClick={() => setWizardStage('custom_name')}
+              className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              Modify Name
+            </button>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-8 flex flex-col items-center justify-center space-y-6">
+            <div className="text-center space-y-2">
+              <h2 className="text-2xl font-bold text-[var(--text-primary)] tracking-tight">
+                What is the main goal of your Assistant?
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] max-w-md leading-relaxed">
+                Describe the guidelines, responsibilities, or behaviors expected of the assistant.
+              </p>
+            </div>
+
+            <div className="w-full pt-2">
+              <textarea 
+                value={formData.prompt} 
+                onChange={e => setFormData({ ...formData, prompt: e.target.value })}
+                className="w-full h-40 rounded-xl border border-[var(--border)] bg-[var(--input-bg)] p-4 text-xs font-semibold leading-relaxed outline-none focus:border-[var(--accent)] transition-all duration-200 resize-none text-left"
+                placeholder="Describe what you want this agent to do. For example: You are a high-performing concierge assistant..."
+                autoFocus
+              />
+            </div>
+          </div>
+
+          {/* Footer Bar */}
+          <div className="bg-[var(--surface-secondary)] border-t border-[var(--border)] px-8 py-4 flex items-center justify-between">
+            <button
+              onClick={() => setWizardStage('custom_name')}
+              className="btn-outline h-9 px-4 text-[10px] font-bold uppercase tracking-wider"
+            >
+              Previous Step
+            </button>
+            <button
+              onClick={() => setWizardStage('configure')}
+              className="btn-primary h-9 px-5 text-[10px] font-bold uppercase tracking-wider"
+            >
+              Configure Settings &rarr;
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+    <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)]">
       
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
         <div>
-          <div className="mb-5">
+          <div className="mb-4">
             <BackButton fallbackPath="/agents" label="Agents" />
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-100">
+          <h1 className="text-2xl font-bold tracking-tight">
             {editingAgent ? 'Configure Assistant' : 'Register Assistant'}
           </h1>
-          <p className="text-sm text-zinc-500 mt-2">
-            Configure and launch your AI voice assistant connection node.
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]"></span>
+            </span>
+            <p className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">Configure and launch your AI voice assistant connection node</p>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <button onClick={() => handleSave(false)} className="h-11 px-5 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-300 hover:bg-zinc-800 transition flex items-center gap-2">
+
+        <div className="flex items-center gap-3 self-start lg:self-auto">
+          <button 
+            onClick={() => handleSave(false)} 
+            className="btn-outline h-11 text-xs font-bold uppercase tracking-wider px-5"
+          >
             Save Draft
           </button>
-          <button onClick={() => handleSave(true)} className="h-11 px-5 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center gap-2 shadow-lg shadow-primary/10">
-            <Zap size={15} fill="currentColor" strokeWidth={0} />
+          <button 
+            onClick={() => handleSave(true)} 
+            className="btn-primary h-11 text-xs font-bold uppercase tracking-wider px-5 shadow-sm"
+          >
+            <Zap size={14} />
             Launch Agent
           </button>
         </div>
@@ -331,51 +578,51 @@ const CreateAgentPage = () => {
       {renderStepIndicator()}
 
       {/* MAIN CONTENT GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
         
         {/* FORM PANEL */}
-        <div className="space-y-8">
+        <div className="space-y-6">
           {step === 1 && (
-            <div className="space-y-8 animate-in fade-in duration-300">
+            <div className="space-y-6 animate-in fade-in duration-300">
               {/* BLUEPRINTS */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 px-1">
-                  <Sparkles size={14} className="text-zinc-500" />
-                  <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Agent Blueprints</span>
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 px-1 text-[var(--text-muted)]">
+                  <Sparkles size={14} />
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Agent Blueprints</span>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {BLUEPRINTS.map(bp => (
                     <button
                       key={bp.name}
                       onClick={() => applyBlueprint(bp)}
-                      className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 text-left"
+                      className="card p-5 border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_8px_24px_rgba(197,168,128,0.06)] transition-all duration-300 text-left cursor-pointer group"
                     >
-                      <div className="text-3xl mb-4">{bp.icon}</div>
-                      <h3 className="text-base font-semibold text-zinc-100 mb-2">{bp.name}</h3>
-                      <p className="text-sm text-zinc-400 leading-relaxed italic line-clamp-3">"{bp.prompt}"</p>
+                      <div className="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">{bp.icon}</div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1 tracking-wide group-hover:text-[var(--accent)] transition-colors duration-300">{bp.name}</h3>
+                      <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic line-clamp-3">"{bp.prompt}"</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* IDENTITY FORM */}
-              <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 space-y-6">
+              <div className="card p-6 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-300">Assistant Name</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Assistant Name</label>
                     <input 
                       value={formData.agentName} 
                       onChange={e => setFormData({ ...formData, agentName: e.target.value })} 
-                      className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition" 
+                      className="input-field" 
                       placeholder="e.g. Identity Node-01" 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-zinc-300">Linked Phone Number</label>
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Linked Phone Number</label>
                     <select
                       value={selectedNumberId}
                       onChange={e => setSelectedNumberId(e.target.value)}
-                      className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition cursor-pointer"
+                      className="input-field cursor-pointer"
                     >
                       <option value="none">No Phone Number (Web / Chat only)</option>
                       {userNumbers.map((num: any) => (
@@ -422,12 +669,12 @@ const CreateAgentPage = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-zinc-300">Behavioral Directives</label>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Behavioral Directives</label>
                   <textarea 
                     value={formData.prompt} 
                     onChange={e => setFormData({ ...formData, prompt: e.target.value })} 
-                    className="w-full !py-4 h-48 resize-none rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition leading-relaxed" 
+                    className="w-full !py-4 h-48 resize-none rounded-xl border border-[var(--border)] bg-[var(--input-bg)] px-4 text-xs font-semibold leading-relaxed outline-none focus:border-[var(--border-focus)] transition" 
                     placeholder="Enter detailed directives, constraints, persona rules, and background domain knowledge..." 
                   />
                 </div>
@@ -449,62 +696,108 @@ const CreateAgentPage = () => {
                   <ConfigGroup 
                     label="Primary Language" 
                     value={formData.language} 
-                    options={['hi-IN', 'en-US', 'bn-IN']} 
-                    labels={['Hindi (India)', 'English (US)', 'Bengali (India)']}
+                    options={['hi-IN', 'en-US']} 
+                    labels={['Hindi (Indic Dialect)', 'English (Global Dialect)']}
                     onChange={(l: string) => setFormData({ ...formData, language: l, stt: { ...formData.stt, language: l } })} 
                   />
                 </ProPanel>
-                <ProPanel label="TTS (The Voice)" icon={<Volume2 size={14} />}>
+
+                <ProPanel label="TTS (The Mouth)" icon={<Volume2 size={14} />}>
                   <ConfigGroup 
-                    label="Vocal Engine" 
+                    label="Signal Provider" 
                     value={formData.tts.provider} 
                     options={['sarvam', 'openai']} 
-                    labels={['Sarvam Indic Voice', 'OpenAI Premium Voice']}
+                    labels={['Sarvam TTS', 'OpenAI Premium']}
                     onChange={(p: string) => {
-                      const defaultVoice = TTS_VOICES[p as keyof typeof TTS_VOICES]?.[0]?.id || '';
+                      const list = TTS_VOICES[p as keyof typeof TTS_VOICES] || [];
                       setFormData({ 
                         ...formData, 
-                        tts: { ...formData.tts, provider: p, voice: defaultVoice } 
+                        tts: { ...formData.tts, provider: p, voice: list[0]?.id || 'neha' } 
                       });
                     }} 
                   />
-                  <ConfigGroup 
-                    label="Voice ID" 
-                    value={formData.tts.voice} 
-                    options={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.id)} 
-                    labels={TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES].map(v => v.name)} 
-                    onChange={(v: string) => setFormData({ ...formData, tts: { ...formData.tts, voice: v } })} 
-                  />
+                  <div className="space-y-2 mt-4">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Voice Identity</label>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar">
+                      {((TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES] || [])).map((v: any) => {
+                        const isSelected = formData.tts.voice === v.id;
+                        const isMale = v.id === 'shubh' || v.id === 'aditya' || v.id === 'echo';
+                        const isFemale = v.id === 'neha' || v.id === 'shreya' || v.id === 'ritu' || v.id === 'shimmer';
+                        const tag = isMale ? 'Male' : isFemale ? 'Female' : 'Neutral';
+                        
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, tts: { ...formData.tts, voice: v.id } })}
+                            className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer min-h-[85px] relative overflow-hidden ${
+                              isSelected 
+                                ? 'border-[var(--accent)] bg-[var(--accent)]/5 ring-1 ring-[var(--accent)] shadow-[0_4px_12px_rgba(197,168,128,0.08)]' 
+                                : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]/50'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center gap-1.5 min-w-0">
+                                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  isMale ? 'bg-blue-400 animate-pulse' : isFemale ? 'bg-rose-400 animate-pulse' : 'bg-amber-400 animate-pulse'
+                                }`} />
+                                <span className="text-[11px] font-bold text-[var(--text-primary)] truncate max-w-[85px]">{v.name.split(' (')[0]}</span>
+                              </div>
+                              <span className={`text-[8px] font-extrabold uppercase px-1.5 py-0.5 rounded leading-none tracking-wider shrink-0 ${
+                                isMale 
+                                  ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20' 
+                                  : isFemale 
+                                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20' 
+                                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20'
+                              }`}>
+                                {tag}
+                              </span>
+                            </div>
+                            <p className="text-[9px] text-[var(--text-muted)] line-clamp-1 italic mt-2 leading-normal">
+                              {v.name.includes(' - ') ? v.name.split(' - ')[1].replace(')', '') : 'Premium synthesized speech.'}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </ProPanel>
               </div>
-              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300">
+
+              <div className="card p-6 space-y-6">
+                <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider border-b border-[var(--border)] pb-2">Speech Pace Adjustment</h3>
                 <SensitivitySlider 
-                  label="Speech Pace (Speed)" 
-                  value={formData.tts.pace || 1.0} 
-                  min={0.5} 
-                  max={2.0} 
-                  step={0.1} 
+                  label="Vocal Tempo Pace" 
+                  value={formData.tts.pace} 
+                  min={0.6} 
+                  max={1.5} 
+                  step={0.05} 
                   onChange={(v: number) => setFormData({...formData, tts: {...formData.tts, pace: v}})} 
-                  sub="Ratio of generated voice synthesis feedback speed (Standard: 1.0x)." 
+                  sub="Sets voice articulation rate speed." 
                 />
               </div>
             </div>
           )}
 
           {step === 3 && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 space-y-6 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between mb-2">
+            <div className="card p-6 space-y-6 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
                 <div>
-                  <h3 className="text-lg font-semibold text-zinc-100">Agent Tools Integration</h3>
-                  <p className="text-sm text-zinc-500 mt-1">Connect operational tools to execute platform triggers.</p>
+                  <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Agent Tools Integration</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">Connect operational tools to execute platform triggers.</p>
                 </div>
-                <button onClick={() => navigate('/tools')} className="h-9 px-4 rounded-xl border border-zinc-800 bg-zinc-900/50 text-sm font-medium text-zinc-305 hover:bg-zinc-800 transition">Marketplace</button>
+                <button 
+                  onClick={() => navigate('/tools')} 
+                  className="btn-outline h-9 text-[11px] px-3 font-semibold uppercase tracking-wider"
+                >
+                  Marketplace
+                </button>
               </div>
 
               {availableTools.length === 0 ? (
-                <div className="p-16 text-center border border-dashed border-zinc-800 rounded-xl bg-zinc-950/40">
-                  <Command size={40} className="mx-auto text-zinc-700 mb-4" />
-                  <p className="text-sm text-zinc-550 italic font-medium">No tools available in current registry.</p>
+                <div className="p-16 text-center border border-dashed border-[var(--border)] rounded-2xl bg-[var(--surface-secondary)]/30">
+                  <Command size={32} className="mx-auto text-[var(--text-muted)] mb-3" />
+                  <p className="text-xs text-[var(--text-muted)] italic font-semibold">No tools available in current registry.</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -520,22 +813,24 @@ const CreateAgentPage = () => {
                             : [...current, tool.id];
                           setFormData({ ...formData, tools: next });
                         }}
-                        className={`p-5 rounded-2xl border text-left transition-all duration-300 group relative ${
+                        className={`p-4 rounded-xl border text-left flex flex-col justify-between min-h-[110px] group transition-all duration-200 ${
                           isSelected 
-                            ? 'bg-primary/5 border-primary/45 shadow-sm' 
-                            : 'bg-zinc-950 border-zinc-900 hover:border-zinc-800 hover:bg-zinc-900/20'
+                            ? 'border-[var(--primary)] bg-[var(--primary)]/5 shadow-sm' 
+                            : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]/50'
                         }`}
                       >
-                        <div className="flex justify-between items-center mb-3">
-                          <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                            isSelected ? 'bg-primary text-on-primary shadow shadow-primary/10' : 'bg-zinc-900 text-zinc-500'
+                        <div className="flex justify-between items-center w-full">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                            isSelected ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-secondary)] border border-[var(--border)] text-[var(--text-muted)]'
                           }`}>
-                            <Code size={16} />
+                            <Code size={14} />
                           </div>
-                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />}
+                          {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-[var(--primary)] animate-pulse" />}
                         </div>
-                        <h4 className="text-sm font-semibold text-zinc-100">{tool.name}</h4>
-                        <p className="text-xs text-zinc-550 line-clamp-1 italic mt-1">{tool.description || 'Custom module link.'}</p>
+                        <div>
+                          <h4 className="text-xs font-bold text-[var(--text-primary)] mt-3">{tool.name}</h4>
+                          <p className="text-[10px] text-[var(--text-muted)] line-clamp-1 italic mt-1 leading-normal">{tool.description || 'Custom module link.'}</p>
+                        </div>
                       </button>
                     );
                   })}
@@ -545,24 +840,27 @@ const CreateAgentPage = () => {
           )}
 
           {step === 4 && (
-            <div className="rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 space-y-8 animate-in fade-in duration-300">
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-lg font-semibold text-zinc-100">Audio Signal Processing</h3>
-                <span className="px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">Advanced Audio</span>
+            <div className="card p-6 space-y-8 animate-in fade-in duration-300">
+              <div className="flex items-center justify-between border-b border-[var(--border)] pb-3">
+                <div>
+                  <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Audio Signal Processing</h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5 font-medium">Calibrate connection latency and noise thresholds.</p>
+                </div>
+                <span className="px-2.5 py-0.5 border border-emerald-500/20 bg-emerald-500/10 text-[var(--success)] text-[9px] rounded font-bold uppercase tracking-wider leading-none">Advanced Audio</span>
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <SensitivitySlider label="Activation Threshold" value={formData.vad.activation_threshold} min={0.1} max={0.9} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, activation_threshold: v}})} sub="VAD threshold detection floor." />
                 <SensitivitySlider label="Speech Resilience" value={formData.vad.min_speech_duration} min={0.05} max={1.0} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, min_speech_duration: v}})} sub="Minimum sound duration floor." />
                 <SensitivitySlider label="Silence Tolerance" value={formData.vad.min_silence_duration} min={0.1} max={3.0} step={0.1} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, min_silence_duration: v}})} sub="Delay buffer before speaker changes." />
                 <SensitivitySlider label="Signal Padding" value={formData.vad.padding_duration} min={0.05} max={1.0} step={0.05} onChange={(v: number) => setFormData({...formData, vad: {...formData.vad, padding_duration: v}})} sub="Padding border boundaries." />
               </div>
 
-              <div className="p-5 bg-zinc-950/40 border border-zinc-800 rounded-xl flex gap-4">
-                <div className="w-10 h-10 rounded-lg bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 shrink-0">
-                  <Info size={16} />
+              <div className="p-4 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl flex gap-3 shadow-inner">
+                <div className="w-8 h-8 rounded-lg bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-muted)] shrink-0 shadow-sm mt-0.5">
+                  <Info size={14} />
                 </div>
-                <p className="text-xs text-zinc-550 leading-relaxed pt-0.5">
+                <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed font-semibold">
                   Voice Activity Detection controls latency and sensitivity thresholds. Correct settings ensure stable, real-time responses with zero disruption.
                 </p>
               </div>
@@ -570,12 +868,12 @@ const CreateAgentPage = () => {
           )}
 
           {/* BOTTOM STEP CONTROLS */}
-          <div className="mt-8 flex justify-between items-center py-5 border-t border-zinc-900/60 sticky bottom-0 bg-background/50 backdrop-blur-xl z-10">
+          <div className="mt-8 flex justify-between items-center py-4 border-t border-[var(--border)]">
             {step === 1 ? (
               <button 
                 type="button"
                 onClick={() => navigate('/agents')}
-                className="h-10 px-5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-200 hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+                className="btn-outline h-10 px-5 text-xs font-bold uppercase tracking-wider"
               >
                 Cancel
               </button>
@@ -583,7 +881,7 @@ const CreateAgentPage = () => {
               <button 
                 type="button"
                 onClick={() => setStep(s => Math.max(1, s - 1))}
-                className="h-10 px-5 rounded-xl border border-zinc-800 bg-zinc-900 text-sm font-medium text-zinc-200 hover:bg-zinc-800 transition flex items-center justify-center gap-2"
+                className="btn-outline h-10 px-5 text-xs font-bold uppercase tracking-wider"
               >
                 Previous Stage
               </button>
@@ -595,7 +893,7 @@ const CreateAgentPage = () => {
                 if (step < 4) setStep(s => s + 1);
                 else handleSave(true);
               }}
-              className="h-11 px-6 rounded-xl bg-primary text-on-primary text-sm font-medium hover:opacity-90 transition flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+              className="btn-primary h-10 px-6 text-xs font-bold uppercase tracking-wider shadow-sm"
             >
               {step < 4 ? 'Next Stage' : 'Save & Launch'}
             </button>
@@ -604,28 +902,27 @@ const CreateAgentPage = () => {
 
         {/* SIDEBAR PREVIEW (MATCHES PROFILE CARD STYLE EXACTLY) */}
         <div className="space-y-6">
-          <div className="rounded-3xl border border-zinc-800 bg-zinc-900/50 p-6 hover:border-primary/20 hover:bg-zinc-900/60 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 sticky top-24">
-            
+          <div className="card p-6 flex flex-col justify-between sticky top-24 min-h-[350px]">
             <div className="flex flex-col items-center text-center">
               {/* AVATAR BOX WITH STATUS DOT */}
-              <div className="relative mb-5">
-                <AgentAvatar name={formData.agentName} agent={formData} className="w-24 h-24 text-5xl" />
-                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-lg bg-emerald-500 border-2 border-zinc-950 animate-pulse" />
+              <div className="relative mb-4">
+                <AgentAvatar name={formData.agentName} agent={formData} className="w-20 h-20 text-4xl" />
+                <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-[var(--success)] border border-[var(--border)] animate-pulse" />
               </div>
 
               {/* NAME */}
-              <h2 className="text-xl font-semibold text-zinc-100 truncate max-w-[280px]">
+              <h2 className="text-sm font-bold text-[var(--text-primary)] truncate max-w-[240px] uppercase tracking-wide leading-none">
                 {formData.agentName || 'Unnamed Assistant'}
               </h2>
 
               {/* BADGE */}
-              <div className="mt-4 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-medium">
+              <div className="mt-3 px-2 py-0.5 rounded border border-[var(--primary)]/20 bg-[var(--primary)]/5 text-[var(--primary)] text-[8px] font-extrabold uppercase tracking-widest leading-none">
                 Link Protocol Ready
               </div>
             </div>
 
             {/* PREVIEW STATS */}
-            <div className="mt-8 space-y-1">
+            <div className="mt-6 border-t border-[var(--border)] pt-4 space-y-1">
               <PreviewStat 
                 label="Intelligence" 
                 value={dynamicModels[currentProvider]?.find((m: any) => m.id === formData.llm.model)?.name || formData.llm.model} 
@@ -647,7 +944,7 @@ const CreateAgentPage = () => {
                 value={`${formData.tts.pace || 1.0}x`} 
               />
               <PreviewStat 
-                label="VAD Sensitivity" 
+                label="VAD Threshold" 
                 value={formData.vad.activation_threshold} 
               />
             </div>
@@ -659,47 +956,54 @@ const CreateAgentPage = () => {
   );
 };
 
+/* COMPONENT INTERACTION PARTS */
 const ConfigGroup = ({ label, value, options, labels, onChange }: any) => (
-  <div className="space-y-2">
-    <label className="text-sm font-medium text-zinc-300">{label}</label>
+  <div className="space-y-1.5 flex-1 min-w-0">
+    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">{label}</label>
     <select 
       value={value} 
-      onChange={e => onChange(e.target.value)} 
-      className="w-full h-11 rounded-xl border border-zinc-800 bg-zinc-950 px-4 text-sm outline-none focus:border-primary transition"
+      onChange={e => onChange(e.target.value)}
+      className="input-field cursor-pointer text-xs"
     >
-      {options.map((o: any, i: number) => (
-        <option key={o} value={o}>{labels ? labels[i] : o}</option>
+      {options.map((opt: string, i: number) => (
+        <option key={opt} value={opt}>
+          {labels[i] || opt.toUpperCase()}
+        </option>
       ))}
     </select>
   </div>
 );
 
 const ProPanel = ({ label, icon, children }: any) => (
-  <div className="bg-zinc-950/40 p-6 rounded-2xl border border-zinc-800 space-y-6 flex-1">
-    <div className="flex items-center gap-3 mb-1 font-semibold text-zinc-150 text-base uppercase tracking-wider leading-none">
-      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary border border-primary/15">{icon}</div>
-      {label}
+  <div className="card p-6 flex flex-col justify-between min-h-[220px]">
+    <div className="flex items-center gap-2 border-b border-[var(--border)] pb-3 mb-4">
+      <div className="w-8 h-8 rounded-lg bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] shrink-0 shadow-sm">
+        {icon}
+      </div>
+      <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">{label}</h3>
     </div>
-    {children}
+    <div className="space-y-4 flex-1">
+      {children}
+    </div>
   </div>
 );
 
 const SensitivitySlider = ({ label, value, min, max, step, onChange, sub }: any) => (
-  <div className="space-y-3">
-    <div className="flex justify-between items-end px-1">
-      <span className="text-sm font-medium text-zinc-300">{label}</span>
-      <span className="text-sm font-semibold text-zinc-100">{value}</span>
+  <div className="space-y-2">
+    <div className="flex justify-between items-center">
+      <span className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">{label}</span>
+      <span className="text-xs font-extrabold text-[var(--primary)] font-mono">{value}</span>
     </div>
     <input 
-      type="range" 
-      min={min} 
-      max={max} 
-      step={step} 
-      value={value} 
-      onChange={e => onChange(parseFloat(e.target.value))} 
-      className="w-full h-1 bg-zinc-800 rounded-full appearance-none accent-primary cursor-pointer" 
+      type="range"
+      min={min}
+      max={max}
+      step={step}
+      value={value}
+      onChange={e => onChange(parseFloat(e.target.value))}
+      className="w-full h-1.5 rounded-lg bg-[var(--border)] appearance-none cursor-pointer accent-[var(--primary)]"
     />
-    <p className="text-xs text-zinc-550 mt-1">{sub}</p>
+    <span className="text-[9px] text-[var(--text-muted)] italic font-semibold block">{sub}</span>
   </div>
 );
 
