@@ -22,6 +22,7 @@ import {
 import { settingsApi } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
 import { BackButton } from '../components/BackButton';
+import { Select } from '../components/ui/Select';
 import toast from 'react-hot-toast';
 
 const SettingsPage = () => {
@@ -248,20 +249,20 @@ const SettingsPage = () => {
                       <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
                         <Clock size={12} /> Timezone
                       </label>
-                      <select
-                        className="input-field cursor-pointer"
+                      <Select
                         value={general.timezone}
-                        onChange={e => setGeneral({ ...general, timezone: e.target.value })}
-                      >
-                        <option value="UTC">UTC</option>
-                        <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
-                        <option value="America/New_York">America/New_York (EST)</option>
-                        <option value="America/Los_Angeles">America/Los_Angeles (PST)</option>
-                        <option value="Europe/London">Europe/London (GMT)</option>
-                        <option value="Europe/Berlin">Europe/Berlin (CET)</option>
-                        <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
-                        <option value="Australia/Sydney">Australia/Sydney (AEDT)</option>
-                      </select>
+                        onChange={val => setGeneral({ ...general, timezone: val })}
+                        options={[
+                          { value: 'UTC', label: 'UTC' },
+                          { value: 'Asia/Kolkata', label: 'Asia/Kolkata (IST)' },
+                          { value: 'America/New_York', label: 'America/New_York (EST)' },
+                          { value: 'America/Los_Angeles', label: 'America/Los_Angeles (PST)' },
+                          { value: 'Europe/London', label: 'Europe/London (GMT)' },
+                          { value: 'Europe/Berlin', label: 'Europe/Berlin (CET)' },
+                          { value: 'Asia/Tokyo', label: 'Asia/Tokyo (JST)' },
+                          { value: 'Australia/Sydney', label: 'Australia/Sydney (AEDT)' }
+                        ]}
+                      />
                     </div>
 
                     {/* Default Language */}
@@ -269,18 +270,18 @@ const SettingsPage = () => {
                       <label className="text-xs font-semibold flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
                         <Languages size={12} /> Default Language
                       </label>
-                      <select
-                        className="input-field cursor-pointer"
+                      <Select
                         value={general.default_language}
-                        onChange={e => setGeneral({ ...general, default_language: e.target.value })}
-                      >
-                        <option value="en">English</option>
-                        <option value="hi-IN">Hindi</option>
-                        <option value="es">Spanish</option>
-                        <option value="fr">French</option>
-                        <option value="de">German</option>
-                        <option value="ja">Japanese</option>
-                      </select>
+                        onChange={val => setGeneral({ ...general, default_language: val })}
+                        options={[
+                          { value: 'en', label: 'English' },
+                          { value: 'hi-IN', label: 'Hindi' },
+                          { value: 'es', label: 'Spanish' },
+                          { value: 'fr', label: 'French' },
+                          { value: 'de', label: 'German' },
+                          { value: 'ja', label: 'Japanese' }
+                        ]}
+                      />
                     </div>
                   </div>
 

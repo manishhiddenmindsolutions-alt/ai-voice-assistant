@@ -1,4 +1,5 @@
 from typing import List, Optional
+import re
 import aiohttp
 import logging
 from fastapi import APIRouter, Depends, HTTPException
@@ -16,7 +17,7 @@ from app.api.deps import get_current_user
 # pyrefly: ignore [missing-import]
 from app.core.security import vault
 # pyrefly: ignore [missing-import]
-from app.models.orm import UserORM, ToolORM, agent_tools
+from app.models.orm import UserORM, ToolORM, IntegrationORM, agent_tools
 
 logger = logging.getLogger("tools-diagnostic")
 
@@ -54,13 +55,53 @@ async def create_tool(
     db: AsyncSession = Depends(get_db)
 ):
     try:
-        # Encrypt the API key before storage
-        encrypted_key = vault.encrypt(tool.api_key) if tool.api_key else None
+        # --- Auto-resolve integration for native Google tools ---
+        resolved_integration_id = tool.integration_id or None
+        tool_config = dict(tool.config) if tool.config else {}
+        
+        if tool.tool_type in ("SHEETS", "CALENDAR") and not resolved_integration_id:
+            # Auto-find the user's Google integration
+            int_stmt = select(IntegrationORM).where(
+                IntegrationORM.user_id == current_user.id,
+                IntegrationORM.provider == "google"
+            ).order_by(IntegrationORM.updated_at.desc())
+            int_result = await db.execute(int_stmt)
+            google_int = int_result.scalars().first()
+            if google_int:
+                resolved_integration_id = google_int.id
+                logger.info(f"Auto-linked {tool.tool_type} tool to Google integration {google_int.id}")
+        
+        # --- Extract spreadsheet ID from full URLs ---
+        if tool.tool_type == "SHEETS" and "spreadsheetId" in tool_config:
+            raw_id = tool_config["spreadsheetId"]
+            match = re.search(r'/spreadsheets/d/([a-zA-Z0-9\-_]+)', raw_id)
+            if match:
+                tool_config["spreadsheetId"] = match.group(1)
+                logger.info(f"Extracted spreadsheet ID from URL: {tool_config['spreadsheetId']}")
+                
+        # --- Extract calendar ID from full/embed URLs ---
+        if tool.tool_type == "CALENDAR" and "calendarId" in tool_config:
+            raw_cid = tool_config["calendarId"]
+            if "embed?src=" in raw_cid or "src=" in raw_cid:
+                match = re.search(r'src=([^&]+)', raw_cid)
+                if match:
+                    import urllib.parse
+                    tool_config["calendarId"] = urllib.parse.unquote(match.group(1))
+                    logger.info(f"Extracted calendar ID from embed URL: {tool_config['calendarId']}")
+            elif "calendar.google.com/calendar/" in raw_cid:
+                # Handle direct links
+                pass
+        
+        # For native Google tools, don't store dummy api_keys — the integration handles auth
+        encrypted_key = None
+        if tool.api_key and resolved_integration_id is None:
+            encrypted_key = vault.encrypt(tool.api_key)
         
         db_tool = ToolORM(
-            **tool.model_dump(exclude={"api_key", "integration_id"}),
+            **tool.model_dump(exclude={"api_key", "integration_id", "config"}),
             api_key=encrypted_key,
-            integration_id=tool.integration_id if tool.integration_id else None,
+            integration_id=resolved_integration_id,
+            config=tool_config,
             user_id=current_user.id
         )
         db.add(db_tool)

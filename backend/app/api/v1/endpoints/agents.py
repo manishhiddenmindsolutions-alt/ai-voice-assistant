@@ -44,7 +44,8 @@ async def create_or_update_agent(
     db: AsyncSession = Depends(get_db)
 ):
     # Check if agent already exists and belongs to current user
-    stmt = select(AgentORM).where(AgentORM.id == agent.id)
+    from sqlalchemy.orm import selectinload
+    stmt = select(AgentORM).options(selectinload(AgentORM.tools)).where(AgentORM.id == agent.id)
     result = await db.execute(stmt)
     existing_agent = result.scalar_one_or_none()
     
@@ -68,9 +69,19 @@ async def create_or_update_agent(
     if "stt" in agent_data: agent_data["stt"].pop("apiKey", None)
     if "tts" in agent_data: agent_data["tts"].pop("apiKey", None)
     
-    # Filter tools for storage linking
-    valid_tools = [t for t in agent.tools if not isinstance(t, str)]
-    agent_data["tools"] = [t.model_dump() if hasattr(t, "model_dump") else t for t in valid_tools]
+    # Extract tool IDs (which are strings) from agent.tools
+    tool_ids = [t for t in agent.tools if isinstance(t, str)]
+    
+    # Query ToolORM objects from database
+    db_tools = []
+    if tool_ids:
+        from app.models.orm import ToolORM
+        tool_stmt = select(ToolORM).where(ToolORM.id.in_(tool_ids), ToolORM.user_id == current_user.id)
+        tool_result = await db.execute(tool_stmt)
+        db_tools = list(tool_result.scalars().all())
+        
+    # Keep the tool IDs in the JSON config representation as expected by the model mapping
+    agent_data["tools"] = tool_ids
     
     if existing_agent:
         existing_agent.agent_name = agent.agentName
@@ -81,6 +92,7 @@ async def create_or_update_agent(
         existing_agent.config = agent_data
         existing_agent.voice_id = agent.tts.voice
         existing_agent.llm_model = agent.llm.model
+        existing_agent.tools = db_tools # Update the many-to-many relationship
         # Update secrets only if new ones were provided
         if agent_secrets:
             existing_agent.secrets = {**existing_agent.secrets, **agent_secrets}
@@ -96,7 +108,8 @@ async def create_or_update_agent(
             config=agent_data,
             secrets=agent_secrets,
             voice_id=agent.tts.voice,
-            llm_model=agent.llm.model
+            llm_model=agent.llm.model,
+            tools=db_tools # Set the many-to-many relationship
         )
         db.add(new_agent)
     

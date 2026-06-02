@@ -238,20 +238,20 @@ export const IntegrationsPage: React.FC = () => {
         <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)]">
 
             {/* HEADER SECTION */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
                 <div>
                     <div className="mb-4">
                         <BackButton fallbackPath="/" label="Back" />
                     </div>
-                    <h1 className="text-2xl font-bold tracking-tight">
+                    <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
                         Integrations Hub
                     </h1>
-                    <div className="flex items-center gap-2 mt-1">
-                        <span className="relative flex h-2 w-2">
+                    <div className="flex items-center gap-2 mt-1.5">
+                        <span className="relative flex h-2.5 w-2.5">
                             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]"></span>
+                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--success)]"></span>
                         </span>
-                        <p className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">Configure Enterprise Connected Accounts</p>
+                        <p className="text-[var(--text-secondary)] text-xs font-bold tracking-widest uppercase">Configure Enterprise Connected Accounts</p>
                     </div>
                 </div>
 
@@ -290,21 +290,21 @@ export const IntegrationsPage: React.FC = () => {
                         return (
                             <div 
                                 key={int.id}
-                                className="card flex flex-col justify-between min-h-[250px] relative overflow-hidden group cursor-default"
+                                className="card flex flex-col justify-between min-h-[270px] relative overflow-hidden group cursor-default"
                             >
                                 <div>
                                     {/* TOP BRAND ICON & STATUS */}
-                                    <div className="flex items-start justify-between mb-4">
-                                        <div className="w-12 h-12 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center shadow-sm">
-                                            <int.icon size={22} />
+                                    <div className="flex items-start justify-between mb-5">
+                                        <div className="w-14 h-14 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center shadow-sm p-3 group-hover:scale-105 transition-transform duration-300">
+                                            <int.icon size={26} />
                                         </div>
  
-                                        <span className={`px-2.5 py-0.5 border text-[9px] rounded font-bold uppercase tracking-wider flex items-center gap-1 ${
+                                        <span className={`px-2.5 py-0.5 border text-[9px] rounded font-extrabold uppercase tracking-widest flex items-center gap-1 ${
                                             isConnected 
-                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-[var(--success)]' 
+                                                ? 'bg-emerald-500/10 border-emerald-500/20 text-[var(--success)] animate-pulse' 
                                                 : 'bg-[var(--surface-secondary)] border-[var(--border)] text-[var(--text-muted)]'
                                         }`}>
-                                            <span className={`w-1 h-1 rounded-full ${isConnected ? 'bg-[var(--success)] animate-pulse' : 'bg-current'}`} />
+                                            <span className={`w-1 h-1 rounded-full ${isConnected ? 'bg-[var(--success)]' : 'bg-current'}`} />
                                             {isTwilio 
                                                 ? (hasTwilio ? 'Active Node' : 'Offline')
                                                 : isN8n 
@@ -317,11 +317,11 @@ export const IntegrationsPage: React.FC = () => {
                                     </div>
  
                                     {/* INFO TEXT */}
-                                    <div className="space-y-1 mb-4">
-                                        <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-wide">
+                                    <div className="space-y-1.5 mb-5">
+                                        <h3 className="text-lg font-bold text-[var(--text-primary)] tracking-tight">
                                             {int.name}
                                         </h3>
-                                        <p className="text-[var(--text-secondary)] text-xs font-medium leading-relaxed">
+                                        <p className="text-[var(--text-secondary)] text-sm font-medium leading-relaxed">
                                             {int.description}
                                         </p>
                                     </div>
@@ -332,7 +332,7 @@ export const IntegrationsPage: React.FC = () => {
                                     {isTwilio ? (
                                         <button 
                                             onClick={() => setShowTwilioModal(true)}
-                                            className="btn-outline w-full flex items-center justify-between px-4 text-xs font-semibold uppercase tracking-wider h-10"
+                                            className={`${hasTwilio ? 'btn-outline' : 'btn-primary'} w-full flex items-center justify-between px-4 text-xs font-bold uppercase tracking-wider h-10`}
                                         >
                                             <span>{hasTwilio ? 'Edit Credentials' : 'Link Twilio Trunk'}</span>
                                             <ArrowRight size={13} />
@@ -358,7 +358,7 @@ export const IntegrationsPage: React.FC = () => {
                                                         setAutomationInput(int.id === 'n8n' ? n8nWebhookUrl : makeWebhookUrl);
                                                         setShowAutomationModal(true);
                                                     }}
-                                                    className="btn-outline w-full flex items-center justify-between px-4 text-xs font-semibold uppercase tracking-wider h-10"
+                                                    className="btn-primary w-full flex items-center justify-between px-4 text-xs font-bold uppercase tracking-wider h-10"
                                                 >
                                                     <span>{`Link ${int.name}`}</span>
                                                     <ArrowRight size={13} />
@@ -376,7 +376,7 @@ export const IntegrationsPage: React.FC = () => {
                                     ) : (
                                         <button 
                                             onClick={() => handleConnect(int.id)}
-                                            className="btn-primary w-full flex items-center justify-between px-4 text-xs font-semibold uppercase tracking-wider h-10 shadow-sm"
+                                            className="btn-primary w-full flex items-center justify-between px-4 text-xs font-bold uppercase tracking-wider h-10 shadow-sm"
                                         >
                                             <span>OAuth Gateway Login</span>
                                             <ArrowRight size={13} />

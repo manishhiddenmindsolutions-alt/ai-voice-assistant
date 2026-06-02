@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Phone, 
   PhoneOutgoing, 
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import api, { numbersApi, callsApi, telephonyApi, agentApi, twilioApi } from '../services/api';
 import { useAgentStore } from '../store/useAgentStore';
+import { Select } from './ui/Select';
 import toast from 'react-hot-toast';
 import { BackButton } from './BackButton';
 
@@ -280,28 +282,42 @@ export const TelephonyPanel: React.FC = () => {
         </div>
 
         {/* HIGH-END NAVIGATION TABS */}
-        <div className="flex bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] self-start lg:self-auto shadow-sm">
+        <div className="flex bg-[var(--surface-secondary)] p-1 rounded-xl border border-[var(--border)] self-start lg:self-auto shadow-sm relative overflow-hidden">
           <button
             onClick={() => setActiveTab('gateways')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 relative z-10 cursor-pointer ${
               activeTab === 'gateways'
-                ? 'bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] shadow-sm'
+                ? 'text-[var(--primary)]'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <Server size={13} />
             Call Center
+            {activeTab === 'gateways' && (
+              <motion.div 
+                layoutId="telephonyActiveTab"
+                className="absolute inset-0 bg-[var(--surface)] border border-[var(--border)] shadow-sm rounded-lg -z-10"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
           </button>
           <button
             onClick={() => setActiveTab('twilio')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition-all duration-200 ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-wider transition-all duration-200 relative z-10 cursor-pointer ${
               activeTab === 'twilio'
-                ? 'bg-[var(--surface)] text-[var(--primary)] border border-[var(--border)] shadow-sm'
+                ? 'text-[var(--primary)]'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
             }`}
           >
             <Key size={13} />
             SIP Gateways
+            {activeTab === 'twilio' && (
+              <motion.div 
+                layoutId="telephonyActiveTab"
+                className="absolute inset-0 bg-[var(--surface)] border border-[var(--border)] shadow-sm rounded-lg -z-10"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
           </button>
         </div>
       </div>
@@ -318,20 +334,18 @@ export const TelephonyPanel: React.FC = () => {
 
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Target Persona</label>
-                    <select 
-                      className="input-field cursor-pointer font-medium"
+                    <Select 
                       value={selectedAgentId}
-                      onChange={e => setSelectedAgentId(e.target.value)}
-                    >
-                      <option value="">Select Voice Agent...</option>
-                      {agents.map(a => (
-                        <option key={a.id} value={a.id}>{a.agentName}</option>
-                      ))}
-                    </select>
+                      onChange={val => setSelectedAgentId(val)}
+                      options={[
+                        { value: '', label: 'Select Voice Agent...' },
+                        ...agents.map(a => ({ value: a.id, label: a.agentName }))
+                      ]}
+                    />
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Destination Number</label>
                     <input 
                       className="input-field font-mono"
@@ -341,6 +355,53 @@ export const TelephonyPanel: React.FC = () => {
                     />
                   </div>
                 </div>
+
+                {/* Dynamic Selected Agent Visual Profile */}
+                <AnimatePresence mode="wait">
+                  {selectedAgentId ? (
+                    (() => {
+                      const selectedAgent = agents.find(a => a.id === selectedAgentId);
+                      if (!selectedAgent) return null;
+                      return (
+                        <motion.div
+                          key={selectedAgent.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{ duration: 0.2 }}
+                          className="p-4 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl flex items-start gap-4"
+                        >
+                          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 text-white flex items-center justify-center font-bold text-base shadow-sm shrink-0">
+                            {selectedAgent.agentName.substring(0, 2).toUpperCase()}
+                          </div>
+                          <div className="space-y-1 min-w-0 flex-1">
+                            <div className="flex items-center justify-between">
+                              <h4 className="font-bold text-sm text-[var(--text-primary)]">{selectedAgent.agentName}</h4>
+                              <span className="text-[8px] text-indigo-600 font-bold uppercase tracking-widest bg-indigo-50 border border-indigo-100 px-1.5 py-0.5 rounded">
+                                Persona Loaded
+                              </span>
+                            </div>
+                            <p className="text-xs text-[var(--text-secondary)] line-clamp-1 italic">
+                              "{selectedAgent.prompt || 'No system instructions provided.'}"
+                            </p>
+                            <div className="flex gap-2 mt-2">
+                              <span className="px-2 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[8px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                                Voice: {selectedAgent.voice || 'Default'}
+                              </span>
+                              <span className="px-2 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[8px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                                Lang: {selectedAgent.language || 'hi-IN'}
+                              </span>
+                            </div>
+                          </div>
+                        </motion.div>
+                      );
+                    })()
+                  ) : (
+                    <div className="p-4 border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)] text-center text-xs text-[var(--text-muted)] font-medium py-6">
+                      No agent selected. Pick a target persona above to preview system parameters.
+                    </div>
+                  )}
+                </AnimatePresence>
 
                 {/* Highly Reassuring Status Banner */}
                 <div className="flex items-center gap-3 p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl">
@@ -388,8 +449,16 @@ export const TelephonyPanel: React.FC = () => {
               </h2>
               <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1 custom-scrollbar">
                 {calls.length === 0 ? (
-                  <div className="py-10 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-widest border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)]">
-                    No Active Node History
+                  <div className="py-12 px-6 text-center border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)] flex flex-col items-center justify-center gap-3">
+                    <div className="p-3 bg-[var(--surface)] rounded-full border border-[var(--border)] text-[var(--text-muted)] shadow-sm">
+                      <History size={20} />
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">No Active Sessions</p>
+                      <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed max-w-[220px] mx-auto">
+                        Trigger an outbound dispatch call above to see live routing sessions and logs.
+                      </p>
+                    </div>
                   </div>
                 ) : calls.map(call => {
                   const statusColors: Record<string, string> = {
@@ -432,7 +501,7 @@ export const TelephonyPanel: React.FC = () => {
                   <h2 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider">PSTN Registry</h2>
                   <button 
                       onClick={() => setIsAdding(true)}
-                      className="p-1.5 bg-[var(--surface-secondary)] hover:bg-[var(--border)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg transition-all"
+                      className="p-1.5 bg-[var(--surface-secondary)] hover:bg-[var(--border)] text-[var(--text-primary)] border border-[var(--border)] rounded-lg transition-all cursor-pointer"
                       title="Link Phone Number"
                   >
                       <Plus size={14} />
@@ -440,8 +509,22 @@ export const TelephonyPanel: React.FC = () => {
                 </div>
                 <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1 custom-scrollbar">
                   {numbers.length === 0 ? (
-                    <div className="py-10 text-center text-xs font-semibold text-[var(--text-muted)] uppercase tracking-widest border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)]">
-                      No Registered Numbers
+                    <div className="py-12 px-6 text-center border border-dashed border-[var(--border)] rounded-xl bg-[var(--surface-secondary)] flex flex-col items-center justify-center gap-3">
+                      <div className="p-3 bg-[var(--surface)] rounded-full border border-[var(--border)] text-[var(--text-muted)] shadow-sm">
+                        <Phone size={20} />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">No Numbers Linked</p>
+                        <p className="text-[10px] text-[var(--text-secondary)] leading-relaxed max-w-[200px] mx-auto">
+                          Link your Twilio number to start routing inbound calls to agents.
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => setIsAdding(true)}
+                        className="btn-outline h-8 px-3 rounded-lg text-[10px] font-bold uppercase tracking-wider flex items-center gap-1.5 mt-2 cursor-pointer"
+                      >
+                        <Plus size={11} /> Link Number
+                      </button>
                     </div>
                   ) : numbers.map(num => {
                     const assignedAgent = agents.find(a => a.id === num.agent_id);
@@ -471,7 +554,7 @@ export const TelephonyPanel: React.FC = () => {
                         </div>
                         <button 
                           onClick={() => handleDeleteNumber(num.id)}
-                          className="text-[var(--text-muted)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 hover:bg-red-500/5 rounded border border-transparent hover:border-red-500/10"
+                          className="text-[var(--text-muted)] hover:text-[var(--danger)] opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 hover:bg-red-500/5 rounded border border-transparent hover:border-red-500/10 cursor-pointer"
                         >
                           <Trash2 size={13} />
                         </button>
@@ -739,28 +822,26 @@ export const TelephonyPanel: React.FC = () => {
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Provider Node Gateway</label>
-                <select 
-                  className="input-field cursor-pointer font-semibold"
+                <Select 
                   value={newNumber.provider}
-                  onChange={e => setNewNumber({...newNumber, provider: e.target.value})}
-                >
-                  <option value="twilio">Twilio Node Gateway</option>
-                  <option value="custom">Generic Custom SIP Node</option>
-                </select>
+                  onChange={val => setNewNumber({...newNumber, provider: val})}
+                  options={[
+                    { value: 'twilio', label: 'Twilio Node Gateway' },
+                    { value: 'custom', label: 'Generic Custom SIP Node' }
+                  ]}
+                />
               </div>
 
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Assigned Voice Agent</label>
-                <select 
-                  className="input-field cursor-pointer font-semibold"
+                <Select 
                   value={newNumber.agent_id}
-                  onChange={e => setNewNumber({...newNumber, agent_id: e.target.value})}
-                >
-                  <option value="">No Agent (Disable Inbound)</option>
-                  {agents.map(a => (
-                    <option key={a.id} value={a.id}>{a.agentName}</option>
-                  ))}
-                </select>
+                  onChange={val => setNewNumber({...newNumber, agent_id: val})}
+                  options={[
+                    { value: '', label: 'No Agent (Disable Inbound)' },
+                    ...agents.map(a => ({ value: a.id, label: a.agentName }))
+                  ]}
+                />
               </div>
 
               <button 

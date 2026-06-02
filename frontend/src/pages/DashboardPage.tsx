@@ -147,30 +147,32 @@ const DashboardPage = () => {
               ))
             ) : agents.length > 0 ? (
               agents.slice(0, 4).map(agent => (
-                <div 
+                <motion.div 
                   key={agent.id} 
-                  className="card p-4 flex items-center justify-between group cursor-pointer"
+                  whileHover={{ x: 4, scale: 1.005 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                  className="card p-4 flex items-center justify-between group cursor-pointer border border-[var(--border)] hover:border-[var(--accent)]/40 hover:shadow-[0_8px_30px_rgba(139,92,246,0.06)]"
                 >
                   <div className="flex items-center gap-3">
-                    <AgentAvatar name={agent.agentName} agent={agent} className="w-10 h-10 text-lg" />
+                    <AgentAvatar name={agent.agentName} agent={agent} className="w-10 h-10 text-lg shadow-sm" />
                     <div>
-                      <h4 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{agent.agentName}</h4>
-                      <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
-                        {agent.llm?.model ? agent.llm.model.substring(0, 20) : 'Default model'} · {agent.language}
+                      <h4 className="text-sm font-semibold transition-colors group-hover:text-[var(--accent)]" style={{ color: 'var(--text-primary)' }}>{agent.agentName}</h4>
+                      <p className="text-xs mt-0.5 font-medium" style={{ color: 'var(--text-muted)' }}>
+                        {agent.llm?.model ? agent.llm.model.substring(0, 20) : 'Default model'} &bull; {agent.language}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="hidden sm:flex flex-col items-end">
-                      <div className="flex items-center gap-1.5">
-                         <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
-                         <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>Active</span>
+                      <div className="flex items-center gap-1.5 bg-[var(--success)]/10 px-2 py-0.5 rounded-full border border-[var(--success)]/20">
+                         <div className="w-1.5 h-1.5 rounded-full bg-[var(--success)] animate-pulse" />
+                         <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: 'var(--success)' }}>Active</span>
                       </div>
-                      <span className="text-[11px] font-mono mt-0.5" style={{ color: 'var(--text-muted)' }}>ID: {agent.id.slice(0, 8)}</span>
+                      <span className="text-[10px] font-mono mt-1 font-semibold" style={{ color: 'var(--text-muted)' }}>ID: {agent.id.slice(0, 8)}</span>
                     </div>
                     <button 
                       onClick={() => handleQuickLaunch(agent)}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center transition active:scale-95"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 hover:bg-[var(--success)]/10 hover:text-[var(--success)] hover:border-[var(--success)]/30 active:scale-90"
                       style={{ 
                         border: '1px solid var(--border)',
                         backgroundColor: 'var(--surface)',
@@ -181,7 +183,7 @@ const DashboardPage = () => {
                       <Play size={12} fill="currentColor" strokeWidth={0} />
                     </button>
                   </div>
-                </div>
+                </motion.div>
               ))
             ) : (
               <div 
@@ -306,29 +308,40 @@ const DashboardPage = () => {
 };
 
 const StatCard = ({ label, value, change, icon, color }: any) => (
-  <div className="card p-5 flex flex-col justify-between min-h-[140px] cursor-pointer group">
-    <div className="flex items-center justify-between">
+  <motion.div 
+    whileHover={{ y: -5, scale: 1.015 }}
+    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+    className="card p-5 flex flex-col justify-between min-h-[145px] cursor-pointer group relative overflow-hidden border border-[var(--border)] hover:border-[var(--primary)]/30 hover:shadow-[0_15px_35px_rgba(0,0,0,0.06)]"
+  >
+    {/* Subtle Glow Blur Backdrop */}
+    <div 
+      className="absolute -right-6 -bottom-6 w-20 h-20 rounded-full blur-3xl opacity-10 transition-opacity duration-300 group-hover:opacity-20 pointer-events-none"
+      style={{ backgroundColor: color }}
+    />
+    
+    <div className="flex items-center justify-between relative z-10">
       <div 
-        className="w-10 h-10 rounded-lg flex items-center justify-center"
+        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-inner"
         style={{ 
-          backgroundColor: `${color}12`,
-          color: color 
+          backgroundColor: `${color}15`,
+          color: color,
+          border: `1px solid ${color}25`
         }}
       >
         {icon}
       </div>
-      <div className="flex items-center gap-1">
-        <TrendingUp size={12} style={{ color: 'var(--success)' }} />
-        <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>
+      <div className="flex items-center gap-1 bg-[var(--surface-secondary)] px-2 py-0.5 rounded-full border border-[var(--border)]">
+        <TrendingUp size={11} style={{ color: 'var(--success)' }} />
+        <span className="text-[10px] font-bold" style={{ color: 'var(--success)' }}>
           {change}
         </span>
       </div>
     </div>
-    <div className="mt-4">
-      <p className="text-xs font-medium" style={{ color: 'var(--text-muted)' }}>{label}</p>
-      <h3 className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>{value}</h3>
+    <div className="mt-4 relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <h3 className="text-2xl font-extrabold mt-1 tracking-tight" style={{ color: 'var(--text-primary)' }}>{value}</h3>
     </div>
-  </div>
+  </motion.div>
 );
 
 export default DashboardPage;

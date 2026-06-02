@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { callsApi } from '../services/api';
 import { BackButton } from '../components/BackButton';
+import { Select } from '../components/ui/Select';
 
 interface CallRecord {
   id: string;
@@ -168,27 +169,27 @@ const CallLogsPage = () => {
               />
             </div>
             
-            <select
-              className="input-field cursor-pointer"
+            <Select
               value={directionFilter}
-              onChange={e => setDirectionFilter(e.target.value)}
-            >
-              <option value="">All Directions</option>
-              <option value="inbound">Inbound</option>
-              <option value="outbound">Outbound</option>
-            </select>
+              onChange={val => setDirectionFilter(val)}
+              options={[
+                { value: '', label: 'All Directions' },
+                { value: 'inbound', label: 'Inbound' },
+                { value: 'outbound', label: 'Outbound' }
+              ]}
+            />
             
-            <select
-              className="input-field cursor-pointer"
+            <Select
               value={statusFilter}
-              onChange={e => setStatusFilter(e.target.value)}
-            >
-              <option value="">All Statuses</option>
-              <option value="completed">Completed</option>
-              <option value="active">Active</option>
-              <option value="initiated">Initiated</option>
-              <option value="failed">Failed</option>
-            </select>
+              onChange={val => setStatusFilter(val)}
+              options={[
+                { value: '', label: 'All Statuses' },
+                { value: 'completed', label: 'Completed' },
+                { value: 'active', label: 'Active' },
+                { value: 'initiated', label: 'Initiated' },
+                { value: 'failed', label: 'Failed' }
+              ]}
+            />
           </div>
           
           {(directionFilter || statusFilter || searchQuery) && (

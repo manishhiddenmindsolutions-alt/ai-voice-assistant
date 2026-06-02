@@ -44,91 +44,134 @@ import {
   SiElevenlabs,
 } from "react-icons/si";
 
-const OpenAILogo = () => (
-  <SiOpenai color="#10A37F" size={20} className="shrink-0" />
-);
+// Dynamic TypingMind Provider Icon component with robust vector fallbacks
+const ProviderIcon: React.FC<{ provider: string; size?: number; className?: string }> = ({ provider, size = 20, className = "" }) => {
+  const [useFallback, setUseFallback] = useState(false);
 
-const OpenRouterLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2L2 22h20L12 2zm0 4.5L18.5 19H5.5L12 6.5zm-2 5h4v2h-4v-2z" fill="#7C3AED" />
-  </svg>
-);
+  // Curated fallback SVG and React Icon wrappers matching authentic provider colors
+  const fallbacks: Record<string, React.ReactNode> = {
+    openai: <SiOpenai color="#10A37F" size={size} className="shrink-0" />,
+    openrouter: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L2 22h20L12 2zm0 4.5L18.5 19H5.5L12 6.5zm-2 5h4v2h-4v-2z" fill="#7C3AED" />
+      </svg>
+    ),
+    anthropic: <SiAnthropic color="#D97706" size={size} className="shrink-0 bg-[#FDFBF7] p-0.5 rounded border border-[#E5E7EB]" />,
+    groq: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 10.9 21.1 10 20 10H12V14H18C17.5 16.3 15.4 18 12 18C8.7 18 6 15.3 6 12C6 8.7 8.7 6 12 6C14.3 6 16.3 7.3 17.3 9.3L20.9 7.7C19.2 4.3 15.9 2 12 2Z" fill="#F55036" />
+      </svg>
+    ),
+    gemini: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="#4285F4" />
+      </svg>
+    ),
+    deepseek: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" fill="#0054FF" />
+        <path d="M7.5 12.5C7.5 10 9.5 8 12 8C14.5 8 16.5 10 16.5 12.5C16.5 15 14.5 17 12 17H7.5V12.5Z" fill="white" />
+        <path d="M10 12.5C10 11.4 10.9 10.5 12 10.5C13.1 10.5 14 11.4 14 12.5C14 13.6 13.1 14.5 12 14.5H10V12.5Z" fill="#0054FF" />
+      </svg>
+    ),
+    together_ai: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="url(#togetherGrad)" />
+      </svg>
+    ),
+    sarvam: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="9" width="2.5" height="6" rx="1.25" fill="#FF9933"/>
+        <rect x="7.5" y="6" width="2.5" height="12" rx="1.25" fill="#FF9933"/>
+        <rect x="12" y="3" width="2.5" height="18" rx="1.25" fill="#128807"/>
+        <rect x="16.5" y="6" width="2.5" height="12" rx="1.25" fill="#128807"/>
+        <rect x="21" y="9" width="2.5" height="6" rx="1.25" fill="#128807"/>
+      </svg>
+    ),
+    deepgram: <SiDeepgram color="#13EF95" size={size} className="shrink-0" />,
+    elevenlabs: <SiElevenlabs color="#000000" size={size} className="shrink-0 bg-[#F2F0E4] p-0.5 rounded border border-[#E5E7EB]" />,
+    cartesia: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="url(#cartesiaGrad)" strokeWidth="2.5" strokeDasharray="3 3" />
+        <circle cx="12" cy="12" r="6" stroke="url(#cartesiaGrad)" strokeWidth="2" />
+        <circle cx="12" cy="12" r="2.5" fill="#EC4899" />
+      </svg>
+    ),
+    assemblyai: (
+      <svg viewBox="0 0 24 24" style={{ width: size, height: size }} className="shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="10" width="3.5" height="4" rx="1.75" fill="#FF6D00" />
+        <rect x="8.5" y="6" width="3.5" height="12" rx="1.75" fill="#6366F1" />
+        <rect x="14" y="3" width="3.5" height="18" rx="1.75" fill="#FF6D00" />
+        <rect x="19.5" y="8" width="3.5" height="8" rx="1.75" fill="#6366F1" />
+      </svg>
+    )
+  };
 
-const AnthropicLogo = () => (
-  <SiAnthropic color="#E0D5C1" size={20} className="shrink-0 bg-[#191919] p-0.5 rounded" />
-);
+  // Official TypingMind model-icons links
+  const typingMindUrls: Record<string, string> = {
+    openai: "https://raw.githubusercontent.com/TypingMind/model-icons/main/icons/openai.svg",
+    openrouter: "https://raw.githubusercontent.com/TypingMind/model-icons/main/icons/openrouterai.png",
+    anthropic: "https://raw.githubusercontent.com/TypingMind/model-icons/main/icons/claude.webp",
+    groq: "https://raw.githubusercontent.com/TypingMind/model-icons/main/icons/groq.svg",
+    gemini: "https://raw.githubusercontent.com/TypingMind/model-icons/main/icons/gemini.png",
+    deepseek: "https://raw.githubusercontent.com/TypingMind/model-icons/main/icons/deepseek.png"
+  };
 
-const GroqLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 10.9 21.1 10 20 10H12V14H18C17.5 16.3 15.4 18 12 18C8.7 18 6 15.3 6 12C6 8.7 8.7 6 12 6C14.3 6 16.3 7.3 17.3 9.3L20.9 7.7C19.2 4.3 15.9 2 12 2Z" fill="#F55036" />
-  </svg>
-);
+  const imageUrl = typingMindUrls[provider];
 
-const GeminiLogo = () => (
-  <SiGoogle color="#4285F4" size={20} className="shrink-0" />
-);
+  if (!imageUrl || useFallback) {
+    return <div className={`flex items-center justify-center shrink-0 ${className}`}>{fallbacks[provider] || <span>🪐</span>}</div>;
+  }
 
-const DeepSeekLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" fill="#0054FF" />
-    <path d="M7.5 12.5C7.5 10 9.5 8 12 8C14.5 8 16.5 10 16.5 12.5C16.5 15 14.5 17 12 17H7.5V12.5Z" fill="white" />
-    <path d="M10 12.5C10 11.4 10.9 10.5 12 10.5C13.1 10.5 14 11.4 14 12.5C14 13.6 13.1 14.5 12 14.5H10V12.5Z" fill="#0054FF" />
-  </svg>
-);
+  return (
+    <img 
+      src={imageUrl} 
+      alt={provider} 
+      className={`shrink-0 object-contain ${className}`} 
+      style={{ width: size, height: size }}
+      onError={() => setUseFallback(true)}
+    />
+  );
+};
 
+// Map PROVIDER_METADATA to use dynamic brand logos
+const OpenAILogo = () => <ProviderIcon provider="openai" size={20} />;
+const OpenRouterLogo = () => <ProviderIcon provider="openrouter" size={20} />;
+const AnthropicLogo = () => <ProviderIcon provider="anthropic" size={20} />;
+const GroqLogo = () => <ProviderIcon provider="groq" size={20} />;
+const GeminiLogo = () => <ProviderIcon provider="gemini" size={20} />;
+const DeepSeekLogo = () => <ProviderIcon provider="deepseek" size={20} />;
 const TogetherLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM12 17C9.24 17 7 14.76 7 12C7 9.24 9.24 7 12 7C14.76 7 17 9.24 17 12C17 14.76 14.76 17 12 17Z" fill="url(#togetherGrad)" />
-    <defs>
-      <linearGradient id="togetherGrad" x1="2" y1="12" x2="22" y2="12" gradientUnits="userSpaceOnUse">
-        <stop offset="0%" stopColor="#4F46E5" />
-        <stop offset="100%" stopColor="#EC4899" />
-      </linearGradient>
-    </defs>
-  </svg>
+  <>
+    <ProviderIcon provider="together_ai" size={20} />
+    <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+      <defs>
+        <linearGradient id="togetherGrad" x1="2" y1="12" x2="22" y2="12" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#4F46E5" />
+          <stop offset="100%" stopColor="#EC4899" />
+        </linearGradient>
+      </defs>
+    </svg>
+  </>
 );
-
-const SarvamLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="9" width="2.5" height="6" rx="1.25" fill="#FF9933"/>
-    <rect x="7.5" y="6" width="2.5" height="12" rx="1.25" fill="#FF9933"/>
-    <rect x="12" y="3" width="2.5" height="18" rx="1.25" fill="#128807"/>
-    <rect x="16.5" y="6" width="2.5" height="12" rx="1.25" fill="#128807"/>
-    <rect x="21" y="9" width="2.5" height="6" rx="1.25" fill="#128807"/>
-  </svg>
-);
-
-const DeepgramLogo = () => (
-  <SiDeepgram color="#13EF95" size={20} className="shrink-0" />
-);
-
-const ElevenLabsLogo = () => (
-  <SiElevenlabs color="#D2FF00" size={20} className="shrink-0 bg-[#090A0B] p-0.5 rounded" />
-);
-
+const SarvamLogo = () => <ProviderIcon provider="sarvam" size={20} />;
+const DeepgramLogo = () => <ProviderIcon provider="deepgram" size={20} />;
+const ElevenLabsLogo = () => <ProviderIcon provider="elevenlabs" size={20} />;
 const CartesiaLogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="url(#cartesiaGrad)" strokeWidth="2.5" strokeDasharray="3 3" />
-    <circle cx="12" cy="12" r="6" stroke="url(#cartesiaGrad)" strokeWidth="2" />
-    <circle cx="12" cy="12" r="2.5" fill="#EC4899" />
-    <defs>
-      <linearGradient id="cartesiaGrad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
-        <stop stopColor="#3B82F6"/>
-        <stop offset="0.5" stopColor="#EC4899"/>
-        <stop offset="1" stopColor="#F59E0B"/>
-      </linearGradient>
-    </defs>
-  </svg>
+  <>
+    <ProviderIcon provider="cartesia" size={20} />
+    <svg style={{ position: 'absolute', width: 0, height: 0 }}>
+      <defs>
+        <linearGradient id="cartesiaGrad" x1="4" y1="4" x2="20" y2="20" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#3B82F6"/>
+          <stop offset="0.5" stopColor="#EC4899"/>
+          <stop offset="1" stopColor="#F59E0B"/>
+        </linearGradient>
+      </defs>
+    </svg>
+  </>
 );
-
-const AssemblyAILogo = () => (
-  <svg viewBox="0 0 24 24" className="w-5 h-5 shrink-0" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="3" y="10" width="3.5" height="4" rx="1.75" fill="#FF6D00" />
-    <rect x="8.5" y="6" width="3.5" height="12" rx="1.75" fill="#6366F1" />
-    <rect x="14" y="3" width="3.5" height="18" rx="1.75" fill="#FF6D00" />
-    <rect x="19.5" y="8" width="3.5" height="8" rx="1.75" fill="#6366F1" />
-  </svg>
-);
+const AssemblyAILogo = () => <ProviderIcon provider="assemblyai" size={20} />;
 
 const PROVIDER_METADATA: { 
   [key: string]: { 
@@ -242,17 +285,25 @@ const StatCard = ({
   icon,
   label,
   value,
+  color = 'var(--text-secondary)'
 }: any) => (
-  <div className="card p-5 group cursor-pointer hover:border-[var(--border-hover)] transition-all duration-200">
+  <div className="card p-5 group cursor-pointer hover:shadow-sm transition-all duration-200">
     <div className="flex items-center justify-between mb-4">
-      <div className="w-10 h-10 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--primary)] transition-colors">
+      <div 
+        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 shadow-inner"
+        style={{ 
+          backgroundColor: `${color}15`,
+          color: color,
+          border: `1px solid ${color}25`
+        }}
+      >
         {icon}
       </div>
     </div>
     <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">
       {label}
     </p>
-    <h3 className="text-xl font-bold text-[var(--text-primary)] mt-2 tracking-tight group-hover:text-[var(--primary)] transition-colors">
+    <h3 className="text-xl font-bold text-[var(--text-primary)] mt-2 tracking-tight">
       {value}
     </h3>
   </div>
@@ -404,6 +455,7 @@ const ProvidersPage: React.FC = () => {
           icon={<Cpu size={16} />}
           label="Connections"
           value={connections.length}
+          color="var(--primary)"
         />
         <StatCard
           icon={<Database size={16} />}
@@ -412,16 +464,19 @@ const ProvidersPage: React.FC = () => {
             (acc, curr) => acc + curr.models_count,
             0
           )}
+          color="var(--success)"
         />
         <StatCard
           icon={<Activity size={16} />}
           label="Status"
           value="Operational"
+          color="#8B5CF6"
         />
         <StatCard
           icon={<Lock size={16} />}
           label="Security"
           value="AES-256"
+          color="#F59E0B"
         />
       </div>
 

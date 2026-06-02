@@ -41,41 +41,48 @@ const LoginPage = () => {
 
   return (
     <div 
-      className="min-h-screen flex items-center justify-center p-6"
+      className="min-h-screen flex items-center justify-center p-6 aurora-bg"
       style={{ backgroundColor: 'var(--background)' }}
     >
-      <div className="w-full max-w-[420px] animate-in fade-in slide-in-from-bottom-8 duration-300">
+      <div className="w-full max-w-[420px] z-10 animate-in fade-in slide-in-from-bottom-8 duration-500">
         
         {/* LOGO & HEADER */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="w-12 h-12 rounded-xl overflow-hidden mb-4 shadow-sm" style={{ border: '1px solid var(--border)' }}>
+        <div className="flex flex-col items-center mb-6">
+          <div 
+            className="w-14 h-14 rounded-2xl overflow-hidden mb-4 shadow-lg p-2.5 flex items-center justify-center transition-all duration-300 hover:rotate-6 bg-white/10 backdrop-blur-md" 
+            style={{ border: '1px solid var(--border)' }}
+          >
             <img 
               src={hmsLogo} 
               alt="HMS Logo" 
-              className="w-full h-full object-cover"
+              className="w-full h-full object-contain"
             />
           </div>
-          <h1 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Welcome back
+          <h1 className="text-2xl font-extrabold tracking-tight text-gradient-brand text-center">
+            HMS Voice Forge
           </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
-            Sign in to manage your voice agents
+          <p className="text-xs mt-1.5 font-medium tracking-wide uppercase" style={{ color: 'var(--text-muted)' }}>
+            High-Performance AI Voice Gateways
           </p>
         </div>
 
         {/* FORM CARD */}
         <div 
-          className="rounded-xl p-8 shadow-lg"
+          className="rounded-2xl p-8 shadow-2xl glass-premium"
           style={{ 
-            backgroundColor: 'var(--card-bg)',
-            border: '1px solid var(--card-border)' 
+            border: '1px solid var(--border)' 
           }}
         >
+          <div className="mb-6">
+            <h2 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Welcome back</h2>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>Sign in to manage your voice nodes and credentials.</p>
+          </div>
+
           <form onSubmit={handleLogin} className="space-y-5">
             
             {/* EMAIL */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold ml-0.5" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[10px] font-bold uppercase tracking-wider ml-1" style={{ color: 'var(--text-secondary)' }}>
                 Email Address
               </label>
               <div className="relative">
@@ -84,7 +91,7 @@ const LoginPage = () => {
                   type="email"
                   required
                   placeholder="you@company.com"
-                  className="input-field pl-10"
+                  className="input-field pl-10 focus:ring-2 focus:ring-[var(--primary)]/10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                 />
@@ -93,7 +100,7 @@ const LoginPage = () => {
 
             {/* PASSWORD */}
             <div className="space-y-2">
-              <label className="text-xs font-semibold ml-0.5" style={{ color: 'var(--text-secondary)' }}>
+              <label className="text-[10px] font-bold uppercase tracking-wider ml-1" style={{ color: 'var(--text-secondary)' }}>
                 Password
               </label>
               <div className="relative">
@@ -102,7 +109,7 @@ const LoginPage = () => {
                   type="password"
                   required
                   placeholder="••••••••"
-                  className="input-field pl-10"
+                  className="input-field pl-10 focus:ring-2 focus:ring-[var(--primary)]/10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                 />
@@ -114,12 +121,16 @@ const LoginPage = () => {
               type="submit"
               disabled={loading}
               className="w-full btn-primary h-11 font-semibold text-sm disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] transition-all group/btn"
+              style={{
+                background: 'linear-gradient(135deg, var(--primary) 0%, #6366F1 100%)',
+                boxShadow: '0 4px 20px -2px rgba(139, 92, 246, 0.25)'
+              }}
             >
               {loading ? (
                 <Loader2 className="animate-spin" size={18} />
               ) : (
                 <>
-                  Sign In
+                  Enter Voice Studio
                   <ArrowRight size={16} className="group-hover/btn:translate-x-0.5 transition-transform" />
                 </>
               )}
@@ -129,9 +140,9 @@ const LoginPage = () => {
 
         {/* FOOTER */}
         <div className="mt-6 text-center">
-          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-            Don't have an account?{' '}
-            <Link to="/register" className="font-medium transition-colors" style={{ color: 'var(--primary)' }}>
+          <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>
+            New to Voice Forge?{' '}
+            <Link to="/register" className="font-extrabold transition-colors hover:underline" style={{ color: 'var(--primary)' }}>
               Create Account
             </Link>
           </p>

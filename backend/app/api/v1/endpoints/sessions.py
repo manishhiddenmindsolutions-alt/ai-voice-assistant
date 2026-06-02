@@ -101,11 +101,19 @@ async def start_session(
                     "config": t.config
                 })
             
-            # Merge DB tools with any provided in config
-            if tools_data:
-                combined_tools = tools_data + metadata.get("tools", [])
-                # Ensure only full dictionary configs are passed, filter out raw tool IDs
-                metadata["tools"] = [t for t in combined_tools if isinstance(t, dict)]
+            print(f"📋 [TOOL RESOLUTION] DB tools resolved: {len(tools_data)} tool(s)")
+            for td in tools_data:
+                print(f"  ✅ Tool: {td['name']} (type={td['tool_type']}, has_token={bool(td.get('apiKey'))}, config={td.get('config',{})})")
+            
+            # Merge DB tools with any dict-based tools in config, ALWAYS filter out raw UUID strings
+            raw_config_tools = metadata.get("tools", [])
+            dict_config_tools = [t for t in raw_config_tools if isinstance(t, dict)]
+            skipped_ids = [t for t in raw_config_tools if isinstance(t, str)]
+            if skipped_ids:
+                print(f"  ⚠️ Filtered out {len(skipped_ids)} raw tool ID string(s): {skipped_ids}")
+            
+            metadata["tools"] = tools_data + dict_config_tools
+            print(f"📋 [TOOL RESOLUTION] Final tools count in metadata: {len(metadata['tools'])}")
                 
             # --- SYNC AGENT IDENTITY FROM DB ---
             metadata["agentName"] = db_agent.agent_name

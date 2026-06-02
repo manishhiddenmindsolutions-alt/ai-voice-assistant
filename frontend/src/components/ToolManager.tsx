@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import api, { toolApi } from '../services/api';
 import { DecommissionModal } from './DecommissionModal';
 import { BackButton } from './BackButton';
+import { Select } from './ui/Select';
 
 const GoogleCalendarIcon = ({ size = 22 }: { size?: number }) => (
   <svg viewBox="0 0 48 48" style={{ width: size, height: size }} className="shrink-0 animate-fade-in">
@@ -226,29 +227,30 @@ export const ToolManager: React.FC = () => {
     <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)]">
 
       {/* HEADER SECTION */}
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-6 pb-5 border-b border-[var(--border)] mb-6">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold tracking-tight">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+        <div>
+          <div className="mb-3">
+            <BackButton fallbackPath="/" label="Dashboard" />
+          </div>
+          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
             Tool Marketplace
           </h1>
-          <div className="flex items-center gap-2">
-            <span className="relative flex h-2 w-2">
+          <div className="flex items-center gap-2 mt-1.5">
+            <span className="relative flex h-2.5 w-2.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--success)]"></span>
             </span>
-            <p className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">Sync workflows & automated API relays</p>
+            <p className="text-[var(--text-secondary)] text-xs font-bold tracking-widest uppercase">Sync workflows & automated API relays</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3.5 self-start md:self-auto">
-          <BackButton fallbackPath="/" label="Overview" />
-
+        <div className="flex items-center gap-2">
           <button
             onClick={() => {
               setCreationStep('type');
               setIsAdding(true);
             }}
-            className="btn-primary"
+            className="btn-primary flex items-center gap-2 shadow-sm"
           >
             <Plus size={15} />
             Add New Tool
@@ -257,91 +259,121 @@ export const ToolManager: React.FC = () => {
       </div>
 
       {/* TOOLS GRID */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {tools.map((tool) => (
-          <div
-            key={tool.id}
-            className="card flex flex-col justify-between min-h-[250px] relative overflow-hidden group cursor-default"
+      {tools.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto animate-in fade-in duration-300 w-full col-span-full">
+          <div 
+            className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--primary)] mb-5 border shadow-sm"
+            style={{
+              borderColor: 'var(--border)',
+              backgroundColor: 'var(--surface-secondary)'
+            }}
           >
-            <div>
-              {/* TOP */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-[var(--surface-secondary)] flex items-center justify-center border border-[var(--border)] shadow-sm">
-                    {renderToolIcon(tool.tool_type, 22)}
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-bold text-[var(--text-primary)] tracking-wide line-clamp-1">
-                      {tool.name}
-                    </h3>
-                    <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest block mt-0.5">
-                      {tool.category || tool.tool_type}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => handleTestTool(tool.id, e)}
-                    className="w-8 h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--border-hover)] transition-all duration-205 active:scale-95"
-                    title="Probe Link"
-                  >
-                    <Zap size={13} className={isTesting === tool.id ? 'animate-pulse text-[var(--primary)]' : ''} />
-                  </button>
-
-                  <button
-                    onClick={(e) => handleDelete(tool.id, tool.name, e)}
-                    className="w-8 h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--danger)] hover:border-red-500/20 transition-all duration-205 active:scale-95"
-                    title="Decommission Link"
-                  >
-                    <Trash2 size={13} />
-                  </button>
-                </div>
-              </div>
-
-              {/* DESCRIPTION */}
-              <p className="text-[var(--text-secondary)] text-xs leading-relaxed font-medium line-clamp-2">
-                {tool.description || 'External integration adapter for cellular routing nodes.'}
-              </p>
-            </div>
-
-            {/* URL/INFO */}
-            <div className="mt-4 p-3 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] shadow-inner">
-              <div className="flex items-center justify-between">
-                <span className="text-[9px] text-[var(--text-secondary)] font-bold uppercase tracking-wider">
-                  {tool.tool_type === 'N8N' ? 'Orchestration Flow' : 'Endpoint Node'}
-                </span>
-                <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)]">
-                  {tool.method}
-                </span>
-              </div>
-              <p className="mt-1.5 text-[9px] text-[var(--text-muted)] font-mono truncate leading-none">
-                {tool.tool_type === 'WEBHOOK' || tool.tool_type === 'N8N' ? tool.url : 'Native Relay Adapter'}
-              </p>
-            </div>
+            <Zap size={20} />
           </div>
-        ))}
-
-        {/* ADD CARD */}
-        <button
-          onClick={() => {
-            setCreationStep('type');
-            setIsAdding(true);
-          }}
-          className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-secondary)]/30 p-6 flex flex-col items-center justify-center min-h-[250px] hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]/50 transition-all duration-200 group relative overflow-hidden text-center"
-        >
-          <div className="w-12 h-12 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--primary)] group-hover:border-[var(--border-hover)] transition duration-200 mb-4 shadow-sm">
-            <Plus size={20} />
-          </div>
-          <h3 className="text-xs font-bold text-[var(--text-primary)] tracking-wide uppercase tracking-wider">
-            Add New Tool
+          <h3 className="text-xs font-bold tracking-wider uppercase text-[var(--text-primary)]">
+            No Tools Integrated Yet
           </h3>
-          <p className="text-[var(--text-muted)] text-xs mt-2 max-w-[200px] leading-relaxed font-medium">
-            Connect webhooks, workflows and direct Google service integrations.
+          <p className="text-xs mt-2 mb-6 text-[var(--text-muted)] font-medium leading-relaxed">
+            Connect external webhooks, automated n8n workflows, or direct Google Sheets & Calendar adapters to empower your AI voice agents.
           </p>
-        </button>
-      </div>
+          <button
+            onClick={() => {
+              setCreationStep('type');
+              setIsAdding(true);
+            }}
+            className="btn-primary h-9 px-4 text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5"
+          >
+            <Plus size={13} />
+            Connect Your First Tool
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+          {tools.map((tool) => (
+            <div
+              key={tool.id}
+              className="card flex flex-col justify-between min-h-[270px] relative overflow-hidden group cursor-default"
+            >
+              <div>
+                {/* TOP */}
+                <div className="flex items-start justify-between mb-5">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    <div className="w-14 h-14 rounded-2xl bg-[var(--surface-secondary)] flex items-center justify-center border border-[var(--border)] shadow-sm p-3 group-hover:scale-105 transition-transform duration-300 shrink-0">
+                      {renderToolIcon(tool.tool_type, 26)}
+                    </div>
+
+                    <div className="min-w-0">
+                      <h3 className="text-base font-bold text-[var(--text-primary)] tracking-tight line-clamp-1">
+                        {tool.name}
+                      </h3>
+                      <span className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-widest block mt-1">
+                        {tool.category || tool.tool_type}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      onClick={(e) => handleTestTool(tool.id, e)}
+                      className="w-8 h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--primary)] hover:border-[var(--border-hover)] transition-all duration-205 active:scale-95"
+                      title="Probe Link"
+                    >
+                      <Zap size={13} className={isTesting === tool.id ? 'animate-pulse text-[var(--primary)]' : ''} />
+                    </button>
+
+                    <button
+                      onClick={(e) => handleDelete(tool.id, tool.name, e)}
+                      className="w-8 h-8 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--text-muted)] hover:text-[var(--danger)] hover:border-red-500/20 transition-all duration-205 active:scale-95"
+                      title="Decommission Link"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* DESCRIPTION */}
+                <p className="text-[var(--text-secondary)] text-sm leading-relaxed font-medium line-clamp-2 min-h-[40px]">
+                  {tool.description || 'External integration adapter for cellular routing nodes.'}
+                </p>
+              </div>
+
+              {/* URL/INFO */}
+              <div className="mt-5 p-3.5 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] shadow-inner">
+                <div className="flex items-center justify-between">
+                  <span className="text-[9px] text-[var(--text-secondary)] font-bold uppercase tracking-wider">
+                    {tool.tool_type === 'N8N' ? 'Orchestration Flow' : 'Endpoint Node'}
+                  </span>
+                  <span className="text-[8px] font-extrabold px-1.5 py-0.5 rounded bg-[var(--surface)] border border-[var(--border)] text-[var(--text-secondary)]">
+                    {tool.method}
+                  </span>
+                </div>
+                <p className="mt-2 text-[9px] text-[var(--text-muted)] font-mono truncate leading-none">
+                  {tool.tool_type === 'WEBHOOK' || tool.tool_type === 'N8N' ? tool.url : 'Native Relay Adapter'}
+                </p>
+              </div>
+            </div>
+          ))}
+
+          {/* ADD CARD */}
+          <button
+            onClick={() => {
+              setCreationStep('type');
+              setIsAdding(true);
+            }}
+            className="rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface-secondary)]/30 p-6 flex flex-col items-center justify-center min-h-[250px] hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]/50 transition-all duration-200 group relative overflow-hidden text-center"
+          >
+            <div className="w-12 h-12 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] group-hover:text-[var(--accent)] group-hover:border-[var(--border-hover)] transition duration-200 mb-4 shadow-sm">
+              <Plus size={20} />
+            </div>
+            <h3 className="text-xs font-bold text-[var(--text-primary)] tracking-wide uppercase tracking-wider">
+              Add New Tool
+            </h3>
+            <p className="text-[var(--text-muted)] text-xs mt-2 max-w-[200px] leading-relaxed font-medium">
+              Connect webhooks, workflows and direct Google service integrations.
+            </p>
+          </button>
+        </div>
+      )}
 
       {/* ADD/CONFIGURE MODAL */}
       {isAdding && (
@@ -567,34 +599,22 @@ export const ToolManager: React.FC = () => {
                       <div className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl space-y-1">
                         <span className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-wider block">NATIVE CALENDAR ADAPTER</span>
                         <p className="text-[9px] text-[var(--text-secondary)] leading-relaxed font-medium">
-                          Allows agent to view and book events. Uses Google Cloud credentials.
+                          Allows agent to view and book events. Connect your Google account and paste a Calendar ID.
                         </p>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Connect Account</label>
-                        <select 
-                          className="input-field font-semibold"
-                          value={newTool.integration_id}
-                          onChange={e => setNewTool({...newTool, integration_id: e.target.value})}
-                        >
-                          <option value="">Manual OAuth Token Input</option>
-                          {integrations.filter(i => i.provider === 'google').map(i => (
-                            <option key={i.id} value={i.id}>Connected Google Account</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {!newTool.integration_id && (
-                        <div className="space-y-1 animate-in fade-in duration-200">
-                          <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">OAuth Access Token</label>
-                          <input 
-                            type="password"
-                            className="input-field font-mono"
-                            placeholder="ya29.a0AfH6SM..."
-                            value={newTool.api_key}
-                            onChange={e => setNewTool({...newTool, api_key: e.target.value})}
-                          />
+                      {/* Google Connection Status */}
+                      {integrations.filter(i => i.provider === 'google').length > 0 ? (
+                        <div className="flex items-center gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Google Account Connected</span>
+                          <span className="text-[9px] text-[var(--text-muted)] ml-auto">Auth handled automatically</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">No Google Account Connected</span>
+                          <button onClick={() => window.location.href = '/integrations'} className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-wider ml-auto hover:underline">Connect Now</button>
                         </div>
                       )}
 
@@ -606,6 +626,7 @@ export const ToolManager: React.FC = () => {
                           value={newTool.config?.calendarId || ''}
                           onChange={e => setNewTool({...newTool, config: {...newTool.config, calendarId: e.target.value}})}
                         />
+                        <p className="text-[8px] text-[var(--text-muted)] ml-1 mt-0.5">Use "primary" for your main calendar, or paste a specific calendar ID.</p>
                       </div>
                     </div>
                   )}
@@ -615,65 +636,43 @@ export const ToolManager: React.FC = () => {
                       <div className="p-3 bg-[var(--surface-secondary)] border border-[var(--border)] rounded-xl space-y-1">
                         <span className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-wider block">GOOGLE SHEETS ADAPTER</span>
                         <p className="text-[9px] text-[var(--text-secondary)] leading-relaxed font-medium">
-                          Log live conversations, caller details, and leads directly inside custom spreadsheet cells.
+                          Log live conversations, caller details, and leads directly inside custom spreadsheet cells. Just paste your Google Sheet link below.
                         </p>
                       </div>
 
-                      <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Connect Account</label>
-                        <select 
-                          className="input-field font-semibold"
-                          value={newTool.integration_id}
-                          onChange={e => setNewTool({...newTool, integration_id: e.target.value})}
-                        >
-                          <option value="">Manual OAuth Token Input</option>
-                          {integrations.filter(i => i.provider === 'google').map(i => (
-                            <option key={i.id} value={i.id}>Connected Google Account</option>
-                          ))}
-                        </select>
-                      </div>
-
-                      {!newTool.integration_id && (
-                        <div className="space-y-1 animate-in fade-in duration-200">
-                          <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">OAuth Access Token</label>
-                          <input 
-                            type="password"
-                            className="input-field font-mono"
-                            placeholder="ya29.a0AfH6SM..."
-                            value={newTool.api_key}
-                            onChange={e => setNewTool({...newTool, api_key: e.target.value})}
-                          />
+                      {/* Google Connection Status */}
+                      {integrations.filter(i => i.provider === 'google').length > 0 ? (
+                        <div className="flex items-center gap-2 p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl">
+                          <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Google Account Connected</span>
+                          <span className="text-[9px] text-[var(--text-muted)] ml-auto">Auth handled automatically</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
+                          <div className="w-2 h-2 rounded-full bg-amber-500 animate-pulse" />
+                          <span className="text-[10px] font-bold text-amber-600 uppercase tracking-wider">No Google Account Connected</span>
+                          <button onClick={() => window.location.href = '/integrations'} className="text-[9px] font-bold text-[var(--primary)] uppercase tracking-wider ml-auto hover:underline">Connect Now</button>
                         </div>
                       )}
 
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Spreadsheet ID / URL</label>
-                          <input 
-                            className="input-field font-mono"
-                            placeholder="Spreadsheet Link or ID"
-                            value={newTool.config?.spreadsheetId || ''}
-                            onChange={e => {
-                                const val = e.target.value;
-                                let finalId = val;
-                                const match = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
-                                if (match && match[1]) {
-                                    finalId = match[1];
-                                    toast.success('Spreadsheet ID parsed!');
-                                }
-                                setNewTool({...newTool, config: {...newTool.config, spreadsheetId: finalId}});
-                            }}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Spreadsheet Range</label>
-                          <input 
-                            className="input-field font-mono"
-                            placeholder="Sheet1!A1"
-                            value={newTool.config?.range || ''}
-                            onChange={e => setNewTool({...newTool, config: {...newTool.config, range: e.target.value}})}
-                          />
-                        </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Google Sheet URL</label>
+                        <input 
+                          className="input-field font-mono"
+                          placeholder="https://docs.google.com/spreadsheets/d/... or paste just the ID"
+                          value={newTool.config?.spreadsheetId || ''}
+                          onChange={e => {
+                              const val = e.target.value;
+                              let finalId = val;
+                              const match = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9\-_]+)/);
+                              if (match && match[1]) {
+                                  finalId = match[1];
+                                  toast.success('Spreadsheet ID extracted from URL!');
+                              }
+                              setNewTool({...newTool, config: {...newTool.config, spreadsheetId: finalId}});
+                          }}
+                        />
+                        <p className="text-[8px] text-[var(--text-muted)] ml-1 mt-0.5">Paste the full Google Sheet link — the spreadsheet ID will be extracted automatically.</p>
                       </div>
                     </div>
                   )}
@@ -723,15 +722,11 @@ export const ToolManager: React.FC = () => {
                           <div className="grid grid-cols-2 gap-3">
                             <div className="space-y-1">
                               <label className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">HTTP Method</label>
-                              <select 
-                                className="input-field font-semibold cursor-pointer"
-                                value={newTool.method}
-                                onChange={e => setNewTool({...newTool, method: e.target.value})}
-                              >
-                                <option>GET</option>
-                                <option>POST</option>
-                                <option>PUT</option>
-                              </select>
+                              <Select 
+                                value={newTool.method || 'POST'}
+                                onChange={val => setNewTool({...newTool, method: val})}
+                                options={['GET', 'POST', 'PUT']}
+                              />
                             </div>
                             <div className="space-y-1">
                               <label className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Custom Headers (JSON)</label>

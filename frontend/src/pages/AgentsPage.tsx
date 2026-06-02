@@ -208,6 +208,31 @@ const AgentsPage = () => {
                         <div key={i} className="h-64 rounded-lg skeleton" />
                     ))}
                 </div>
+            ) : filteredAgents.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center max-w-sm mx-auto animate-in fade-in duration-300">
+                    <div 
+                        className="w-12 h-12 rounded-xl flex items-center justify-center text-[var(--primary)] mb-5 border shadow-sm"
+                        style={{
+                            borderColor: 'var(--border)',
+                            backgroundColor: 'var(--surface-secondary)'
+                        }}
+                    >
+                        <Users size={20} />
+                    </div>
+                    <h3 className="text-xs font-bold tracking-wider uppercase text-[var(--text-primary)]">
+                        No AI Agents Configured
+                    </h3>
+                    <p className="text-xs mt-2 mb-6 text-[var(--text-muted)] font-medium leading-relaxed">
+                        Deploy a highly customizable virtual assistant equipped with LLM intelligence and premium text-to-speech voices.
+                    </p>
+                    <button
+                        onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
+                        className="btn-primary h-9 px-4 text-xs font-bold uppercase tracking-wider shadow-sm flex items-center gap-1.5"
+                    >
+                        <Plus size={13} />
+                        Create Voice Agent
+                    </button>
+                </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {filteredAgents.map((agent) => {
@@ -223,7 +248,7 @@ const AgentsPage = () => {
                                             <AgentAvatar name={agent.agentName} agent={agent} className="w-11 h-11 text-xl" />
 
                                             <div>
-                                                <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-[var(--primary)] transition-colors" style={{ color: 'var(--text-primary)' }}>
+                                                <h3 className="text-sm font-semibold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style={{ color: 'var(--text-primary)' }}>
                                                     {agent.agentName || 'Unnamed Agent'}
                                                 </h3>
                                                 <div className="flex items-center gap-2 mt-1">
@@ -337,7 +362,7 @@ const AgentsPage = () => {
                         >
                             <Plus size={20} />
                         </div>
-                        <h3 className="text-sm font-semibold group-hover:text-[var(--primary)] transition-colors" style={{ color: 'var(--text-primary)' }}>
+                        <h3 className="text-sm font-semibold group-hover:text-[var(--accent)] transition-colors" style={{ color: 'var(--text-primary)' }}>
                             Create Agent
                         </h3>
                         <p className="text-xs mt-1 text-center max-w-[200px]" style={{ color: 'var(--text-muted)' }}>

@@ -6,6 +6,7 @@ import datetime
 import urllib.parse as urlparse
 from urllib.parse import urlencode
 from typing import Dict, Any, List, Optional, Annotated
+from pydantic import Field
 from livekit.agents import llm
 from livekit.plugins import sarvam, groq, openai, deepgram, silero
 
@@ -31,17 +32,27 @@ class NativeToolHandler:
             from dateutil import parser as date_parser
             start = date_parser.parse(start_time)
             if start.tzinfo is None:
-                local_tz = datetime.datetime.now().astimezone().tzinfo
-                start = start.replace(tzinfo=local_tz)
-            end = start + datetime.timedelta(minutes=duration_mins)
-            logger.info(f"Scheduling event '{summary}' for {start_time}. End: {end}")   
+                # If naive, assume local system offset
+                local_now = datetime.datetime.now().astimezone()
+                start = start.replace(tzinfo=local_now.tzinfo)
+            
+            # Convert start and end to UTC to ensure absolute format compliance
+            start_utc = start.astimezone(datetime.timezone.utc)
+            end = start_utc + datetime.timedelta(minutes=duration_mins)
+            logger.info(f"Scheduling event '{summary}' for {start_time}. UTC: {start_utc.isoformat()}. End: {end.isoformat()}")   
             
             payload = {
                 "summary": summary,
-                "start": {"dateTime": start.isoformat()},
-                "end": {"dateTime": end.isoformat()}
+                "start": {
+                    "dateTime": start_utc.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "timeZone": "UTC"
+                },
+                "end": {
+                    "dateTime": end.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                    "timeZone": "UTC"
+                }
             }
-            logger.info(f"Token: {integration_token}")
+            logger.info(f"Token: {integration_token[:10]}...")
             logger.info(f"Calendar ID: {calendar_id}")
             logger.info(f"Summary: {summary}")
             logger.info(f"Start Time: {start_time}")
@@ -79,8 +90,17 @@ class NativeToolHandler:
             else:
                 flat_values = [values]
 
+            # Normalize values as stripped strings
+            flat_values = [str(v).strip() for v in flat_values]
+
             payload = {"values": [flat_values]}
-            url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{range_name}:append?valueInputOption=RAW"
+            
+            # URL-encode the range (e.g. Sheet1!A1 -> Sheet1%21A1) to prevent invalid request paths
+            import urllib.parse
+            encoded_range = urllib.parse.quote(range_name)
+            url = f"https://sheets.googleapis.com/v4/spreadsheets/{spreadsheet_id}/values/{encoded_range}:append?valueInputOption=RAW"
+            
+            logger.info(f"--- [FORGE DEBUG] Appending to sheet. URL: {url}, Payload: {payload}")
             
             async with aiohttp.ClientSession() as session:
                 async with session.post(
@@ -90,9 +110,17 @@ class NativeToolHandler:
                 ) as resp:
                     if resp.status < 300:
                         return "Success: Data logged to spreadsheet."
-                    data = await resp.json()
-                    return f"Sheets Error: {data.get('error', {}).get('message', 'Unknown Error')}"
+                    
+                    try:
+                        data = await resp.json()
+                        error_msg = data.get('error', {}).get('message', 'Unknown Error')
+                    except Exception:
+                        error_msg = await resp.text()
+                        
+                    logger.error(f"--- [FORGE ERROR] Google Sheets API responded with status {resp.status}: {error_msg}")
+                    return f"Sheets Error (Status {resp.status}): {error_msg}"
         except Exception as e:
+            logger.exception(f"--- [FORGE ERROR] Exception in append_to_sheet: {e}")
             return f"Logging Error: {str(e)}"
 
 class DynamicTools:
@@ -163,7 +191,10 @@ class DynamicTools:
                     if resp.status >= 400:
                         return f"Error: The tool returned status {resp.status}. Please inform the user."
                     
-                    data = await resp.json() if "application/json" in resp.headers.get("Content-Type", "") else await resp.text()
+                    try:
+                        data = await resp.json()
+                    except Exception:
+                        data = await resp.text()
                     # Flatten it for the LLM to read easily
                     return str(data)[:1000] # Cap the response size
         except Exception as e:
@@ -322,6 +353,14 @@ def create_components(config: Dict[str, Any]):
                 speaker=config.get("tts", {}).get("voice", "shubh"),
                 model="bulbul:v3",
             )
+            # Patch the stale connection pool issue for Sarvam WebSocket
+            try:
+                if hasattr(agent_tts, "_pool"):
+                    agent_tts._pool._max_session_duration = 45.0
+                    agent_tts._pool._mark_refreshed_on_get = True
+                    logger.info("Successfully patched Sarvam TTS connection pool to prevent stale sessions.")
+            except Exception as patch_err:
+                logger.warning(f"Could not patch Sarvam TTS connection pool: {patch_err}")
     except Exception as e:
         logger.error(f"TTS Initialization failed: {e}. Falling back to stable OpenAI TTS.")
         agent_tts = openai.TTS(model="tts-1", voice="alloy")
@@ -329,6 +368,12 @@ def create_components(config: Dict[str, Any]):
     # 4. TOOLS (CRITICAL: Neural Forge Fulfillment)
     agent_tools = []
     tools_cfg = config.get("tools", [])
+    logger.info(f"--- [FORGE TOOL DIAG] Raw tools_cfg count: {len(tools_cfg)}")
+    for i, tc in enumerate(tools_cfg):
+        if isinstance(tc, dict):
+            logger.info(f"--- [FORGE TOOL DIAG] Tool[{i}]: name={tc.get('name','?')}, type={tc.get('tool_type', tc.get('type','?'))}, has_apiKey={bool(tc.get('apiKey'))}, config={tc.get('config',{})}")
+        else:
+            logger.info(f"--- [FORGE TOOL DIAG] Tool[{i}]: RAW_VALUE (not dict) = {tc}")
     dt = DynamicTools(tools_cfg)
     
     for t_cfg in tools_cfg:
@@ -344,14 +389,25 @@ def create_components(config: Dict[str, Any]):
         raw_name = t_cfg.get("name", "UnknownTool")
         name = raw_name.lower().replace(" ", "_")
         
-        desc = t_cfg.get("description", f"Action: {name}")
+        desc = t_cfg.get("description", "")
+        if not desc or desc.strip() == "":
+            if tool_type == "CALENDAR":
+                desc = "Schedule meetings, appointments, or book events on Google Calendar."
+            elif tool_type == "SHEETS":
+                desc = "Log details, leads, or records directly into Google Sheets."
+            else:
+                desc = f"Execute action: {name}"
         
         if tool_type == "CALENDAR":
             calendar_id = t_cfg.get("config", {}).get("calendarId", "primary")
             token = t_cfg.get("apiKey")
             
             def create_calendar_cmd(cid, tk, n):
-                async def calendar_fn(summary: str, start_time: str, duration_mins: int = 30):
+                async def calendar_fn(
+                    summary: Annotated[str, Field(description="Brief title/summary of the meeting or appointment, e.g., 'Appointment: Manish with Dr. Vikas'")],
+                    start_time: Annotated[str, Field(description="The starting date and time of the appointment in strict ISO 8601 format, e.g., '2026-06-03T14:30:00+05:30' (UTC/Offset mandatory). Calculate offset from current time.")],
+                    duration_mins: Annotated[int, Field(description="Duration of the appointment in minutes. Defaults to 30.")] = 30
+                ):
                     """Schedule a new meeting or event."""
                     logger.info(f"--- [FORGE DEBUG] Agent executing CALENDAR tool: {n} (Summary: {summary}, Start: {start_time})")
                     res = await NativeToolHandler.schedule_calendar_event(tk, cid, summary, start_time, duration_mins)
@@ -364,20 +420,39 @@ def create_components(config: Dict[str, Any]):
             
         elif tool_type == "SHEETS":
             raw_sheet_id = t_cfg.get("config", {}).get("spreadsheetId")
-            sheet_id = raw_sheet_id
-            if raw_sheet_id:
+            sheet_id = raw_sheet_id.strip() if raw_sheet_id else ""
+            if "spreadsheets/d/" in sheet_id:
                 import re
-                match = re.search(r"/spreadsheets/d/([a-zA-Z0-9-_]+)", raw_sheet_id)
+                match = re.search(r"/spreadsheets/d/([a-zA-Z0-9\-_]+)", sheet_id)
                 if match:
                     sheet_id = match.group(1)
             sheet_range = t_cfg.get("config", {}).get("range", "Sheet1!A1")
             token = t_cfg.get("apiKey")
 
             def create_sheet_cmd(sid, sr, tk, n):
-                async def sheet_fn(data_row: List[Any]):
-                    """Log information to a spreadsheet row."""
-                    logger.info(f"--- [FORGE DEBUG] Agent executing SHEETS tool: {n} (Data: {data_row})")
-                    res = await NativeToolHandler.append_to_sheet(tk, sid, sr, data_row)
+                async def sheet_fn(
+                    data_row: Annotated[Optional[List[str]], Field(description="A list of values to append to the spreadsheet row. Example: ['John Doe', 'john@example.com', 'Interested']")] = None,
+                    **kwargs: Any
+                ):
+                    """Log information, lead details, or conversation notes to a spreadsheet row.
+                    You can pass a list of values in 'data_row', or pass key-value pairs representing columns (e.g. name='John', email='john@example.com').
+                    """
+                    logger.info(f"--- [FORGE DEBUG] Agent executing SHEETS tool: {n} (Data: {data_row}, Kwargs: {kwargs})")
+                    
+                    values_to_log = []
+                    if data_row:
+                        if isinstance(data_row, list):
+                            values_to_log.extend(data_row)
+                        else:
+                            values_to_log.append(data_row)
+                    
+                    if kwargs:
+                        values_to_log.extend(list(kwargs.values()))
+                        
+                    if not values_to_log:
+                        return "Failed: No data values were provided to log to the spreadsheet."
+                        
+                    res = await NativeToolHandler.append_to_sheet(tk, sid, sr, values_to_log)
                     logger.info(f"--- [FORGE DEBUG] SHEETS result: {res}")
                     return res
                 sheet_fn.__name__ = n
@@ -417,7 +492,7 @@ def create_components(config: Dict[str, Any]):
     agent_name = config.get("agentName") or config.get("agent_name") or "VoiceForge"
     lang_name = "Hindi" if stt_lang == "hi-IN" else "English" if stt_lang.startswith("en") else stt_lang
     
-    current_time = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%S%z")
+    current_time = datetime.datetime.now().astimezone().strftime("%Y-%m-%dT%H:%M:%S%z")
     
     base_instructions = f"Your name is {agent_name}. The current date and time is {current_time}. {config.get('prompt', 'You are a helpful assistant.')}"
     base_instructions += f"\n\nCRITICAL: You MUST respond in {lang_name} at all times. Do not switch to others unless explicitly asked."
@@ -431,6 +506,8 @@ def create_components(config: Dict[str, Any]):
         base_instructions += "2. LANGUAGE AGNOSTIC: Even if the user speaks in Hindi, you must identify the intent and call the English-named tools.\n"
         base_instructions += "3. DATA RETRIEVAL: Use tools to fetch real-time info before answering. If a tool fails, explain why clearly but remain professional.\n"
         base_instructions += "4. CALENDAR FORMATTING: If scheduling an event, you MUST provide `start_time` in strict ISO 8601 format (e.g., '2026-05-18T14:30:00Z'). Calculate dates accurately based on the current date provided above."
+
+    logger.info(f"--- [FORGE TOOL DIAG] Final registered agent_tools count: {len(agent_tools)}. Tool instructions appended: {bool(agent_tools)}")
 
     return {
         "stt": stt,

@@ -119,17 +119,53 @@ async def _build_agent_metadata(agent: AgentORM, db: AsyncSession) -> str:
     # Resolve tools
     tools_list = []
     if agent.tools:
-        for tool_orm in agent.tools:
+        from google.oauth2 import service_account
+        from google.auth.transport.requests import Request as GoogleRequest
+        from app.models.orm import IntegrationORM
+
+        for t in agent.tools:
+            # DECRYPT TOOL KEY OR INTEGRATION TOKEN
+            final_token = None
+            
+            if t.integration_id:
+                # Resolve token from linked integration
+                int_stmt = select(IntegrationORM).where(IntegrationORM.id == t.integration_id)
+                int_res = await db.execute(int_stmt)
+                integration = int_res.scalar_one_or_none()
+                if integration:
+                    if integration.integration_type == "SERVICE_ACCOUNT" and integration.credentials:
+                        # Formal Service Account Flow: Generate a scoped token on the fly
+                        try:
+                            scopes = integration.scopes or ["https://www.googleapis.com/auth/calendar.events", "https://www.googleapis.com/auth/spreadsheets"]
+                            credentials = service_account.Credentials.from_service_account_info(
+                                integration.credentials, 
+                                scopes=scopes
+                            )
+                            credentials.refresh(GoogleRequest())
+                            final_token = credentials.token
+                        except Exception as e:
+                            logger.error(f"⚠️ [SYSTEM] Service Account Token Generation Failed: {e}")
+                            final_token = "GENERATION_ERROR"
+                    else:
+                        # OAuth flow: Use GoogleManager to verify/refresh token
+                        # pyrefly: ignore [missing-import]
+                        from app.core.integrations.google_utils import GoogleManager
+                        final_token = await GoogleManager.refresh_token(db, integration)
+            
+            # Fallback to tool's own API key if no integration or token found
+            if not final_token:
+                final_token = vault.decrypt(t.api_key) if t.api_key else None
+
             tool_data = {
-                "name": tool_orm.name,
-                "description": tool_orm.description,
-                "tool_type": tool_orm.tool_type,
-                "url": tool_orm.url,
-                "method": tool_orm.method,
-                "headers": tool_orm.headers or {},
-                "apiKey": tool_orm.api_key or "",
-                "body_template": tool_orm.body_template or "",
-                "config": tool_orm.config or {},
+                "name": t.name,
+                "description": t.description,
+                "tool_type": t.tool_type,
+                "url": t.url,
+                "method": t.method,
+                "headers": t.headers or {},
+                "apiKey": final_token or "",
+                "body_template": t.body_template or "",
+                "config": t.config or {},
             }
             tools_list.append(tool_data)
     

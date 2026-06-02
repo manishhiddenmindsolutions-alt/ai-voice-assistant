@@ -17,6 +17,7 @@ import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../components/BackButton';
 import { AgentAvatar } from '../components/AgentAvatar';
+import { Select } from '../components/ui/Select';
 
 const LLM_MODELS = {
   groq: [
@@ -619,18 +620,17 @@ const CreateAgentPage = () => {
                   </div>
                   <div className="space-y-1.5">
                     <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Linked Phone Number</label>
-                    <select
+                    <Select
                       value={selectedNumberId}
-                      onChange={e => setSelectedNumberId(e.target.value)}
-                      className="input-field cursor-pointer"
-                    >
-                      <option value="none">No Phone Number (Web / Chat only)</option>
-                      {userNumbers.map((num: any) => (
-                        <option key={num.id} value={num.id}>
-                          {num.number} ({num.provider === 'twilio' ? 'Twilio Telephony' : num.provider.toUpperCase()})
-                        </option>
-                      ))}
-                    </select>
+                      onChange={val => setSelectedNumberId(val)}
+                      options={[
+                        { value: 'none', label: 'No Phone Number (Web / Chat only)' },
+                        ...userNumbers.map((num: any) => ({
+                          value: num.id,
+                          label: `${num.number} (${num.provider === 'twilio' ? 'Twilio Telephony' : num.provider.toUpperCase()})`
+                        }))
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -960,17 +960,14 @@ const CreateAgentPage = () => {
 const ConfigGroup = ({ label, value, options, labels, onChange }: any) => (
   <div className="space-y-1.5 flex-1 min-w-0">
     <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">{label}</label>
-    <select 
+    <Select 
       value={value} 
-      onChange={e => onChange(e.target.value)}
-      className="input-field cursor-pointer text-xs"
-    >
-      {options.map((opt: string, i: number) => (
-        <option key={opt} value={opt}>
-          {labels[i] || opt.toUpperCase()}
-        </option>
-      ))}
-    </select>
+      onChange={onChange}
+      options={options.map((opt: string, i: number) => ({
+        value: opt,
+        label: labels[i] || opt.toUpperCase()
+      }))}
+    />
   </div>
 );
 
@@ -1001,7 +998,7 @@ const SensitivitySlider = ({ label, value, min, max, step, onChange, sub }: any)
       step={step}
       value={value}
       onChange={e => onChange(parseFloat(e.target.value))}
-      className="w-full h-1.5 rounded-lg bg-[var(--border)] appearance-none cursor-pointer accent-[var(--primary)]"
+      className="w-full premium-slider appearance-none cursor-pointer"
     />
     <span className="text-[9px] text-[var(--text-muted)] italic font-semibold block">{sub}</span>
   </div>
