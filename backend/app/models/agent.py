@@ -48,6 +48,9 @@ class AgentConfig(BaseModel):
     llm: LLMConfig = Field(default_factory=LLMConfig)
     tts: TTSConfig = Field(default_factory=TTSConfig)
     vad: VADConfig = Field(default_factory=VADConfig)
+    first_message: str = "Hello! How can I help you today?"
+    expressive_mode: bool = False
+    termination_keywords: str = ""
     # Allow List of full configs (for GET) or List of IDs (for POST link)
     tools: List[Union[ToolConfig, str]] = Field(default_factory=list)
 

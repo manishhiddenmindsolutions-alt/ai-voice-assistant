@@ -1,60 +1,60 @@
 # syntax=docker/dockerfile:1
+ARG PYTHON_VERSION=3.11
 
-# Use the official UV Python base image with Python 3.13 on Debian Bookworm
-# UV is a fast Python package manager that provides better performance than pip
-# We use the slim variant to keep the image size smaller while still having essential tools
-ARG PYTHON_VERSION=3.13
-FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS base
+# ==============================================================================
+# STAGE 1: Build the React Frontend
+# ==============================================================================
+FROM node:20-bookworm-slim AS frontend-builder
+WORKDIR /app/frontend
 
-# Keeps Python from buffering stdout and stderr to avoid situations where
-# the application crashes without emitting any logs due to buffering.
-ENV PYTHONUNBUFFERED=1
+# Install dependencies first for caching
+COPY frontend/package*.json ./
+RUN npm ci
 
-# --- Build stage ---
-# Install dependencies, build native extensions, and prepare the application
-FROM base AS build
+# Copy frontend source code and build
+COPY frontend/ ./
+# Set VITE_API_URL empty so it falls back to window.location.origin dynamically
+ENV VITE_API_URL=""
+RUN npm run build
 
-# Install build dependencies required for Python packages with native extensions
-# gcc: C compiler needed for building Python packages with C extensions
-# g++: C++ compiler needed for building Python packages with C++ extensions
-# python3-dev: Python development headers needed for compilation
-# We clean up the apt cache after installation to keep the image size down
+# ==============================================================================
+# STAGE 2: Build Python Dependencies & Pre-download VAD Models
+# ==============================================================================
+FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS backend-builder
+
+# Install build dependencies for compiling any C/C++ extensions
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     python3-dev \
+    git \
   && rm -rf /var/lib/apt/lists/*
 
-# Create a new directory for our application code
-# And set it as the working directory
 WORKDIR /app
 
-# Copy just the dependency files first, for more efficient layer caching
+# Copy dependency files for caching
 COPY pyproject.toml uv.lock ./
-RUN mkdir -p src
+RUN mkdir -p agent backend
 
-# Install Python dependencies using UV's lock file
-# --locked ensures we use exact versions from uv.lock for reproducible builds
-# This creates a virtual environment and installs all dependencies
-# Ensure your uv.lock file is checked in for consistency across environments
-RUN uv sync --locked
+# Sync dependencies (non-dev only)
+RUN uv sync --frozen --no-dev
 
-# Copy all remaining application files into the container
-# This includes source code, configuration files, and dependency specifications
-# (Excludes files specified in .dockerignore)
-COPY . .
+# Copy application files
+COPY agent/ ./agent/
+COPY backend/ ./backend/
+COPY .env.local* ./
 
-# Pre-download any ML models or files the agent needs
-# This ensures the container is ready to run immediately without downloading
-# dependencies at runtime, which improves startup time and reliability
-RUN uv run "src/agent.py" download-files
+# Pre-download VAD models so they are cached in the container image
+RUN uv run python agent/main.py download-files
 
-# --- Production stage ---
-# Build tools (gcc, g++, python3-dev) are not included in the final image
-FROM base
+# ==============================================================================
+# STAGE 3: Final Production Stage (Slim Runtime)
+# ==============================================================================
+FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS runner
 
-# Create a non-privileged user that the app will run under.
-# See https://docs.docker.com/build/building/best-practices/#user
+WORKDIR /app
+
+# Create a non-privileged user for security
 ARG UID=10001
 RUN adduser \
     --disabled-password \
@@ -64,17 +64,33 @@ RUN adduser \
     --uid "${UID}" \
     appuser
 
-# Copy the application and virtual environment with correct ownership in a single layer
-# This avoids expensive recursive chown and excludes build tools from the final image
-COPY --from=build --chown=appuser:appuser /app /app
+# Copy virtual environment and app files from backend builder
+COPY --from=backend-builder --chown=appuser:appuser /app /app
+# Copy built frontend assets to the location served by FastAPI
+COPY --from=frontend-builder --chown=appuser:appuser /app/frontend/dist /app/frontend/dist
 
-WORKDIR /app
+# Copy the downloaded model cache (e.g. Silero VAD) to the appuser's home directory
+COPY --from=backend-builder /root/.cache /app/.cache
+RUN chown -R appuser:appuser /app/.cache
 
-# Switch to the non-privileged user for all subsequent operations
-# This improves security by not running as root
+# Create data directory and ensure it is owned by appuser
+RUN mkdir -p /app/data && chown -R appuser:appuser /app/data
+
+# Switch to home directory for appuser cache configurations
+ENV HOME=/app
+
+# Expose the single unified port
+EXPOSE 8000
+
+# Set required Python paths so all absolute/relative imports work seamlessly
+ENV PYTHONPATH=/app/backend:/app
+# Automatically enable the Voice Agent in the background of the FastAPI process
+ENV ENABLE_BACKGROUND_AGENT=true
+# Force logging in production
+ENV PYTHONUNBUFFERED=1
+
+# Switch to the non-privileged user
 USER appuser
 
-# Run the AgentServer using UV
-# UV will activate the virtual environment and run the agent.
-# The "start" command tells the AgentServer to connect to LiveKit and begin waiting for jobs.
-CMD ["uv", "run", "src/agent.py", "start"]
+# Start the unified backend service
+CMD ["uv", "run", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]

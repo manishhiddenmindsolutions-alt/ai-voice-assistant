@@ -17,7 +17,6 @@ import {
 } from 'lucide-react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
-import { BackButton } from '../components/BackButton';
 
 interface ProviderModel {
   id: string;
@@ -39,7 +38,6 @@ interface ProviderConnection {
 import {
   SiOpenai,
   SiAnthropic,
-  SiGoogle,
   SiDeepgram,
   SiElevenlabs,
 } from "react-icons/si";
@@ -285,27 +283,34 @@ const StatCard = ({
   icon,
   label,
   value,
+  gradient,
+  shadow,
   color = 'var(--text-secondary)'
 }: any) => (
-  <div className="card p-5 group cursor-pointer hover:shadow-sm transition-all duration-200">
-    <div className="flex items-center justify-between mb-4">
+  <div className="card-shimmer stat-card-glow p-5 flex flex-col justify-between min-h-[140px] relative overflow-hidden">
+    <div 
+      className="absolute -right-8 -bottom-8 w-24 h-24 rounded-full blur-3xl opacity-15 pointer-events-none"
+      style={{ background: gradient || `linear-gradient(135deg, ${color}, ${color}cc)` }}
+    />
+    <div className="flex items-center justify-between relative z-10">
       <div 
-        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-105 shadow-inner"
+        className="w-10 h-10 rounded-xl flex items-center justify-center text-white shadow-lg"
         style={{ 
-          backgroundColor: `${color}15`,
-          color: color,
-          border: `1px solid ${color}25`
+          background: gradient || `linear-gradient(135deg, ${color}, ${color}cc)`,
+          boxShadow: `0 4px 12px -2px ${shadow || `${color}40`}`
         }}
       >
         {icon}
       </div>
     </div>
-    <p className="text-xs text-[var(--text-muted)] font-bold uppercase tracking-wider">
-      {label}
-    </p>
-    <h3 className="text-xl font-bold text-[var(--text-primary)] mt-2 tracking-tight">
-      {value}
-    </h3>
+    <div className="mt-3 relative z-10">
+      <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--text-muted)]">
+        {label}
+      </p>
+      <h3 className="text-xl font-extrabold text-[var(--text-primary)] mt-1 tracking-tight">
+        {value}
+      </h3>
+    </div>
   </div>
 );
 
@@ -420,63 +425,65 @@ const ProvidersPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)]">
-
+    <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)] relative">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-6">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 relative z-10">
         <div>
-          <div className="mb-4">
-            <BackButton fallbackPath="/" label="Back" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)]">
+              <Cpu size={18} className="text-white" />
+            </div>
+            <h1 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Provider Connections</h1>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Provider Connections
-          </h1>
-          <div className="flex items-center gap-2 mt-1">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--success)]"></span>
-            </span>
-            <p className="text-[var(--text-secondary)] text-xs font-semibold uppercase tracking-wider">Connect model providers and sync infrastructure APIs</p>
-          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium ml-[52px]">Connect model providers and sync infrastructure API keys.</p>
         </div>
 
         <button
           onClick={startAddFlow}
-          className="btn-primary flex items-center gap-2 self-start lg:self-auto shadow-sm"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer self-start md:self-auto btn-shine active:scale-[0.97]"
+          style={{
+            backgroundColor: 'var(--primary)',
+            color: '#fff',
+            boxShadow: '0 4px 14px -3px rgba(79, 70, 229, 0.4)'
+          }}
         >
-          <Plus size={15} />
+          <Plus size={14} />
           Connect Provider
         </button>
       </div>
 
       {/* STATS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8 relative z-10">
         <StatCard
-          icon={<Cpu size={16} />}
+          icon={<Cpu size={20} />}
           label="Connections"
           value={connections.length}
-          color="var(--primary)"
+          gradient="linear-gradient(135deg, #4F46E5, #6366F1)"
+          shadow="rgba(79, 70, 229, 0.25)"
         />
         <StatCard
-          icon={<Database size={16} />}
+          icon={<Database size={20} />}
           label="Models Synced"
           value={connections.reduce(
             (acc, curr) => acc + curr.models_count,
             0
           )}
-          color="var(--success)"
+          gradient="linear-gradient(135deg, #10B981, #06D6A0)"
+          shadow="rgba(16, 185, 129, 0.25)"
         />
         <StatCard
-          icon={<Activity size={16} />}
+          icon={<Activity size={20} />}
           label="Status"
           value="Operational"
-          color="#8B5CF6"
+          gradient="linear-gradient(135deg, #8B5CF6, #A78BFA)"
+          shadow="rgba(139, 92, 246, 0.25)"
         />
         <StatCard
-          icon={<Lock size={16} />}
+          icon={<Lock size={20} />}
           label="Security"
           value="AES-256"
-          color="#F59E0B"
+          gradient="linear-gradient(135deg, #F59E0B, #FBBF24)"
+          shadow="rgba(245, 158, 11, 0.25)"
         />
       </div>
 
@@ -522,7 +529,7 @@ const ProvidersPage: React.FC = () => {
               return (
                 <div
                   key={conn.id}
-                  className="card flex flex-col justify-between min-h-[240px] relative overflow-hidden group cursor-default"
+                  className="card-shimmer flex flex-col justify-between min-h-[240px] relative overflow-hidden group cursor-default"
                 >
                   {/* TOP */}
                   <div className="flex items-start justify-between mb-4">
@@ -685,14 +692,14 @@ const ProvidersPage: React.FC = () => {
                             setSelectedProvider(key);
                             setWizardStep(2);
                           }}
-                          className={`p-2.5 rounded-xl text-left border flex items-center justify-between group transition-all duration-200 ${
+                          className={`p-2.5 rounded-xl text-left border flex items-center justify-between group ${
                             isConnected 
                               ? 'border-[var(--border)] bg-[var(--surface-secondary)]/50 opacity-70' 
                               : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--primary)] hover:bg-[var(--surface-secondary)]'
                           }`}
                         >
                           <div className="flex items-center gap-2 min-w-0">
-                            <div className="w-7 h-7 rounded-lg bg-white border border-[var(--border)] flex items-center justify-center overflow-hidden shrink-0 group-hover:scale-105 transition-all duration-200 p-0.5 text-center flex-col">
+                            <div className="w-7 h-7 rounded-lg bg-white border border-[var(--border)] flex items-center justify-center overflow-hidden shrink-0 p-0.5 text-center flex-col">
                               <meta.logo />
                             </div>
                             <span className="text-[10px] font-bold text-[var(--text-primary)] truncate max-w-[80px] uppercase tracking-wider">{meta.name.replace(' platform','').replace(' API','').replace(' cloud','').replace(' AI','').replace(' voices','')}</span>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   History,
   PhoneIncoming,
@@ -59,7 +60,8 @@ const formatDuration = (seconds: number): string => {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 };
 
-const CallLogsPage = () => {
+const AgentConversationsPage = () => {
+  const { agentId } = useParams<{ agentId: string }>();
   const [calls, setCalls] = useState<CallRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -75,7 +77,7 @@ const CallLogsPage = () => {
   const fetchCalls = async () => {
     setLoading(true);
     try {
-      const params: any = { limit: 50, offset: 0, days: 90 };
+      const params: any = { agent_id: agentId, limit: 50, offset: 0, days: 90 };
       if (directionFilter) params.direction = directionFilter;
       if (statusFilter) params.status = statusFilter;
       
@@ -90,8 +92,10 @@ const CallLogsPage = () => {
   };
 
   useEffect(() => {
-    fetchCalls();
-  }, [directionFilter, statusFilter]);
+    if (agentId) {
+      fetchCalls();
+    }
+  }, [agentId, directionFilter, statusFilter]);
 
   const handleExpandCall = async (callId: string) => {
     if (expandedCallId === callId) {
@@ -116,33 +120,36 @@ const CallLogsPage = () => {
     ? calls.filter(c =>
         c.to_number?.includes(searchQuery) ||
         c.from_number?.includes(searchQuery) ||
-        c.agent_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.session_id?.includes(searchQuery)
       )
     : calls;
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300 relative">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300 font-sans">
       {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 relative z-10">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)]">
-              <History size={18} className="text-white" />
-            </div>
-            <h1 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Call Logs</h1>
-          </div>
-          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium ml-[52px]">{total} total call records logged</p>
+          <h1 className="text-xl md:text-2xl font-bold" style={{ color: 'var(--text-primary)' }}>
+            Conversations History
+          </h1>
+          <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
+            {total} total calls tracked for this agent.
+          </p>
         </div>
 
         <button
           onClick={() => setShowFilters(!showFilters)}
-          className="flex items-center gap-1.5 border border-[var(--border)] hover:bg-[var(--surface-secondary)] text-[var(--text-primary)] px-4 py-2 rounded-lg text-xs font-bold transition-colors cursor-pointer self-start md:self-auto"
+          className="btn-outline self-start lg:self-auto"
+          style={{
+            backgroundColor: showFilters ? 'rgba(59,130,246,0.08)' : undefined,
+            borderColor: showFilters ? 'rgba(59,130,246,0.2)' : undefined,
+            color: showFilters ? 'var(--primary)' : undefined,
+          }}
         >
-          <Filter size={13} />
+          <Filter size={14} />
           Filters
           {(directionFilter || statusFilter) && (
-            <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]" />
+            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--primary)' }} />
           )}
         </button>
       </div>
@@ -155,7 +162,7 @@ const CallLogsPage = () => {
               <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'var(--text-muted)' }} />
               <input
                 className="input-field pl-9"
-                placeholder="Search numbers, agents..."
+                placeholder="Search numbers..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -200,15 +207,13 @@ const CallLogsPage = () => {
       <div className="space-y-2">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="animate-spin text-[var(--primary)]" size={24} />
+            <Loader2 className="animate-spin text-[var(--text-muted)]" size={24} />
           </div>
         ) : filteredCalls.length === 0 ? (
-          <div className="w-full flex flex-col items-center justify-center py-20 px-4 border border-[var(--border)] rounded-2xl bg-[var(--surface-secondary)]/10 text-center">
-            <div className="w-12 h-12 rounded-xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center text-[var(--text-secondary)] shadow-sm mb-4">
-              <History size={20} />
-            </div>
-            <h3 className="text-sm font-bold text-[var(--text-primary)] uppercase tracking-wider mb-1">No call records found</h3>
-            <p className="text-xs text-[var(--text-muted)] max-w-sm">No call sessions have been recorded yet. Trigger an outbound call or call an inbound number to see logs here.</p>
+          <div className="py-16 text-center rounded-xl" style={{ border: '2px dashed var(--border)', backgroundColor: 'var(--surface-secondary)' }}>
+            <History className="mx-auto mb-3 text-[var(--text-muted)]" size={36} />
+            <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No Call Records Found</p>
+            <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Make a preview call or dial in to start logging conversations</p>
           </div>
         ) : (
           filteredCalls.map(call => {
@@ -224,7 +229,6 @@ const CallLogsPage = () => {
                   style={isExpanded ? { borderColor: 'var(--border-hover)', boxShadow: 'var(--card-hover-shadow)' } : {}}
                 >
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Direction Icon */}
                     <div 
                       className="p-2 rounded-lg shrink-0"
                       style={{
@@ -236,7 +240,6 @@ const CallLogsPage = () => {
                       {call.direction === 'inbound' ? <PhoneIncoming size={16} /> : <PhoneOutgoing size={16} />}
                     </div>
 
-                    {/* Call Info */}
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-mono text-sm font-semibold truncate" style={{ color: 'var(--text-primary)' }}>
@@ -245,10 +248,6 @@ const CallLogsPage = () => {
                         <span className="badge text-[10px] py-0.5">{call.direction}</span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs font-medium" style={{ color: 'var(--text-secondary)' }}>
-                          {call.agent_name}
-                        </span>
-                        <span style={{ color: 'var(--text-muted)' }}>·</span>
                         <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>
                           {call.started_at ? new Date(call.started_at).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' }) : '—'}
                         </span>
@@ -287,7 +286,6 @@ const CallLogsPage = () => {
                   </div>
                 </div>
 
-                {/* Transcript */}
                 {isExpanded && (
                   <div className="mt-1 ml-4 mr-1 p-4 rounded-lg animate-in fade-in duration-200" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
                     <div className="flex items-center gap-2 mb-3">
@@ -297,7 +295,7 @@ const CallLogsPage = () => {
 
                     {loadingTranscripts ? (
                       <div className="flex justify-center py-6">
-                        <Loader2 className="animate-spin" size={18} style={{ color: 'var(--text-muted)' }} />
+                        <Loader2 className="animate-spin text-[var(--text-muted)]" size={18} />
                       </div>
                     ) : transcripts.length === 0 ? (
                       <p className="text-xs text-center py-6" style={{ color: 'var(--text-muted)' }}>
@@ -335,7 +333,6 @@ const CallLogsPage = () => {
                       </div>
                     )}
 
-                    {/* Metadata */}
                     <div className="mt-3 pt-3 grid grid-cols-2 sm:grid-cols-4 gap-3" style={{ borderTop: '1px solid var(--border)' }}>
                       <div>
                         <span className="text-[10px] font-semibold block" style={{ color: 'var(--text-muted)' }}>Session</span>
@@ -365,4 +362,4 @@ const CallLogsPage = () => {
   );
 };
 
-export default CallLogsPage;
+export default AgentConversationsPage;

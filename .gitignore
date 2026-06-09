@@ -33,3 +33,14 @@ KMS
 # GitHub CLI
 .github/personal-instructions.md
 *log
+
+# Local database and uploaded documents
+data/
+
+# Scratch files
+backend/scratch_*.py
+scratch_*.py
+test_specific_rag.py
+
+# Temp repository clones
+temp-elevenlabs-clone/

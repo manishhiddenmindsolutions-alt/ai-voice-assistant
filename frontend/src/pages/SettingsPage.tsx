@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import { settingsApi } from '../services/api';
 import { useAuthStore } from '../store/useAuthStore';
-import { BackButton } from '../components/BackButton';
 import { Select } from '../components/ui/Select';
 import toast from 'react-hot-toast';
 
@@ -111,19 +110,17 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300 relative">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 relative z-10">
         <div>
-          <div className="mb-3">
-            <BackButton fallbackPath="/" label="Dashboard" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)]">
+              <Shield size={18} className="text-white" />
+            </div>
+            <h1 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Settings</h1>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Settings
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            System configuration and preferences
-          </p>
+          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium ml-[52px]">System configuration and preferences</p>
         </div>
       </div>
 
@@ -219,7 +216,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSaveTelephony}
                     disabled={savingTelephony}
-                    className="btn-primary w-full h-11 disabled:opacity-50"
+                    className="w-full bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 px-4 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {savingTelephony ? <Loader2 className="animate-spin" size={16} /> : (
                       <>
@@ -323,7 +320,7 @@ const SettingsPage = () => {
                   <button
                     onClick={handleSaveGeneral}
                     disabled={savingGeneral}
-                    className="btn-primary w-full h-11 disabled:opacity-50"
+                    className="w-full bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 px-4 py-2.5 rounded-lg text-xs font-bold transition-colors flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-50"
                   >
                     {savingGeneral ? <Loader2 className="animate-spin" size={16} /> : (
                       <>
@@ -376,7 +373,7 @@ const SettingsPage = () => {
                 <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
                   Irreversible actions. Proceed with caution.
                 </p>
-                <button className="btn-danger text-xs h-9">
+                <button className="px-4 py-2 border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 text-red-500 rounded-lg text-xs font-bold transition-colors cursor-pointer">
                   Delete All Call Data
                 </button>
               </div>

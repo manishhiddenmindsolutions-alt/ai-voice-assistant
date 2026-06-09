@@ -37,6 +37,13 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_OAUTH_REDIRECT_URI: str = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:8000/api/v1/integrations/google/callback")
     
+    # Qdrant Cloud
+    QDRANT_URL: str = os.getenv("QDRANT_URL", "")
+    QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
+
+    # Gemini Embedding Key
+    GEMINI_EMBEDDING_KEY: str = os.getenv("GEMINI_EMBEDDING_KEY", "")
+
     class Config:
         case_sensitive = True
 

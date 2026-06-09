@@ -61,6 +61,7 @@ class AgentORM(Base):
     user: Mapped["UserORM"] = relationship(back_populates="agents")
     tools: Mapped[list["ToolORM"]] = relationship(secondary=agent_tools, back_populates="agents")
     calls: Mapped[list["CallORM"]] = relationship(back_populates="agent")
+    documents: Mapped[list["DocumentORM"]] = relationship(back_populates="agent", cascade="all, delete-orphan")
 
 class ToolORM(Base):
     __tablename__ = "tools"
@@ -235,4 +236,19 @@ class ProviderModelORM(Base):
 
     # Relationships
     connection: Mapped["ProviderConnectionORM"] = relationship(back_populates="models")
+
+
+class DocumentORM(Base):
+    __tablename__ = "documents"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), index=True)
+    filename: Mapped[str] = mapped_column(String)
+    file_type: Mapped[str] = mapped_column(String) # "pdf" or "txt"
+    file_size: Mapped[int] = mapped_column(default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    # Relationships
+    agent: Mapped["AgentORM"] = relationship(back_populates="documents")
 

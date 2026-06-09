@@ -13,7 +13,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { dashboardApi } from '../services/api';
-import { BackButton } from '../components/BackButton';
 import { motion } from 'framer-motion';
 
 interface AnalyticsData {
@@ -59,34 +58,30 @@ const AnalyticsPage = () => {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300 relative">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <div className="mb-3">
-            <BackButton fallbackPath="/" label="Dashboard" />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)]">
+              <BarChart3 size={18} className="text-white" />
+            </div>
+            <h1 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Analytics</h1>
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Analytics
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-            Performance insights and call metrics
-          </p>
+          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium ml-[52px]">Performance insights and call metrics</p>
         </div>
 
         {/* Time Range Selector */}
-        <div className="flex p-1 rounded-lg self-start lg:self-auto" style={{ backgroundColor: 'var(--surface-secondary)', border: '1px solid var(--border)' }}>
+        <div className="flex p-1 rounded-lg self-start md:self-auto bg-[var(--surface-secondary)]/20 border border-[var(--border)]">
           {[7, 14, 30].map(d => (
             <button
               key={d}
               onClick={() => setTimeRange(d)}
-              className="px-3.5 py-1.5 rounded-md text-xs font-medium transition-all duration-200"
-              style={{
-                backgroundColor: timeRange === d ? 'var(--surface)' : 'transparent',
-                color: timeRange === d ? 'var(--primary)' : 'var(--text-muted)',
-                border: timeRange === d ? '1px solid var(--border)' : '1px solid transparent',
-                boxShadow: timeRange === d ? 'var(--card-shadow)' : 'none',
-              }}
+              className={`px-3 py-1 rounded text-xs font-bold transition-colors cursor-pointer ${
+                timeRange === d 
+                  ? 'bg-black text-white dark:bg-white dark:text-black' 
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
             >
               {d}D
             </button>
@@ -105,7 +100,7 @@ const AnalyticsPage = () => {
       {/* MAIN */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* VOLUME CHART */}
-        <div className="lg:col-span-2 card p-5">
+        <div className="lg:col-span-2 card-shimmer p-5">
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
@@ -153,7 +148,7 @@ const AnalyticsPage = () => {
         </div>
 
         {/* DIRECTION */}
-        <div className="card p-5 flex flex-col">
+        <div className="card-shimmer p-5 flex flex-col">
           <h2 className="text-sm font-semibold mb-5 flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
             <TrendingUp size={15} style={{ color: 'var(--primary)' }} />
             Direction Breakdown
@@ -287,9 +282,9 @@ const AnalyticsPage = () => {
 };
 
 const StatCard = ({ label, value, icon, color, trend }: any) => (
-  <div className="card p-4 flex flex-col justify-between min-h-[120px]">
+        <div className="card-shimmer stat-card-glow p-4 flex flex-col justify-between min-h-[120px]">
     <div className="flex items-center justify-between">
-      <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${color}12`, color }}>
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${color}, ${color}cc)`, boxShadow: `0 4px 12px -2px ${color}40` }}>
         {icon}
       </div>
       <span className="badge text-[10px] py-0.5">{trend}</span>

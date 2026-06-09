@@ -11,6 +11,8 @@ interface Agent {
   llm: any;
   tts: any;
   tools: any[];
+  first_message?: string;
+  expressive_mode?: boolean;
 }
 
 interface User {

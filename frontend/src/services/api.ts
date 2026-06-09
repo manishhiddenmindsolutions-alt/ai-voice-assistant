@@ -52,6 +52,7 @@ export const authApi = {
 
 export const agentApi = {
   list: () => api.get('/agents'),
+  get: (id: string) => api.get(`/agents/${id}`),
   createOrUpdate: (data: any) => api.post('/agents', data),
   delete: (id: string) => api.delete(`/agents/${id}`),
   linkTool: (agent_id: string, tool_id: string) => api.post('/tools/link', null, { params: { agent_id, tool_id } }),
@@ -155,4 +156,14 @@ export const settingsApi = {
   getAccount: () => api.get('/settings/account'),
 };
 
+export const knowledgeApi = {
+  list: (agentId: string) => api.get(`/knowledge/agent/${agentId}`),
+  upload: (agentId: string, formData: FormData) => 
+    api.post(`/knowledge/agent/${agentId}`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }),
+  delete: (documentId: string) => api.delete(`/knowledge/${documentId}`),
+};
+
 export default api;
+

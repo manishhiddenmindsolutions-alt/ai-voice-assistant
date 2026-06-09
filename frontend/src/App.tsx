@@ -15,23 +15,46 @@ import { useAuthStore } from './store/useAuthStore';
 import { useThemeStore } from './store/useThemeStore';
 
 import DashboardPage from './pages/DashboardPage';
-import AgentsPage from './pages/AgentsPage';
 import CreateAgentPage from './pages/CreateAgentPage';
 import ComingSoonPage from './pages/ComingSoonPage';
 import ToolsPage from './pages/ToolsPage';
 import TelephonyPage from './pages/TelephonyPage';
+import OutboundPage from './pages/OutboundPage';
 import CallLogsPage from './pages/CallLogsPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProvidersPage from './pages/ProvidersPage';
+import AgentConfigurePage from './pages/AgentConfigurePage';
+import AgentOverviewPage from './pages/AgentOverviewPage';
+import AgentToolsPage from './pages/AgentToolsPage';
+import AgentSettingsPage from './pages/AgentSettingsPage';
+import AgentConversationsPage from './pages/AgentConversationsPage';
+import AgentAnalyticsPage from './pages/AgentAnalyticsPage';
+import AgentKnowledgePage from './pages/AgentKnowledgePage';
 
 import { IntegrationsPage } from './pages/IntegrationsPage';
 import { ProfilePage } from './pages/ProfilePage';
 
 import Sidebar from './components/Sidebar';
 import VoiceSession from './components/VoiceSession';
+import { useParams } from 'react-router-dom';
+
+const ComingSoonTab = () => {
+  const { tab } = useParams<{ tab: string }>();
+  const titleMap: Record<string, string> = {
+    'procedures': 'Procedures Blueprint',
+    'workflow': 'Workflow Engine',
+    'branches': 'Workflow Branches',
+    'knowledge-base': 'Knowledge Base',
+    'analysis': 'Conversational Analysis',
+    'widget': 'Web Voice Widget',
+    'tests': 'Agent System Tests'
+  };
+  const title = (tab && titleMap[tab]) || 'Feature Module';
+  return <ComingSoonPage title={title} />;
+};
 
 const ProtectedRoute = ({
   children,
@@ -112,7 +135,9 @@ const AppLayout = () => {
   }, [theme]);
 
   return (
-    <div className="flex h-screen overflow-hidden antialiased" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
+    <div className="flex h-screen overflow-hidden antialiased relative" style={{ backgroundColor: 'var(--background)', color: 'var(--foreground)' }}>
+      {/* Dot Grid Overlay */}
+      <div className="absolute inset-0 bg-grid-pattern pointer-events-none opacity-30 z-0" />
 
       {/* SIDEBAR */}
       <Sidebar
@@ -121,14 +146,16 @@ const AppLayout = () => {
       />
 
       {/* MAIN LAYOUT */}
-      <main className="flex flex-1 flex-col overflow-hidden">
+      <main className="flex flex-1 flex-col overflow-hidden relative z-10">
 
         {/* HEADER */}
         <header 
-          className="sticky top-0 z-50 h-16 shrink-0 glass"
+          className="sticky top-0 z-50 h-16 shrink-0"
           style={{ 
             backgroundColor: 'var(--header-bg)',
-            borderBottom: '1px solid var(--header-border)' 
+            borderBottom: '1px solid var(--header-border)',
+            backdropFilter: 'blur(20px) saturate(1.8)',
+            WebkitBackdropFilter: 'blur(20px) saturate(1.8)'
           }}
         >
           <div className="flex h-full items-center justify-between px-4 lg:px-6">
@@ -163,20 +190,6 @@ const AppLayout = () => {
 
             {/* RIGHT */}
             <div className="flex items-center gap-2">
-
-              {/* STATUS */}
-              <div 
-                className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg"
-                style={{ 
-                  backgroundColor: 'rgba(16,185,129,0.06)',
-                  border: '1px solid rgba(16,185,129,0.15)' 
-                }}
-              >
-                <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--success)' }} />
-                <span className="text-xs font-medium" style={{ color: 'var(--success)' }}>
-                  Online
-                </span>
-              </div>
 
               {/* NOTIFICATION */}
               <button
@@ -261,7 +274,7 @@ const AppLayout = () => {
 
               <Route
                 path="/agents"
-                element={<AgentsPage />}
+                element={<Navigate to="/" replace />}
               />
 
               <Route
@@ -272,6 +285,11 @@ const AppLayout = () => {
               <Route
                 path="/numbers"
                 element={<TelephonyPage />}
+              />
+
+              <Route
+                path="/outbound"
+                element={<OutboundPage />}
               />
 
               <Route
@@ -321,6 +339,16 @@ const AppLayout = () => {
                   <ComingSoonPage title="Help & Support" />
                 }
               />
+
+              {/* DEDICATED AGENT WORKSPACE ROUTES */}
+              <Route path="/agent/:agentId/overview" element={<AgentOverviewPage />} />
+              <Route path="/agent/:agentId/configure" element={<AgentConfigurePage />} />
+              <Route path="/agent/:agentId/knowledge" element={<AgentKnowledgePage />} />
+              <Route path="/agent/:agentId/tools" element={<AgentToolsPage />} />
+              <Route path="/agent/:agentId/settings" element={<AgentSettingsPage />} />
+              <Route path="/agent/:agentId/conversations" element={<AgentConversationsPage />} />
+              <Route path="/agent/:agentId/analytics" element={<AgentAnalyticsPage />} />
+              <Route path="/agent/:agentId/coming-soon/:tab" element={<ComingSoonTab />} />
             </Routes>
           </div>
         </div>

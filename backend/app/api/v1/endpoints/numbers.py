@@ -237,6 +237,7 @@ async def get_inbound_config(
     if agent.tools:
         from google.oauth2 import service_account
         from google.auth.transport.requests import Request as GoogleRequest
+        # pyrefly: ignore [missing-import]
         from app.models.orm import IntegrationORM
 
         for t in agent.tools:
@@ -288,6 +289,7 @@ async def get_inbound_config(
     logger.info(f"Loaded agent config successfully for inbound call. Agent: {agent.agent_name}, LLM: {llm_provider}, TTS: {tts_provider}, Tools Count: {len(tools_list)}")
     
     return {
+        "id": agent.id,
         "agentName": agent.agent_name,
         "prompt": agent.prompt,
         "language": agent.language,
@@ -295,6 +297,8 @@ async def get_inbound_config(
         "tts": tts_config,
         "stt": stt_config,
         "tools": tools_list,
+        "first_message": agent_config.get("first_message", ""),
+        "termination_keywords": agent_config.get("termination_keywords", ""),
     }
 
 

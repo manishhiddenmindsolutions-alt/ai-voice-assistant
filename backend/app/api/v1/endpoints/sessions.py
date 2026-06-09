@@ -116,9 +116,12 @@ async def start_session(
             print(f"📋 [TOOL RESOLUTION] Final tools count in metadata: {len(metadata['tools'])}")
                 
             # --- SYNC AGENT IDENTITY FROM DB ---
+            metadata["id"] = db_agent.id
             metadata["agentName"] = db_agent.agent_name
             metadata["prompt"] = db_agent.prompt
             metadata["language"] = db_agent.language
+            metadata["first_message"] = db_agent.config.get("first_message", "")
+            metadata["termination_keywords"] = db_agent.config.get("termination_keywords", "")
             
             # Sync model config if not already specific in request
             metadata.setdefault("llm", {})["model"] = db_agent.llm_model

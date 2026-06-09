@@ -19,7 +19,7 @@ const AgentCard: React.FC<AgentCardProps> = ({ agent, onLaunch, onDelete }) => {
   };
 
   return (
-    <div className="glass group hover:bg-card/60 transition-all p-5 rounded-3xl border border-border flex flex-col gap-4">
+    <div className="glass group hover:bg-card/60 p-5 rounded-3xl border border-border flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="w-12 h-12 bg-primary/20 text-primary rounded-2xl flex items-center justify-center font-bold text-xl">
           <Mic size={24} />

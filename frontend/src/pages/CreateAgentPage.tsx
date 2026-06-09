@@ -361,16 +361,16 @@ const CreateAgentPage = () => {
               {/* Custom Assistant */}
               <button
                 onClick={() => setWizardStage('custom_name')}
-                className="card p-6 flex flex-col justify-between text-left border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_12px_36px_rgba(197,168,128,0.06)] cursor-pointer group transition-all duration-300 min-h-[220px]"
+                className="card p-6 flex flex-col justify-between text-left border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_12px_36px_rgba(197,168,128,0.06)] cursor-pointer group min-h-[220px]"
               >
                 <div>
-                  <div className="text-3xl mb-4 group-hover:scale-110 transition-transform duration-300">✨</div>
-                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2 group-hover:text-[var(--accent)] transition-colors duration-300">Custom Assistant</h3>
+                  <div className="text-3xl mb-4">✨</div>
+                  <h3 className="text-sm font-bold text-[var(--text-primary)] mb-2 group-hover:text-[var(--accent)] transition-colors">Custom Assistant</h3>
                   <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
                     Build a customizable node. Tailor behavioral rules, pick custom models, and connect your business tools from scratch.
                   </p>
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] mt-4 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent)] mt-4 flex items-center gap-1">
                   Configure custom &rarr;
                 </span>
               </button>
@@ -383,11 +383,11 @@ const CreateAgentPage = () => {
                     <button
                       key={bp.name}
                       onClick={() => applyBlueprint(bp)}
-                      className="card p-4 flex items-center gap-3.5 text-left border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_8px_24px_rgba(197,168,128,0.04)] cursor-pointer group transition-all duration-300"
+                      className="card p-4 flex items-center gap-3.5 text-left border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_8px_24px_rgba(197,168,128,0.04)] cursor-pointer group"
                     >
-                      <div className="text-2xl transform group-hover:scale-110 transition-transform duration-300">{bp.icon}</div>
+                      <div className="text-2xl">{bp.icon}</div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors duration-300">{bp.name}</h4>
+                        <h4 className="text-xs font-bold text-[var(--text-primary)] group-hover:text-[var(--accent)] transition-colors">{bp.name}</h4>
                         <p className="text-[10px] text-[var(--text-muted)] truncate italic mt-0.5">"{bp.prompt}"</p>
                       </div>
                     </button>
@@ -596,10 +596,10 @@ const CreateAgentPage = () => {
                     <button
                       key={bp.name}
                       onClick={() => applyBlueprint(bp)}
-                      className="card p-5 border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_8px_24px_rgba(197,168,128,0.06)] transition-all duration-300 text-left cursor-pointer group"
+                      className="card p-5 border border-[var(--border)] hover:border-[var(--accent)] hover:shadow-[0_8px_24px_rgba(197,168,128,0.06)] text-left cursor-pointer group"
                     >
-                      <div className="text-3xl mb-3 transform group-hover:scale-110 transition-transform duration-300">{bp.icon}</div>
-                      <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1 tracking-wide group-hover:text-[var(--accent)] transition-colors duration-300">{bp.name}</h3>
+                      <div className="text-3xl mb-3">{bp.icon}</div>
+                      <h3 className="text-sm font-bold text-[var(--text-primary)] mb-1 tracking-wide group-hover:text-[var(--accent)] transition-colors">{bp.name}</h3>
                       <p className="text-xs text-[var(--text-secondary)] leading-relaxed italic line-clamp-3">"{bp.prompt}"</p>
                     </button>
                   ))}
@@ -730,7 +730,7 @@ const CreateAgentPage = () => {
                             key={v.id}
                             type="button"
                             onClick={() => setFormData({ ...formData, tts: { ...formData.tts, voice: v.id } })}
-                            className={`p-3 rounded-xl border text-left flex flex-col justify-between transition-all duration-200 cursor-pointer min-h-[85px] relative overflow-hidden ${
+                            className={`p-3 rounded-xl border text-left flex flex-col justify-between cursor-pointer min-h-[85px] relative overflow-hidden ${
                               isSelected 
                                 ? 'border-[var(--accent)] bg-[var(--accent)]/5 ring-1 ring-[var(--accent)] shadow-[0_4px_12px_rgba(197,168,128,0.08)]' 
                                 : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]/50'
@@ -813,14 +813,14 @@ const CreateAgentPage = () => {
                             : [...current, tool.id];
                           setFormData({ ...formData, tools: next });
                         }}
-                        className={`p-4 rounded-xl border text-left flex flex-col justify-between min-h-[110px] group transition-all duration-200 ${
+                        className={`p-4 rounded-xl border text-left flex flex-col justify-between min-h-[110px] group ${
                           isSelected 
                             ? 'border-[var(--primary)] bg-[var(--primary)]/5 shadow-sm' 
                             : 'border-[var(--border)] bg-[var(--surface)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-secondary)]/50'
                         }`}
                       >
                         <div className="flex justify-between items-center w-full">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all ${
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                             isSelected ? 'bg-[var(--primary)] text-white' : 'bg-[var(--surface-secondary)] border border-[var(--border)] text-[var(--text-muted)]'
                           }`}>
                             <Code size={14} />

@@ -386,7 +386,7 @@ export const TelephonyPanel: React.FC = () => {
                             </p>
                             <div className="flex gap-2 mt-2">
                               <span className="px-2 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[8px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                                Voice: {selectedAgent.voice || 'Default'}
+                                Voice: {selectedAgent.tts?.voice || 'Default'}
                               </span>
                               <span className="px-2 py-0.5 bg-[var(--surface)] border border-[var(--border)] rounded text-[8px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
                                 Lang: {selectedAgent.language || 'hi-IN'}

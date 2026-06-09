@@ -105,7 +105,7 @@ const VoiceSession = ({ token, url, onDisconnect, agentName = 'Voice Agent' }: V
 
 const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => void; agentName: string }) => {
   const [duration, setDuration] = useState(0);
-  const { state, audioTrack } = useVoiceAssistant();
+  const { state, audioTrack, agent } = useVoiceAssistant();
   const { localParticipant } = useLocalParticipant();
   const room = useRoomContext();
   const tracks = useTracks([Track.Source.Microphone]);
@@ -113,10 +113,36 @@ const VoiceSessionInner = ({ onDisconnect, agentName }: { onDisconnect: () => vo
   const isMuted = !localParticipant?.isMicrophoneEnabled;
   const cfg: Cfg = STATE_CONFIG[state as keyof typeof STATE_CONFIG] ?? STATE_CONFIG.idle;
 
+  const [agentJoined, setAgentJoined] = useState(false);
+
+  useEffect(() => {
+    if (agent) {
+      setAgentJoined(true);
+    } else if (agentJoined) {
+      console.log('--- [HMS DEBUG] Agent left the room. Disconnecting session... ---');
+      room.disconnect();
+    }
+  }, [agent, agentJoined, room]);
+
   useEffect(() => {
     const id = setInterval(() => setDuration(d => d + 1), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!room) return;
+
+    const handleRoomDisconnected = () => {
+      console.log('--- [HMS DEBUG] Room disconnected event received ---');
+      onDisconnect();
+    };
+
+    room.on('disconnected', handleRoomDisconnected);
+
+    return () => {
+      room.off('disconnected', handleRoomDisconnected);
+    };
+  }, [room, onDisconnect]);
 
   const fmt = (s: number) =>
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;

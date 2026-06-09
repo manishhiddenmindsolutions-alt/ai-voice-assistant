@@ -63,8 +63,7 @@ const AgentsPage = () => {
 
     const handleEdit = (agent: any, e: React.MouseEvent) => {
         e.stopPropagation();
-        setEditingAgent(agent);
-        navigate('/agents/create');
+        navigate(`/agent/${agent.id}/configure`);
     };
 
     const handleLaunch = async (agent: any, e: React.MouseEvent) => {
@@ -238,9 +237,10 @@ const AgentsPage = () => {
                     {filteredAgents.map((agent) => {
                         return (
                              <div
-                                key={agent.id}
-                                className="card p-5 flex flex-col justify-between min-h-[260px] group cursor-pointer"
-                            >
+                                 key={agent.id}
+                                 onClick={() => navigate(`/agent/${agent.id}/overview`)}
+                                 className="card p-5 flex flex-col justify-between min-h-[260px] group cursor-pointer hover:border-[var(--primary)]/40 hover:shadow-md"
+                             >
                                 <div>
                                     {/* CARD TOP */}
                                     <div className="flex items-start justify-between mb-4">
@@ -346,14 +346,14 @@ const AgentsPage = () => {
                     {/* ADD NEW CARD */}
                     <button
                         onClick={() => { setEditingAgent(null); navigate('/agents/create'); }}
-                        className="rounded-xl p-6 flex flex-col items-center justify-center min-h-[260px] transition-all duration-200 group"
+                        className="rounded-xl p-6 flex flex-col items-center justify-center min-h-[260px] group"
                         style={{ 
                             border: '2px dashed var(--border)',
                             backgroundColor: 'transparent' 
                         }}
                     >
                         <div 
-                            className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-all group-hover:scale-105"
+                            className="w-12 h-12 rounded-lg flex items-center justify-center mb-4"
                             style={{ 
                                 border: '1px solid var(--border)',
                                 backgroundColor: 'var(--surface-secondary)',
@@ -362,7 +362,7 @@ const AgentsPage = () => {
                         >
                             <Plus size={20} />
                         </div>
-                        <h3 className="text-sm font-semibold group-hover:text-[var(--accent)] transition-colors" style={{ color: 'var(--text-primary)' }}>
+                        <h3 className="text-sm font-semibold group-hover:text-[var(--accent)]" style={{ color: 'var(--text-primary)' }}>
                             Create Agent
                         </h3>
                         <p className="text-xs mt-1 text-center max-w-[200px]" style={{ color: 'var(--text-muted)' }}>

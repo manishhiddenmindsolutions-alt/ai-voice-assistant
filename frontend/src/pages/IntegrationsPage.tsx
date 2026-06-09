@@ -15,7 +15,6 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../services/api';
-import { BackButton } from '../components/BackButton';
 
 interface Integration {
     id: string;
@@ -234,37 +233,31 @@ export const IntegrationsPage: React.FC = () => {
         return `${backendBase}/api/v1/telephony/twilio${path}`;
     };
 
-    return (
-        <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)]">
-
-            {/* HEADER SECTION */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10">
-                <div>
-                    <div className="mb-4">
-                        <BackButton fallbackPath="/" label="Back" />
-                    </div>
-                    <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-                        Integrations Hub
-                    </h1>
-                    <div className="flex items-center gap-2 mt-1.5">
-                        <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--success)] opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[var(--success)]"></span>
-                        </span>
-                        <p className="text-[var(--text-secondary)] text-xs font-bold tracking-widest uppercase">Configure Enterprise Connected Accounts</p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3.5 self-start lg:self-auto">
-                    <div className="h-10 px-4 border border-[var(--border)] bg-[var(--surface-secondary)] rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--success)] shadow-sm">
-                        <ShieldCheck size={14} className="text-[var(--success)] animate-pulse" />
-                        <span>Vault Encrypted</span>
-                    </div>
-                </div>
+  return (
+    <div className="max-w-[1400px] mx-auto pb-12 animate-in fade-in duration-500 font-sans text-[var(--text-primary)] relative">
+      {/* HEADER SECTION */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8 relative z-10">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)]">
+              <Zap size={18} className="text-white" />
             </div>
+            <h1 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Integrations Hub</h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium ml-[52px]">Configure enterprise connected accounts, telephony trunks, and workflow webhooks.</p>
+        </div>
 
-            {/* INTEGRATION GRID */}
-            {loading ? (
+        <div className="flex items-center gap-3.5 self-start md:self-auto">
+          <div className="h-10 px-4 border border-[var(--border)] bg-[var(--surface-secondary)] rounded-xl flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--success)] shadow-sm">
+            <ShieldCheck size={14} className="text-[var(--success)]" />
+            <span>Vault Encrypted</span>
+          </div>
+        </div>
+      </div>
+
+      {/* INTEGRATION GRID */}
+      <div className="relative z-10">
+        {loading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {[1, 2, 3].map(i => (
                         <div key={i} className="h-60 card animate-pulse bg-[var(--surface-secondary)]/50" />
@@ -290,12 +283,12 @@ export const IntegrationsPage: React.FC = () => {
                         return (
                             <div 
                                 key={int.id}
-                                className="card flex flex-col justify-between min-h-[270px] relative overflow-hidden group cursor-default"
+                                className="card-shimmer flex flex-col justify-between min-h-[270px] relative overflow-hidden group cursor-default"
                             >
                                 <div>
                                     {/* TOP BRAND ICON & STATUS */}
                                     <div className="flex items-start justify-between mb-5">
-                                        <div className="w-14 h-14 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center shadow-sm p-3 group-hover:scale-105 transition-transform duration-300">
+                                        <div className="w-14 h-14 rounded-2xl bg-[var(--surface-secondary)] border border-[var(--border)] flex items-center justify-center shadow-sm p-3">
                                             <int.icon size={26} />
                                         </div>
  
@@ -401,6 +394,7 @@ export const IntegrationsPage: React.FC = () => {
                     </div>
                 </div>
             )}
+            </div>
 
             {/* GOOGLE SERVICE ACCOUNT MODAL */}
             {showKeyModal && (

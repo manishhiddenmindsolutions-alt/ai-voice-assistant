@@ -103,17 +103,20 @@ export const ProfilePage = () => {
     : user?.email.substring(0, 2).toUpperCase();
 
   return (
-    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300">
+    <div className="max-w-[1400px] mx-auto pb-24 animate-in fade-in duration-300 relative">
       {/* HEADER */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-8 relative z-10">
         <div>
           <div className="mb-3">
             <BackButton fallbackPath="/" label="Dashboard" />
           </div>
-          <h1 className="text-2xl md:text-3xl font-bold" style={{ color: 'var(--text-primary)' }}>
-            Account Settings
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-[var(--primary)]">
+              <UserIcon size={18} className="text-white" />
+            </div>
+            <h1 className="text-[28px] font-extrabold tracking-tight text-[var(--text-primary)]">Account Settings</h1>
+          </div>
+          <p className="text-xs text-[var(--text-muted)] mt-1 font-medium ml-[52px]">
             Manage your profile and workspace access.
           </p>
         </div>
@@ -125,12 +128,12 @@ export const ProfilePage = () => {
       </div>
 
       {/* GRID */}
-      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 relative z-10">
         
         {/* LEFT SIDEBAR */}
         <div className="space-y-4">
           {/* PROFILE CARD */}
-          <div className="card p-6">
+          <div className="card-shimmer p-6">
             <div className="flex flex-col items-center text-center">
               <div className="relative mb-4">
                 <div 
@@ -158,7 +161,7 @@ export const ProfilePage = () => {
           </div>
 
           {/* TOKEN CARD */}
-          <div className="card p-6">
+          <div className="card-shimmer p-6">
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>API Token</h3>
@@ -192,7 +195,7 @@ export const ProfilePage = () => {
         {/* RIGHT CONTENT */}
         <div className="space-y-6">
           {/* PROFILE FORM */}
-          <div className="card p-6">
+          <div className="card-shimmer p-6">
             <div className="mb-5">
               <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Profile Details</h2>
               <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Update your personal information.</p>
@@ -229,7 +232,7 @@ export const ProfilePage = () => {
           </div>
 
           {/* PERMISSIONS */}
-          <div className="card p-6">
+          <div className="card-shimmer p-6">
             <div className="mb-5">
               <h2 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Permissions</h2>
               <p className="text-sm mt-0.5" style={{ color: 'var(--text-muted)' }}>Workspace access and capabilities.</p>

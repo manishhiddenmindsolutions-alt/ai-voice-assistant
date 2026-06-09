@@ -9,6 +9,7 @@ from typing import Dict, Any, List, Optional, Annotated
 from pydantic import Field
 from livekit.agents import llm
 from livekit.plugins import sarvam, groq, openai, deepgram, silero
+from livekit.agents.types import NOT_GIVEN, NotGivenOr, APIConnectOptions, DEFAULT_API_CONNECT_OPTIONS
 
 try:
     from livekit.plugins import elevenlabs
@@ -228,6 +229,46 @@ def create_vad(config: Dict[str, Any], prewarmed_vad=None):
         min_silence_duration=current_silence_dur,
         activation_threshold=current_threshold
     )
+class OpenRouterLLM(openai.LLM):
+    def chat(
+        self,
+        *,
+        chat_ctx: llm.ChatContext,
+        tools: list[llm.Tool] | None = None,
+        conn_options: APIConnectOptions = DEFAULT_API_CONNECT_OPTIONS,
+        parallel_tool_calls: NotGivenOr[bool] = NOT_GIVEN,
+        tool_choice: NotGivenOr[llm.ToolChoice] = NOT_GIVEN,
+        response_format: NotGivenOr[Any] = NOT_GIVEN,
+        extra_kwargs: NotGivenOr[dict[str, Any]] = NOT_GIVEN,
+    ) -> llm.LLMStream:
+        
+        # Debug: log every LLM call
+        tool_names = []
+        if tools:
+            for t in tools:
+                if hasattr(t, 'info') and hasattr(t.info, 'name'):
+                    tool_names.append(t.info.name)
+        msg_count = len(chat_ctx.items) if chat_ctx else 0
+        logger.info(f"OpenRouterLLM.chat: tool_choice={tool_choice!r}, tools={tool_names}, msgs={msg_count}")
+        
+        # Intercept tool_choice == "none" to prevent OpenRouter 404 errors.
+        # By removing tools when tool_choice is "none", we achieve the same effect
+        # (preventing tool calls) without triggering provider routing errors.
+        if tool_choice == "none":
+            logger.info("OpenRouterLLM: Intercepting tool_choice='none', clearing tools to avoid OpenRouter 404.")
+            tools = None
+            tool_choice = NOT_GIVEN
+            
+        return super().chat(
+            chat_ctx=chat_ctx,
+            tools=tools,
+            conn_options=conn_options,
+            parallel_tool_calls=parallel_tool_calls,
+            tool_choice=tool_choice,
+            response_format=response_format,
+            extra_kwargs=extra_kwargs,
+        )
+
 
 def create_components(config: Dict[str, Any]):
     """Creates all AI components (STT, TTS, LLM) from configuration."""
@@ -277,11 +318,17 @@ def create_components(config: Dict[str, Any]):
                 temperature=config.get("llm", {}).get("temperature", 0.7)
             )
         elif llm_provider == "openrouter":
-            agent_llm = openai.LLM(
+            # Set up analytics headers for OpenRouter
+            default_headers = {}
+            default_headers["HTTP-Referer"] = "https://livekit.io"
+            default_headers["X-Title"] = "LiveKit Voice Agent"
+            
+            agent_llm = OpenRouterLLM(
                 api_key=config.get("llm", {}).get("apiKey") or os.getenv("OPENROUTER_API_KEY"),
                 base_url="https://openrouter.ai/api/v1",
                 model=config.get("llm", {}).get("model", "meta-llama/llama-3.3-70b-instruct"),
-                temperature=config.get("llm", {}).get("temperature", 0.7)
+                temperature=config.get("llm", {}).get("temperature", 0.7),
+                extra_headers=default_headers
             )
         elif llm_provider == "gemini":
             agent_llm = openai.LLM(
@@ -487,6 +534,51 @@ def create_components(config: Dict[str, Any]):
             tool = llm.function_tool(create_webhook_cmd(t_cfg, name), name=name, description=desc)
             
         agent_tools.append(tool)
+    # 4.5. KNOWLEDGE BASE RAG SYSTEM
+    agent_id = config.get("id")
+    if agent_id:
+        backend_url = os.getenv("INTERNAL_BACKEND_URL", "http://localhost:8000")
+        
+        def create_search_knowledge_cmd(aid, b_url):
+            async def rag_system(
+                query: Annotated[str, Field(description="The specific question, topic, or search term to lookup in the reference documents or PDF knowledge base.")]
+            ) -> str:
+                """Search the agent's uploaded PDF/text reference files or knowledge base for relevant facts, policies, guidelines, or instructions."""
+                logger.info(f"--- [RAG SEARCH] Querying knowledge base for agent {aid}: '{query}' ---")
+                try:
+                    import aiohttp
+                    url = f"{b_url}/api/v1/knowledge/search?agent_id={aid}&query={urlparse.quote(query)}&limit=4"
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, timeout=8) as resp:
+                            if resp.status == 200:
+                                data = await resp.json()
+                                if not data:
+                                    logger.info(f"--- [RAG RESULT] Empty list returned for agent {aid} query '{query}' ---")
+                                    return "No relevant information found in the knowledge base."
+                                formatted_results = []
+                                for idx, item in enumerate(data):
+                                    formatted_results.append(
+                                        f"Source document: {item.get('filename')}\nContent excerpt:\n{item.get('text')}\n---"
+                                    )
+                                result_text = "\n\n".join(formatted_results)
+                                logger.info(f"--- [RAG RESULT] Returning {len(data)} results ({len(result_text)} chars) to LLM ---")
+                                return result_text
+                            else:
+                                err_text = await resp.text()
+                                logger.warning(f"--- [RAG ERROR] API call returned non-200 status {resp.status}: {err_text} ---")
+                                return f"Search Error (Status {resp.status}): {err_text}"
+                except Exception as e:
+                    logger.error(f"--- [RAG EXCEPTION] Failed to query knowledge base: {e} ---")
+                    return f"Search Error: {str(e)}"
+            return rag_system
+        
+        knowledge_tool = llm.function_tool(
+            create_search_knowledge_cmd(agent_id, backend_url),
+            name="rag_system",
+            description="Use this tool to search through reference documents, guidelines, health manuals, or text/PDF files uploaded to your knowledge base."
+        )
+        agent_tools.append(knowledge_tool)
+        logger.info(f"--- [RAG SYSTEM] Registered 'rag_system' tool for agent_id: {agent_id} ---")
 
     # 5. INSTRUCTIONS
     agent_name = config.get("agentName") or config.get("agent_name") or "VoiceForge"
@@ -497,8 +589,22 @@ def create_components(config: Dict[str, Any]):
     base_instructions = f"Your name is {agent_name}. The current date and time is {current_time}. {config.get('prompt', 'You are a helpful assistant.')}"
     base_instructions += f"\n\nCRITICAL: You MUST respond in {lang_name} at all times. Do not switch to others unless explicitly asked."
     
+    if agent_id:
+        base_instructions += "\n\n--- KNOWLEDGE BASE REFERENCE INSTRUCTIONS ---\n"
+        base_instructions += "You have access to a reference knowledge base containing PDF and text reference documents. "
+        base_instructions += "Whenever the user asks questions about specific products, guides, terms, health advice, or details contained in your uploaded documents, you MUST use the `rag_system` tool to look up the relevant information before answering. Do not speculate or guess if you do not know the answer—search the knowledge base first."
+
     if agent_tools:
-        tool_names = [t.get("name", "UnknownTool").lower().replace(" ", "_") for t in tools_cfg if isinstance(t, dict)]
+        # Filter out functional tools/native commands to keep tool_names clean
+        tool_names = []
+        for t in agent_tools:
+            if hasattr(t, "info") and hasattr(t.info, "name"):
+                tool_names.append(t.info.name)
+            elif hasattr(t, "name"):
+                tool_names.append(t.name)
+            elif isinstance(t, dict):
+                tool_names.append(t.get("name", "UnknownTool"))
+        
         base_instructions += f"\n\n--- NEURAL FORGE CAPABILITIES ---\n"
         base_instructions += f"You have reached the Forge. You have DIRECT ACCESS to the following neural tools: {', '.join(tool_names)}.\n"
         base_instructions += "CRITICAL INSTRUCTIONS:\n"
@@ -516,3 +622,4 @@ def create_components(config: Dict[str, Any]):
         "tools": agent_tools, 
         "instructions": base_instructions
     }
+

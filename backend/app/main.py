@@ -20,7 +20,7 @@ if sys.stderr and sys.stderr.encoding != 'utf-8':
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # pyrefly: ignore [missing-import]
-from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard, twilio, telephony
+from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard, twilio, telephony, knowledge
 # pyrefly: ignore [missing-import]
 from app.api.v1.endpoints import settings as settings_ep
 # pyrefly: ignore [missing-import]
@@ -104,7 +104,30 @@ app.include_router(providers.router, prefix=f"{settings.API_V1_STR}/providers", 
 app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", tags=["Dashboard"])
 app.include_router(telephony.router, prefix=f"{settings.API_V1_STR}/telephony", tags=["Telephony"])
 app.include_router(settings_ep.router, prefix=f"{settings.API_V1_STR}/settings", tags=["Settings"])
+app.include_router(knowledge.router, prefix=f"{settings.API_V1_STR}/knowledge", tags=["Knowledge"])
 
 @app.get("/hello")
 def read_root():
     return {"message": f"Welcome to {settings.PROJECT_NAME} API"}
+
+# Serve static frontend files if the build directory exists
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+
+frontend_dist = pathlib.Path(__file__).parent.parent.parent / "frontend" / "dist"
+if frontend_dist.exists():
+    print(f"📦 [SYSTEM] Mounting static frontend assets from {frontend_dist}")
+    if (frontend_dist / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=str(frontend_dist / "assets")), name="assets")
+    
+    @app.get("/{catchall:path}")
+    async def serve_frontend(catchall: str):
+        # Prevent intercepting API routes
+        if catchall.startswith("api/") or catchall.startswith("docs") or catchall.startswith("openapi.json") or catchall.startswith("hello"):
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Not Found")
+            
+        file_path = frontend_dist / catchall
+        if file_path.is_file():
+            return FileResponse(str(file_path))
+        return FileResponse(str(frontend_dist / "index.html"))

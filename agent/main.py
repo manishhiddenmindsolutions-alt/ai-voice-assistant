@@ -17,7 +17,7 @@ else:
 
 from livekit import rtc
 from livekit.agents import cli, JobContext, WorkerOptions, AutoSubscribe, JobProcess, llm, RoomInputOptions
-from livekit.agents.voice import Agent, AgentSession
+from livekit.agents.voice import Agent, AgentSession, UserInputTranscribedEvent, ConversationItemAddedEvent
 from livekit.plugins import silero
 
 # Local Imports
@@ -33,11 +33,22 @@ load_dotenv(dotenv_path if dotenv_path.exists() else None)
 # --- LOGGING ---
 log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
+class SilenceWarningFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        msg = record.getMessage()
+        if "input speech hasn't started yet" in msg or "Input is shorter by" in msg:
+            return False
+        return True
+
+silence_filter = SilenceWarningFilter()
+
 file_handler = logging.FileHandler(_ROOT / "agent.log")
 file_handler.setFormatter(log_formatter)
+file_handler.addFilter(silence_filter)
 
 console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
+console_handler.addFilter(silence_filter)
 
 logging.basicConfig(level=logging.INFO, handlers=[file_handler, console_handler])
 logger = logging.getLogger("voice-forge-agent")
@@ -45,10 +56,11 @@ logger.setLevel(logging.INFO)
 
 # API endpoint for transcript logging
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+INTERNAL_BACKEND_URL = os.getenv("INTERNAL_BACKEND_URL", "http://localhost:8000")
 
 async def log_transcript(session_id: str, role: str, content: str):
     """Sends transcript to the backend API."""
-    url = f"{BACKEND_URL}/api/v1/calls/sessions/{session_id}/transcripts"
+    url = f"{INTERNAL_BACKEND_URL}/api/v1/calls/sessions/{session_id}/transcripts"
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, json={"role": role, "content": content}) as resp:
@@ -67,9 +79,10 @@ def prewarm(proc: JobProcess):
     )
 
 class VoiceForgeAgent(Agent):
-    def __init__(self, *args, on_farewell_detected=None, **kwargs):
+    def __init__(self, *args, termination_keywords="", on_farewell_detected=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.on_farewell_detected = on_farewell_detected
+        self.termination_keywords = termination_keywords
 
     async def on_user_turn_completed(self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage) -> None:
         from livekit.agents.llm.tool_context import StopResponse
@@ -82,9 +95,23 @@ class VoiceForgeAgent(Agent):
         
         # Check if the user said farewell or thanks
         user_text = transcript.lower()
-        farewell_keywords = ["bye", "goodbye", "thank you", "thank u", "thanks", "dhanyawad", "shukriya", "alvida", "exit", "close call"]
-        if any(keyword in user_text for keyword in farewell_keywords):
-            logger.info("--- [HMS DEBUG] User farewell detected. Invoking farewell handler callback. ---")
+        logger.info(f"--- [HMS DEBUG] user_turn_completed transcript='{user_text}', configured termination_keywords='{self.termination_keywords}' ---")
+        
+        user_terms = self.termination_keywords
+        if isinstance(user_terms, str) and user_terms.strip():
+            farewells = [k.strip().lower() for k in user_terms.split(",") if k.strip()]
+        elif isinstance(user_terms, list):
+            farewells = [str(k).strip().lower() for k in user_terms if str(k).strip()]
+        else:
+            # Fallback default keywords
+            farewells = [
+                "bye", "goodbye", "thank you", "thank u", "thanks", "take care", 
+                "have a great", "have a nice", "see you", 
+                "dhanyawad", "shukriya", "alvida", "phir milenge"
+            ]
+            
+        if any(keyword in user_text for keyword in farewells):
+            logger.info(f"--- [HMS DEBUG] User farewell detected: '{user_text}'. Invoking farewell handler callback. ---")
             if self.on_farewell_detected:
                 self.on_farewell_detected()
             raise StopResponse()
@@ -155,7 +182,7 @@ async def entrypoint(ctx: JobContext):
         if dialed_number:
             logger.info(f"--- [HMS CONFIG] Dynamic SIP call detected on: {dialed_number} from {caller_number} (Agent={agent_id}, Room={room_name}). Resolving agent config... ---")
             try:
-                url = f"{BACKEND_URL}/api/v1/numbers/inbound-config?number={dialed_number}&caller_number={caller_number or ''}&room_name={room_name}&agent_id={agent_id or ''}"
+                url = f"{INTERNAL_BACKEND_URL}/api/v1/numbers/inbound-config?number={dialed_number}&caller_number={caller_number or ''}&room_name={room_name}&agent_id={agent_id or ''}"
                 async with aiohttp.ClientSession() as session:
                     async with session.get(url) as resp:
                         if resp.status == 200:
@@ -172,24 +199,17 @@ async def entrypoint(ctx: JobContext):
     vad = create_vad(config, prewarmed_vad) 
 
     def handle_farewell():
-        async def ask_and_disconnect():
-            await asyncio.sleep(0.2)
-            stt_lang = config.get("language") or "en"
-            if stt_lang == "hi-IN":
-                msg = "Should we close the communication? Kya hum call cut krde?"
-            else:
-                msg = "Should we close the communication?"
-            logger.info(f"--- [HMS SESSION TERMINATION] Saying: {msg} ---")
-            await session.say(msg, allow_interruptions=False)
-            await asyncio.sleep(4.5)
-            logger.info("--- [HMS SESSION TERMINATION] Disconnecting room session now. ---")
-            await ctx.disconnect()
-        asyncio.create_task(ask_and_disconnect())
+        async def disconnect_now():
+            logger.info("--- [HMS SESSION TERMINATION] User farewell detected. Disconnecting session immediately. ---")
+            await ctx.room.disconnect()
+        asyncio.create_task(disconnect_now())
 
     # Initialize Agent and Session
+    termination_keywords = config.get("termination_keywords", "")
     agent = VoiceForgeAgent(
         instructions=data.get("instructions", "You are a helpful assistant."),
         tools=data.get("tools", []),
+        termination_keywords=termination_keywords,
         on_farewell_detected=handle_farewell
     )
 
@@ -201,31 +221,47 @@ async def entrypoint(ctx: JobContext):
     )
 
     # --- Event Callbacks ---
-    @session.on("user_speech_committed")
-    def _on_user_speech(msg: llm.ChatMessage):
-        logger.info(f"User: {msg.content}")
-        asyncio.create_task(log_transcript(ctx.room.name, "user", msg.content))
+    @session.on("user_input_transcribed")
+    def _on_user_speech(event: UserInputTranscribedEvent):
+        if event.is_final:
+            text = event.transcript or ""
+            logger.info(f"User: {text}")
+            asyncio.create_task(log_transcript(ctx.room.name, "user", text))
 
-    @session.on("agent_speech_committed")
-    def _on_agent_speech(msg: llm.ChatMessage):
-        logger.info(f"Agent: {msg.content}")
-        asyncio.create_task(log_transcript(ctx.room.name, "agent", msg.content))
-        
-        # Smart Session Auto-Termination: Check if the agent is bidding farewell (fallback)
-        content_lower = (msg.content or "").lower()
-        farewells = [
-            "bye", "goodbye", "thank you", "thank u", "thanks", "take care", 
-            "have a great", "have a nice", "see you", 
-            "dhanyawad", "shukriya", "alvida", "phir milenge"
-        ]
-        if any(f in content_lower for f in farewells):
-            logger.info("--- [HMS FALLBACK SESSION TERMINATION] Farewell phrase detected. Scheduling auto-disconnect. ---")
-            async def disconnect_later():
-                # Allow 5 seconds for the TTS audio stream to play back fully to the user
-                await asyncio.sleep(5)
-                logger.info("--- [HMS FALLBACK SESSION TERMINATION] Disconnecting room session now. ---")
-                await ctx.disconnect()
-            asyncio.create_task(disconnect_later())
+    @session.on("conversation_item_added")
+    def _on_conversation_item(event: ConversationItemAddedEvent):
+        item = event.item
+        if isinstance(item, llm.ChatMessage) and item.role == "assistant":
+            text = item.text_content or ""
+            logger.info(f"Agent: {text}")
+            asyncio.create_task(log_transcript(ctx.room.name, "agent", text))
+            
+            # Smart Session Auto-Termination: Check if the agent is bidding farewell (fallback)
+            content_lower = text.lower()
+            
+            # User-customized termination keywords
+            user_terms = config.get("termination_keywords", "")
+            if isinstance(user_terms, str) and user_terms.strip():
+                # Split by comma and strip whitespace
+                farewells = [k.strip().lower() for k in user_terms.split(",") if k.strip()]
+            elif isinstance(user_terms, list):
+                farewells = [str(k).strip().lower() for k in user_terms if str(k).strip()]
+            else:
+                # Fallback default phrases
+                farewells = [
+                    "bye", "goodbye", "thank you", "thank u", "thanks", "take care", 
+                    "have a great", "have a nice", "see you", 
+                    "dhanyawad", "shukriya", "alvida", "phir milenge"
+                ]
+                
+            if any(f in content_lower for f in farewells):
+                logger.info(f"--- [HMS FALLBACK SESSION TERMINATION] Farewell phrase detected in agent speech: '{content_lower}'. Scheduling auto-disconnect. ---")
+                async def disconnect_later():
+                    # Allow 5 seconds for the TTS audio stream to play back fully to the user
+                    await asyncio.sleep(5)
+                    logger.info("--- [HMS FALLBACK SESSION TERMINATION] Disconnecting room session now. ---")
+                    await ctx.room.disconnect()
+                asyncio.create_task(disconnect_later())
 
     # --- Start Agent Session ---
     logger.info("Starting Agent Session...")
@@ -237,8 +273,8 @@ async def entrypoint(ctx: JobContext):
     logger.info(f"Outbound call detected={is_outbound}. Waiting {sip_delay}s for user to answer before greeting...")
     await asyncio.sleep(sip_delay)
     
-    # Use configurable greeting from agent config or fallback
-    greeting = config.get("greeting")
+    # Use configurable first_message/greeting from agent config or fallback
+    greeting = config.get("first_message") or config.get("greeting")
     if not greeting:
         stt_lang = config.get("language") or "en"
         agent_name = config.get("agentName", "")
@@ -247,7 +283,7 @@ async def entrypoint(ctx: JobContext):
         else:
             greeting = f"Hello! I'm {agent_name}, how can I help you today?" if agent_name else "Hello! How can I help you today?"
     
-    logger.info(f"Agent session started. Sending greeting: {greeting[:50]}...")
+    logger.info(f"Agent session started. Sending greeting: {greeting[:100]}...")
     await session.say(greeting, allow_interruptions=True)
 
     # Keep alive while connected
