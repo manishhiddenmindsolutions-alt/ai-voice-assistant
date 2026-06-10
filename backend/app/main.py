@@ -39,8 +39,8 @@ async def lifespan(app: FastAPI):
         agent_path = settings.DATA_DIR.parent / "agent" / "main.py"
         print(f"\n🚀 [SYSTEM] Starting VoiceForge Agent (v5) in Background: {agent_path}")
         
-        # Run 'uv run python agent/main.py dev' in the background
-        cmd = ["uv", "run", "python", str(agent_path), "dev"]
+        # Run the agent in the background using the same Python interpreter
+        cmd = [sys.executable, str(agent_path), "dev"]
         try:
             agent_process = subprocess.Popen(
                 cmd,

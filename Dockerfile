@@ -96,5 +96,5 @@ ENV PYTHONUNBUFFERED=1
 # Switch to the non-privileged user
 USER appuser
 
-# Start the unified backend service
-CMD ["uv", "run", "uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start the unified backend service using the virtual environment's uvicorn directly
+CMD ["/app/.venv/bin/uvicorn", "backend.app.main:app", "--host", "0.0.0.0", "--port", "8000"]
