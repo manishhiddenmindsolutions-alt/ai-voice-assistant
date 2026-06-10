@@ -8,7 +8,8 @@ from sqlalchemy import text
 
 # Create Async Engine
 # Note: For SQLite for local testing, use sqlite+aiosqlite
-engine = create_async_engine(settings.DATABASE_URL, echo=True)
+db_url = settings.DATABASE_URL.strip('"').strip("'")
+engine = create_async_engine(db_url, echo=True)
 
 # Create Session Factory
 AsyncSessionLocal = async_sessionmaker(

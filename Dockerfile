@@ -22,12 +22,14 @@ RUN npm run build
 # ==============================================================================
 FROM ghcr.io/astral-sh/uv:python${PYTHON_VERSION}-bookworm-slim AS backend-builder
 
-# Install build dependencies for compiling any C/C++ extensions
+# Install build dependencies for compiling any C/C++ extensions and fetching Git LFS files
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
     python3-dev \
     git \
+    git-lfs \
+  && git lfs install \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -70,8 +72,7 @@ COPY --from=backend-builder --chown=appuser:appuser /app /app
 COPY --from=frontend-builder --chown=appuser:appuser /app/frontend/dist /app/frontend/dist
 
 # Copy the downloaded model cache (e.g. Silero VAD) to the appuser's home directory
-COPY --from=backend-builder /root/.cache /app/.cache
-RUN chown -R appuser:appuser /app/.cache
+COPY --from=backend-builder --chown=appuser:appuser /root/.cache /app/.cache
 
 # Create data directory and ensure it is owned by appuser
 RUN mkdir -p /app/data && chown -R appuser:appuser /app/data
