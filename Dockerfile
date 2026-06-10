@@ -32,6 +32,9 @@ RUN apt-get update && apt-get install -y \
   && git lfs install \
   && rm -rf /var/lib/apt/lists/*
 
+# Enable Git LFS support globally for uv
+ENV UV_GIT_LFS=1
+
 WORKDIR /app
 
 # Copy dependency files for caching
