@@ -5,7 +5,6 @@ const getApiBaseURL = () => {
   if (import.meta.env.VITE_API_URL) {
     return import.meta.env.VITE_API_URL;
   }
-  // Automatically fallback to window origin if accessed via ngrok or non-localhost
   if (typeof window !== 'undefined' && (window.location.hostname.includes('ngrok') || window.location.hostname !== 'localhost')) {
     return `${window.location.origin}/api/v1`;
   }
@@ -16,7 +15,6 @@ const api = axios.create({
   baseURL: getApiBaseURL(),
 });
 
-// REQUEST INTERCEPTOR: Inject JWT Token
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
   if (token) {
@@ -25,7 +23,6 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// RESPONSE INTERCEPTOR: Handle 401 Unauthorized
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -108,57 +105,65 @@ export const telephonyApi = {
     phone_numbers: string[];
     trunk_name?: string;
     provider?: string;
+    agent_id?: string;
+    twilio_account_sid?: string;
+    twilio_auth_token?: string;
   }) => api.post('/telephony/trunks', data),
   listTrunks: () => api.get('/telephony/trunks'),
+  getTrunk: (id: string) => api.get(`/telephony/trunks/${id}`),
   deleteTrunk: (id: string) => api.delete(`/telephony/trunks/${id}`),
   updateTrunkAgent: (trunkId: string, agentId: string) =>
     api.put(`/telephony/trunks/${trunkId}/agent`, { agent_id: agentId }),
-  
+
   // Dispatch Rules
   listDispatchRules: () => api.get('/telephony/dispatch-rules'),
-  
-  // Outbound Calls (native LiveKit SIP)
-  outbound: (data: { to_number: string; agent_id: string }) =>
+
+  // Outbound Calls — native LiveKit SIP path
+  outbound: (data: { to_number: string; agent_id: string; use_twilio_fallback?: boolean }) =>
     api.post('/telephony/outbound', data),
-  
-  // LiveKit Phone Numbers
-  searchNumbers: (countryCode?: string, areaCode?: string) =>
-    api.get('/telephony/lk-numbers/search', { params: { country_code: countryCode, area_code: areaCode } }),
-  getSipUri: () => api.get('/telephony/lk-numbers/sip-uri'),
-  
+
   // Status & Diagnostics
   status: () => api.get('/telephony/status'),
 };
 
+// Settings — save Twilio credentials to the vault
+export const settingsApi = {
+  getTelephony: () => api.get('/settings/telephony'),
+  updateTelephony: (data: any) => api.put('/settings/telephony', data),
+
+  // PUT /settings/secrets — stores twilio_account_sid, twilio_auth_token, twilio_phone_number
+  saveSecrets: (data: {
+    twilio_account_sid?: string;
+    twilio_auth_token?: string;
+    twilio_phone_number?: string;
+    default_agent_id?: string;
+  }) => api.put('/settings/telephony', data),
+
+  getGeneral: () => api.get('/settings/general'),
+  updateGeneral: (data: any) => api.put('/settings/general', data),
+
+  getAccount: () => api.get('/settings/account'),
+};
+
+/**
+ * @deprecated Use telephonyApi.outbound() with use_twilio_fallback=true instead.
+ * The /telephony/twilio/outbound endpoint no longer exists. Use the unified
+ * /telephony/outbound endpoint with use_twilio_fallback=true for trial accounts.
+ */
 export const twilioApi = {
   outbound: (data: { to_number: string; agent_id: string }) =>
-    api.post('/telephony/twilio/outbound', data),
+    api.post('/telephony/outbound', { ...data, use_twilio_fallback: true }),
 };
 
 export const freeswitchApi = {
-  // Outbound calls
   outbound: (data: { to_number: string; agent_id: string; gateway: string; caller_id?: string }) =>
     api.post('/telephony/freeswitch/outbound', data),
-  // Status
   status: () => api.get('/settings/telephony'),
-};
-
-export const settingsApi = {
-  // Telephony settings
-  getTelephony: () => api.get('/settings/telephony'),
-  updateTelephony: (data: any) => api.put('/settings/telephony', data),
-  
-  // General settings
-  getGeneral: () => api.get('/settings/general'),
-  updateGeneral: (data: any) => api.put('/settings/general', data),
-  
-  // Account info
-  getAccount: () => api.get('/settings/account'),
 };
 
 export const knowledgeApi = {
   list: (agentId: string) => api.get(`/knowledge/agent/${agentId}`),
-  upload: (agentId: string, formData: FormData) => 
+  upload: (agentId: string, formData: FormData) =>
     api.post(`/knowledge/agent/${agentId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     }),
@@ -166,4 +171,3 @@ export const knowledgeApi = {
 };
 
 export default api;
-

@@ -12,9 +12,9 @@ if __name__ == "__main__":
     print("🚀 VOICE AI SAAS — UNIFIED STARTUP")
     print("="*50)
     
-    # Check for .env.local
-    if not os.path.exists(".env.local"):
-        print("⚠️  Warning: .env.local not found in project root!")
+    # Check for .env
+    if not os.path.exists(".env"):
+        print("⚠️  Warning: .env not found in project root!")
 
     # Start the FastAPI Application
     # Note: backend.app.main:app includes the lifecycle to start the Agent Worker automatically

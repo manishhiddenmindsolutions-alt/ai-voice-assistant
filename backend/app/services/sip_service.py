@@ -1,117 +1,139 @@
-import os
-import uuid
-import json
+"""
+SIP Call Service — Native LiveKit Outbound Call Execution.
+
+Handles the two-step outbound call sequence:
+  Step 1: Pre-dispatch the AI agent into a named LiveKit room.
+  Step 2: Create a SIP participant that dials the customer (via LiveKit → Twilio trunk).
+
+This is the canonical (preferred) outbound path. The Twilio REST fallback
+in twilio.py should only be used for trial accounts that cannot receive SIP.
+"""
+
 import logging
-from typing import Optional
-from livekit import api
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
+import uuid
+import httpx
+import json
 
-# pyrefly: ignore [missing-import]
 from app.core.config import settings
-# pyrefly: ignore [missing-import]
-from app.models.orm import SIPTrunkORM, AgentORM
+from app.core.livekit_auth import make_livekit_headers
 
-logger = logging.getLogger("sip-service")
+logger = logging.getLogger("sip_service")
+
+_LK_BASE = settings.LIVEKIT_URL.replace("wss://", "https://").replace("ws://", "http://")
+
 
 class SIPService:
-    def __init__(self):
-        self.api_key = settings.LIVEKIT_API_KEY
-        self.api_secret = settings.LIVEKIT_API_SECRET
-        self.url = settings.LIVEKIT_URL.replace("wss://", "https://")  # LiveKit API uses HTTPS
-
-    def get_livekit_client(self) -> api.LiveKitAPI:
-        return api.LiveKitAPI(
-            url=self.url,
-            api_key=self.api_key,
-            api_secret=self.api_secret,
-        )
+    """Manages native LiveKit SIP outbound calls."""
 
     async def create_outbound_call(
-        self, 
-        to_number: str, 
-        agent: AgentORM,
-        db: AsyncSession,
-        from_number: Optional[str] = None
+        self,
+        *,
+        to_number: str,
+        from_number: str,
+        outbound_trunk_id: str,
+        agent_name: str,
+        agent_metadata: str,
+        room_prefix: str = "call-",
     ) -> dict:
         """
-        Initiates an outbound call via LiveKit SIP with a two-step agent dispatch flow.
-        1. Resolve active outbound SIP trunk (checks user provisioned trunks in DB first, falls back to env).
-        2. Builds full agent metadata (prompt, models, voices, tools).
-        3. Pre-dispatches the agent into the room.
-        4. Invites the SIP participant to the same room.
+        Full two-step outbound call:
+        1. Pre-dispatch agent into a fresh room.
+        2. Dial the customer via LiveKit SIP participant.
+
+        Returns: {"room_name": str, "sip_participant_id": str}
         """
-        room_name = f"call_{uuid.uuid4().hex[:8]}"
-        logger.info(f"Initiating outbound SIP call to {to_number} in room {room_name}")
+        room_name = f"{room_prefix}{uuid.uuid4().hex[:10]}"
 
-        # 1. Resolve Outbound SIP Trunk
-        sip_trunk_id = None
-        
-        # Check if the user has a dynamically provisioned active outbound SIP trunk
-        if agent.user_id:
-            stmt = select(SIPTrunkORM).where(
-                SIPTrunkORM.user_id == agent.user_id,
-                SIPTrunkORM.trunk_type == "outbound",
-                SIPTrunkORM.status == "active"
+        # Step 1 — Dispatch agent
+        await self._dispatch_agent(
+            room_name=room_name,
+            agent_name=agent_name,
+            metadata=agent_metadata,
+        )
+        logger.info(f"[SIP] Agent dispatched to room {room_name}")
+
+        # Step 2 — Dial customer
+        sip_participant = await self._create_sip_participant(
+            room_name=room_name,
+            to_number=to_number,
+            from_number=from_number,
+            trunk_id=outbound_trunk_id,
+        )
+        logger.info(f"[SIP] Outbound SIP participant created for {to_number}")
+
+        return {
+            "room_name": room_name,
+            "sip_participant_id": sip_participant.get("participant_id", ""),
+        }
+
+    # ─── Agent Dispatch ─────────────────────────────────────────────────────
+
+    async def _dispatch_agent(
+        self,
+        *,
+        room_name: str,
+        agent_name: str,
+        metadata: str,
+    ) -> dict:
+        """
+        Issues an AgentDispatch request to LiveKit so the worker is waiting
+        in the room before the SIP leg arrives.
+        """
+        url = f"{_LK_BASE}/twirp/livekit.AgentDispatch/CreateDispatch"
+        body = {
+            "room": room_name,
+            "agent_name": agent_name,
+            "metadata": metadata,
+        }
+        headers = make_livekit_headers()
+
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(url, json=body, headers=headers)
+
+        if resp.status_code not in (200, 201):
+            raise RuntimeError(
+                f"Agent dispatch failed [{resp.status_code}]: {resp.text}"
             )
-            result = await db.execute(stmt)
-            outbound_trunk = result.scalars().first()
-            if outbound_trunk:
-                sip_trunk_id = outbound_trunk.livekit_trunk_id
-                logger.info(f"Resolved dynamic user SIP trunk: {sip_trunk_id}")
+        return resp.json() if resp.text else {}
 
-        # Fallback to env variable
-        if not sip_trunk_id:
-            sip_trunk_id = os.getenv("LIVEKIT_SIP_TRUNK_ID")
-            logger.info(f"Resolved fallback system SIP trunk: {sip_trunk_id}")
+    # ─── SIP Participant ────────────────────────────────────────────────────
 
-        if not sip_trunk_id:
-            raise ValueError(
-                "No active Outbound SIP Trunk configured. Please provision one in the Telephony portal."
+    async def _create_sip_participant(
+        self,
+        *,
+        room_name: str,
+        to_number: str,
+        from_number: str,
+        trunk_id: str,
+    ) -> dict:
+        """
+        Creates a SIP participant in an existing room which causes LiveKit to
+        dial the destination phone number via the specified outbound trunk.
+        """
+        url = f"{_LK_BASE}/twirp/livekit.SIP/CreateSIPParticipant"
+        body = {
+            "room_name": room_name,
+            "sip_trunk_id": trunk_id,
+            "sip_call_to": to_number,
+            "sip_call_from": from_number,
+            "participant_identity": f"sip-{uuid.uuid4().hex[:6]}",
+            "participant_name": "Customer",
+        }
+        headers = make_livekit_headers()
+
+        async with httpx.AsyncClient(timeout=20.0) as client:
+            resp = await client.post(url, json=body, headers=headers)
+
+        if resp.status_code not in (200, 201):
+            raise RuntimeError(
+                f"SIP participant creation failed [{resp.status_code}]: {resp.text}"
             )
+        data = resp.json() if resp.text else {}
+        return {
+            "participant_id": data.get("participantIdentity", ""),
+            "raw": data,
+        }
 
-        client = self.get_livekit_client()
-        try:
-            # 2. Build complete agent metadata (prompt, voice, llm, tools)
-            # We import here to avoid circular imports
-            from app.api.v1.endpoints.telephony import _build_agent_metadata
-            agent_metadata = await _build_agent_metadata(agent, db)
 
-            # 3. Step 1: Pre-dispatch AI agent into room
-            logger.info(f"Step 1: Pre-dispatching agent to room '{room_name}'")
-            await client.agent_dispatch.create_dispatch(
-                api.CreateAgentDispatchRequest(
-                    agent_name="voice-forge-agent-v5",
-                    room=room_name,
-                    metadata=agent_metadata,
-                )
-            )
-            logger.info("Agent pre-dispatched successfully")
-
-            # 4. Step 2: Create SIP participant (dial the customer)
-            logger.info(f"Step 2: Dialing SIP Participant {to_number}")
-            participant_identity = f"phone_{to_number.replace('+', '')}"
-            req = api.CreateSIPParticipantRequest(
-                sip_trunk_id=sip_trunk_id,
-                sip_call_to=to_number,
-                room_name=room_name,
-                participant_identity=participant_identity,
-                participant_name=f"Caller {to_number}",
-                krisp_enabled=True,
-            )
-            
-            result = await client.sip.create_sip_participant(req)
-            logger.info(f"SIP Outbound call initiated successfully: Participant ID = {result.participant_id if hasattr(result, 'participant_id') else result}")
-
-            return {
-                "room_name": room_name,
-                "participant_identity": participant_identity,
-                "status": "initiated"
-            }
-        except Exception as e:
-            logger.error(f"Failed to initiate outbound SIP call: {e}")
-            raise e
-        finally:
-            await client.aclose()
-
+# Singleton
 sip_service = SIPService()

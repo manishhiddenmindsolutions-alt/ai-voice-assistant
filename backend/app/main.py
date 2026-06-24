@@ -20,11 +20,26 @@ if sys.stderr and sys.stderr.encoding != 'utf-8':
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 # pyrefly: ignore [missing-import]
-from app.api.v1.endpoints import agents, sessions, tools, numbers, calls, auth, integrations, keys, providers, dashboard, twilio, telephony, knowledge
+from app.api.v1.endpoints import (
+    agents,
+    sessions,
+    tools,
+    numbers,
+    calls, 
+    auth, 
+    integrations,
+    keys,
+    providers,
+    dashboard,
+    twilio,
+    telephony, 
+    knowledge,
+    livekit_webhook,
+)
 # pyrefly: ignore [missing-import]
 from app.api.v1.endpoints import settings as settings_ep
 # pyrefly: ignore [missing-import]
-from app.core.config import settings
+from app.core.config import settings, validate_required_settings
 # pyrefly: ignore [missing-import]
 from app.db.session import init_db
 
@@ -33,6 +48,7 @@ async def lifespan(app: FastAPI):
     """
     Unified Startup: Automatically runs the VoiceForge Agent Worker and initializes the database.
     """
+    validate_required_settings()
     await init_db()
     
     if os.getenv("ENABLE_BACKGROUND_AGENT") == "true":
@@ -105,10 +121,15 @@ app.include_router(dashboard.router, prefix=f"{settings.API_V1_STR}/dashboard", 
 app.include_router(telephony.router, prefix=f"{settings.API_V1_STR}/telephony", tags=["Telephony"])
 app.include_router(settings_ep.router, prefix=f"{settings.API_V1_STR}/settings", tags=["Settings"])
 app.include_router(knowledge.router, prefix=f"{settings.API_V1_STR}/knowledge", tags=["Knowledge"])
+app.include_router(livekit_webhook.router, prefix=f"{settings.API_V1_STR}/telephony/livekit", tags=["LiveKit Webhooks"])
 
 @app.get("/hello")
 def read_root():
     return {"message": f"Welcome to {settings.PROJECT_NAME} API"}
+
+@app.get("/health")
+async def root_health_check():
+    return {"status": "ok", "service": settings.PROJECT_NAME}
 
 # Serve static frontend files if the build directory exists
 from fastapi.staticfiles import StaticFiles

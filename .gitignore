@@ -1,6 +1,6 @@
 .env
 .env.*
-.env.local
+.env
 !.env.example
 .DS_Store
 __pycache__
@@ -44,3 +44,26 @@ test_specific_rag.py
 
 # Temp repository clones
 temp-elevenlabs-clone/
+
+# ==============================================================================
+# .gitignore additions for production deployment
+# Add these to your root .gitignore
+# ==============================================================================
+
+# Production secrets — NEVER commit these
+.env.production
+.env.local
+.env.*.local
+nginx/ssl/privkey.pem
+nginx/ssl/fullchain.pem
+nginx/ssl/dhparam.pem
+
+# Let's Encrypt
+/etc/letsencrypt/
+
+# Database dumps
+*.sql.gz
+*.dump
+
+# Docker build cache
+.dockerignore

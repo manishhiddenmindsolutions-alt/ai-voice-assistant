@@ -89,7 +89,7 @@ In development and production, the platform is designed to run in a unified cont
 
 ## ⚙️ Configuration
 
-Create a `.env.local` file in the root directory. Copy settings from `.env.example`:
+Create a `.env` file in the root directory. Copy settings from `.env.example`:
 
 ```env
 # LiveKit Cloud Credentials

@@ -34,9 +34,9 @@ This is the easiest way to deploy the entire stack to a virtual private server (
    ```
 
 2. **Configure Environment Variables:**
-   Create a `.env.local` file in the root directory:
+   Create a `.env` file in the root directory:
    ```bash
-   nano .env.local
+   nano .env
    ```
    Add your production variables:
    ```env
@@ -134,4 +134,4 @@ python -c "import secrets; print(secrets.token_hex(32))"
 # Fernet Encryption Key (must be 32 URL-safe base64-encoded bytes)
 python -c "import cryptography.fernet; print(cryptography.fernet.Fernet.generate_key().decode())"
 ```
-Place these generated keys into `SECRET_KEY` and `ENCRYPTION_KEY` inside `.env.local` respectively.
+Place these generated keys into `SECRET_KEY` and `ENCRYPTION_KEY` inside `.env` respectively.

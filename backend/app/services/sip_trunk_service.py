@@ -1,368 +1,211 @@
 """
-SIP Trunk Service — Programmatic LiveKit SIP Trunk & Dispatch Rule Management.
+SIP Trunk Service — LiveKit SIP Trunk Provisioning & Management.
 
-Handles per-user provisioning of:
-- Inbound SIP Trunks (for receiving calls via SIP providers → LiveKit)
-- Outbound SIP Trunks (for placing calls via LiveKit → SIP providers)
-- Dispatch Rules (auto-routing inbound calls to voice agents)
-- SIP Participants (initiating outbound calls)
+Handles all LiveKit SIP API calls:
+  - Inbound trunk creation  (SIP Provider → LiveKit)
+  - Outbound trunk creation (LiveKit → SIP Provider)
+  - Dispatch rule creation/deletion (routes inbound calls to agent workers)
+  - Trunk listing and deletion
+
+All methods are async-safe and idempotent where possible.
 """
-import os
-import uuid
-import json
-import logging
-from typing import Optional, List
-from livekit import api
-# pyre-ignore[missing-import]
-from app.core.config import settings
 
-logger = logging.getLogger("sip-trunk-service")
+import logging
+import httpx
+from typing import Optional
+
+from app.core.config import settings
+from app.core.livekit_auth import make_livekit_headers
+
+logger = logging.getLogger("sip_trunk_service")
+
+def _livekit_http_base() -> str:
+    return settings.LIVEKIT_URL.replace("wss://", "https://").replace("ws://", "http://").rstrip("/")
 
 
 class SIPTrunkService:
-    """Manages LiveKit SIP resources for multi-user telephony."""
+    """Async wrapper around LiveKit's SIP Trunk REST API."""
 
-    def __init__(self):
-        self.api_key = settings.LIVEKIT_API_KEY
-        self.api_secret = settings.LIVEKIT_API_SECRET
-        self.url = settings.LIVEKIT_URL.replace("wss://", "https://").replace("ws://", "http://")
-
-    def _get_client(self) -> api.LiveKitAPI:
-        return api.LiveKitAPI(
-            url=self.url,
-            api_key=self.api_key,
-            api_secret=self.api_secret,
-        )
-
-    # ─── INBOUND TRUNK ──────────────────────────────────────────────────────
+    # ─── Inbound Trunk ──────────────────────────────────────────────────────
 
     async def create_inbound_trunk(
         self,
+        *,
         name: str,
-        numbers: List[str],
-        allowed_addresses: Optional[List[str]] = None,
-        krisp_enabled: bool = True,
+        numbers: list[str],
+        allowed_addresses: Optional[list[str]] = None,
+        auth_username: Optional[str] = None,
+        auth_password: Optional[str] = None,
     ) -> dict:
         """
-        Creates a LiveKit SIP Inbound Trunk.
-        This allows LiveKit to accept incoming SIP calls from the carrier.
-        
-        Args:
-            name: Human-readable trunk name
-            numbers: List of E.164 phone numbers associated with this trunk
-            allowed_addresses: Optional IP allowlist for security
-            krisp_enabled: Enable Krisp noise cancellation for inbound calls
-        """
-        client = self._get_client()
-        try:
-            trunk_info = api.SIPInboundTrunkInfo(
-                name=name,
-                numbers=numbers,
-                krisp_enabled=krisp_enabled,
-            )
-            if allowed_addresses:
-                trunk_info.allowed_addresses = allowed_addresses
+        Creates a LiveKit Inbound SIP Trunk.
 
-            request = api.CreateSIPInboundTrunkRequest(trunk=trunk_info)
-            result = await client.sip.create_sip_inbound_trunk(request)
-            
-            trunk_id = result.sip_trunk_id
-            logger.info(f"Created Inbound SIP Trunk: {trunk_id} ({name}) for numbers: {numbers}")
-            
-            return {
-                "trunk_id": trunk_id,
+        The trunk accepts calls from the SIP provider (e.g., Twilio) and passes
+        them into LiveKit's SIP gateway. The numbers list tells LiveKit which
+        DIDs to accept calls on.
+
+        Returns: {"trunk_id": str, "name": str}
+        """
+        body: dict = {
+            "trunk": {
                 "name": name,
                 "numbers": numbers,
-                "type": "inbound",
             }
-        except Exception as e:
-            logger.error(f"Failed to create inbound SIP trunk: {e}")
-            raise
-        finally:
-            await client.aclose()
+        }
+        if allowed_addresses:
+            body["trunk"]["allowed_addresses"] = allowed_addresses
+        if auth_username and auth_password:
+            body["trunk"]["auth_username"] = auth_username
+            body["trunk"]["auth_password"] = auth_password
 
-    # ─── OUTBOUND TRUNK ─────────────────────────────────────────────────────
+        resp = await self._post("/twirp/livekit.SIP/CreateSIPInboundTrunk", body)
+        trunk_id = resp.get("sipTrunk", {}).get("sipTrunkId") or resp.get("trunk_id", "")
+        logger.info(f"[SIP] Inbound trunk created: {trunk_id}")
+        return {"trunk_id": trunk_id, "name": name, "raw": resp}
+
+    async def list_inbound_trunks(self) -> list[dict]:
+        """Lists all inbound SIP trunks on the LiveKit project."""
+        resp = await self._post("/twirp/livekit.SIP/ListSIPInboundTrunk", {})
+        return resp.get("items", [])
+
+    async def delete_inbound_trunk(self, trunk_id: str) -> None:
+        """Deletes a LiveKit Inbound SIP Trunk by its ID."""
+        await self._post("/twirp/livekit.SIP/DeleteSIPTrunk", {"sip_trunk_id": trunk_id})
+        logger.info(f"[SIP] Inbound trunk deleted: {trunk_id}")
+
+    # ─── Outbound Trunk ─────────────────────────────────────────────────────
 
     async def create_outbound_trunk(
         self,
+        *,
         name: str,
         address: str,
-        numbers: List[str],
-        auth_username: str,
-        auth_password: str,
+        numbers: list[str],
+        auth_username: Optional[str] = None,
+        auth_password: Optional[str] = None,
+        transport: str = "AUTO",
     ) -> dict:
         """
-        Creates a LiveKit SIP Outbound Trunk.
-        This allows LiveKit to place outgoing calls through the carrier (e.g. Twilio SIP).
-        
-        Args:
-            name: Human-readable trunk name
-            address: SIP Termination URI (e.g., "my-trunk.pstn.twilio.com")
-            numbers: Caller ID phone numbers (E.164)
-            auth_username: SIP auth username (from Credential List)
-            auth_password: SIP auth password
-        """
-        client = self._get_client()
-        try:
-            trunk_info = api.SIPOutboundTrunkInfo(
-                name=name,
-                address=address,
-                numbers=numbers,
-                auth_username=auth_username,
-                auth_password=auth_password,
-            )
+        Creates a LiveKit Outbound SIP Trunk.
 
-            request = api.CreateSIPOutboundTrunkRequest(trunk=trunk_info)
-            result = await client.sip.create_sip_outbound_trunk(request)
-            
-            trunk_id = result.sip_trunk_id
-            logger.info(f"Created Outbound SIP Trunk: {trunk_id} ({name}) → {address}")
-            
-            return {
-                "trunk_id": trunk_id,
+        The trunk dials out through the SIP provider (e.g., Twilio Elastic SIP).
+        `address` is the SIP termination URI (e.g., "my-trunk.pstn.twilio.com").
+
+        Returns: {"trunk_id": str, "name": str}
+        """
+        body: dict = {
+            "trunk": {
                 "name": name,
                 "address": address,
                 "numbers": numbers,
-                "type": "outbound",
+                "transport": transport,
             }
-        except Exception as e:
-            logger.error(f"Failed to create outbound SIP trunk: {e}")
-            raise
-        finally:
-            await client.aclose()
+        }
+        if auth_username and auth_password:
+            body["trunk"]["auth_username"] = auth_username
+            body["trunk"]["auth_password"] = auth_password
 
-    # ─── DISPATCH RULE ───────────────────────────────────────────────────────
+        resp = await self._post("/twirp/livekit.SIP/CreateSIPOutboundTrunk", body)
+        trunk_id = resp.get("sipTrunk", {}).get("sipTrunkId") or resp.get("trunk_id", "")
+        logger.info(f"[SIP] Outbound trunk created: {trunk_id}")
+        return {"trunk_id": trunk_id, "name": name, "raw": resp}
+
+    async def list_outbound_trunks(self) -> list[dict]:
+        """Lists all outbound SIP trunks on the LiveKit project."""
+        resp = await self._post("/twirp/livekit.SIP/ListSIPOutboundTrunk", {})
+        return resp.get("items", [])
+
+    async def delete_outbound_trunk(self, trunk_id: str) -> None:
+        """Deletes a LiveKit Outbound SIP Trunk by its ID."""
+        await self._post("/twirp/livekit.SIP/DeleteSIPTrunk", {"sip_trunk_id": trunk_id})
+        logger.info(f"[SIP] Outbound trunk deleted: {trunk_id}")
+
+    async def delete_trunk(self, trunk_id: str, trunk_type: str = "inbound") -> None:
+        """Deletes either an inbound or outbound trunk."""
+        await self._post("/twirp/livekit.SIP/DeleteSIPTrunk", {"sip_trunk_id": trunk_id})
+        logger.info(f"[SIP] Trunk ({trunk_type}) deleted: {trunk_id}")
+
+    # ─── Dispatch Rules ─────────────────────────────────────────────────────
 
     async def create_dispatch_rule(
         self,
-        trunk_ids: List[str],
-        agent_name: str = "voice-forge-agent-v5",
-        room_prefix: str = "sip-call-",
-        metadata: str = "",
+        *,
+        trunk_ids: list[str],
+        agent_name: str,
+        room_prefix: str = "call-",
+        metadata: Optional[str] = None,
+        rule_name: Optional[str] = None,
     ) -> dict:
         """
-        Creates a SIP Dispatch Rule that auto-routes inbound calls to a LiveKit room
-        and dispatches the specified voice agent.
-        
-        Uses the correct CreateSIPDispatchRuleRequest API with dispatch_rule=SIPDispatchRuleInfo().
-        
-        Args:
-            trunk_ids: List of inbound trunk IDs this rule applies to
-            agent_name: Agent worker name to dispatch
-            room_prefix: Prefix for auto-created rooms
-            metadata: Optional metadata string passed to the agent
+        Creates a LiveKit SIP Dispatch Rule.
+
+        The dispatch rule tells LiveKit which agent worker to dispatch when an
+        inbound call arrives on the specified trunks.
+
+        `metadata` should be the JSON string produced by _build_agent_metadata().
+        If empty, the agent worker will use its own fallback configuration.
+
+        Returns: {"dispatch_rule_id": str}
         """
-        client = self._get_client()
-        try:
-            rule = api.SIPDispatchRule(
-                dispatch_rule_individual=api.SIPDispatchRuleIndividual(
-                    room_prefix=room_prefix
-                )
-            )
-
-            room_config = api.RoomConfiguration(
-                agents=[
-                    api.RoomAgentDispatch(
-                        agent_name=agent_name,
-                        metadata=metadata,
-                    )
-                ]
-            )
-
-            dispatch_rule_info = api.SIPDispatchRuleInfo(
-                rule=rule,
-                name=f"dispatch-{room_prefix}",
-                trunk_ids=trunk_ids,
-                room_config=room_config,
-            )
-
-            request = api.CreateSIPDispatchRuleRequest(
-                dispatch_rule=dispatch_rule_info,
-            )
-
-            result = await client.sip.create_sip_dispatch_rule(request)
-            rule_id = result.sip_dispatch_rule_id
-            logger.info(f"Created Dispatch Rule: {rule_id} for trunks: {trunk_ids}")
-            
-            return {
-                "dispatch_rule_id": rule_id,
-                "trunk_ids": trunk_ids,
-                "agent_name": agent_name,
-                "room_prefix": room_prefix,
+        rule: dict = {
+            "dispatch_rule": {
+                "rule": {
+                    "dispatchRuleIndividual": {
+                        "roomPrefix": room_prefix
+                    }
+                },
+                "name": rule_name or "VoiceForge dispatch rule",
+                "trunkIds": trunk_ids,
+                "roomConfig": {
+                    "agents": [
+                        {
+                            "agentName": agent_name,
+                            "metadata": metadata or "",
+                        }
+                    ]
+                },
             }
-        except Exception as e:
-            logger.error(f"Failed to create dispatch rule: {e}")
-            raise
-        finally:
-            await client.aclose()
+        }
 
-    # ─── LIST DISPATCH RULES ─────────────────────────────────────────────────
+        resp = await self._post("/twirp/livekit.SIP/CreateSIPDispatchRule", rule)
+        rule_id = (
+            resp.get("sipDispatchRule", {}).get("sipDispatchRuleId")
+            or resp.get("dispatch_rule_id", "")
+        )
+        logger.info(f"[SIP] Dispatch rule created: {rule_id}")
+        return {"dispatch_rule_id": rule_id, "raw": resp}
 
-    async def list_dispatch_rules(self) -> list:
+    async def list_dispatch_rules(self) -> list[dict]:
         """Lists all SIP dispatch rules on the LiveKit project."""
-        client = self._get_client()
-        try:
-            result = await client.sip.list_sip_dispatch_rule(
-                api.ListSIPDispatchRuleRequest()
-            )
-            return [
-                {
-                    "dispatch_rule_id": r.sip_dispatch_rule_id,
-                    "name": r.name,
-                    "trunk_ids": list(r.trunk_ids) if r.trunk_ids else [],
-                    "room_prefix": r.rule.dispatch_rule_individual.room_prefix if r.rule and r.rule.dispatch_rule_individual else None,
-                }
-                for r in result.items
-            ]
-        except Exception as e:
-            logger.error(f"Failed to list dispatch rules: {e}")
-            return []
-        finally:
-            await client.aclose()
+        resp = await self._post("/twirp/livekit.SIP/ListSIPDispatchRule", {})
+        return resp.get("items", [])
 
-    # ─── OUTBOUND CALL (SIP PARTICIPANT) ─────────────────────────────────────
+    async def delete_dispatch_rule(self, rule_id: str) -> None:
+        """Deletes a SIP dispatch rule by its ID."""
+        await self._post(
+            "/twirp/livekit.SIP/DeleteSIPDispatchRule",
+            {"sip_dispatch_rule_id": rule_id},
+        )
+        logger.info(f"[SIP] Dispatch rule deleted: {rule_id}")
 
-    async def dial_outbound(
-        self,
-        outbound_trunk_id: str,
-        to_number: str,
-        room_name: Optional[str] = None,
-        agent_name: str = "voice-forge-agent-v5",
-        participant_identity: Optional[str] = None,
-        metadata: str = "",
-        krisp_enabled: bool = True,
-    ) -> dict:
-        """
-        Initiates an outbound call via LiveKit SIP using the correct two-step flow:
-        1. Dispatch the AI agent into the room (so it's ready when the call connects)
-        2. Create a SIP participant (dials the customer's phone)
-        
-        Args:
-            outbound_trunk_id: The LiveKit outbound trunk ID to use
-            to_number: Customer phone number in E.164 format
-            room_name: Room to place the call in (auto-generated if not provided)
-            agent_name: Agent worker name to dispatch
-            participant_identity: Identity for the SIP participant
-            metadata: JSON metadata string with agent config (prompt, language, etc.)
-            krisp_enabled: Enable Krisp noise cancellation for the call
-        """
-        if not room_name:
-            room_name = f"outbound_{uuid.uuid4().hex[:8]}"
-        
-        if not participant_identity:
-            participant_identity = f"phone_{to_number.replace('+', '')}"
+    # ─── HTTP Helper ────────────────────────────────────────────────────────
 
-        client = self._get_client()
-        try:
-            # ── STEP 1: Dispatch the AI agent into the room FIRST ──
-            # This is CRITICAL — without this, the phone connects but no agent speaks.
-            logger.info(f"Step 1: Dispatching agent '{agent_name}' to room '{room_name}' with metadata")
-            await client.agent_dispatch.create_dispatch(
-                api.CreateAgentDispatchRequest(
-                    agent_name=agent_name,
-                    room=room_name,
-                    metadata=metadata,
-                )
-            )
-            logger.info(f"Agent '{agent_name}' dispatched to room '{room_name}'")
+    async def _post(self, path: str, body: dict) -> dict:
+        """Sends a signed POST request to the LiveKit Cloud SIP API."""
+        url = f"{_livekit_http_base()}{path}"
+        headers = make_livekit_headers()
 
-            # ── STEP 2: Create SIP participant (dials the phone) ──
-            logger.info(f"Step 2: Dialing {to_number} via SIP trunk {outbound_trunk_id}")
-            request = api.CreateSIPParticipantRequest(
-                sip_trunk_id=outbound_trunk_id,
-                sip_call_to=to_number,
-                room_name=room_name,
-                participant_identity=participant_identity,
-                participant_name=f"Caller {to_number}",
-                krisp_enabled=krisp_enabled,
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(url, json=body, headers=headers)
+
+        if resp.status_code not in (200, 201):
+            logger.error(f"[SIP] LiveKit API error {resp.status_code}: {resp.text}")
+            raise RuntimeError(
+                f"LiveKit SIP API error [{resp.status_code}]: {resp.text}"
             )
 
-            result = await client.sip.create_sip_participant(request)
-            logger.info(f"Outbound call initiated: {to_number} in room {room_name} via trunk {outbound_trunk_id}")
-            
-            return {
-                "room_name": room_name,
-                "participant_id": result.participant_id if hasattr(result, 'participant_id') else str(result),
-                "participant_identity": participant_identity,
-                "status": "initiated",
-            }
-        except Exception as e:
-            logger.error(f"Failed to dial outbound SIP call to {to_number}: {e}")
-            raise
-        finally:
-            await client.aclose()
-
-    # ─── TRUNK MANAGEMENT ────────────────────────────────────────────────────
-
-    async def list_inbound_trunks(self) -> list:
-        """Lists all inbound SIP trunks on the LiveKit project."""
-        client = self._get_client()
-        try:
-            result = await client.sip.list_sip_inbound_trunk(api.ListSIPInboundTrunkRequest())
-            return [
-                {
-                    "trunk_id": t.sip_trunk_id,
-                    "name": t.name,
-                    "numbers": list(t.numbers),
-                }
-                for t in result.items
-            ]
-        except Exception as e:
-            logger.error(f"Failed to list inbound trunks: {e}")
-            return []
-        finally:
-            await client.aclose()
-
-    async def list_outbound_trunks(self) -> list:
-        """Lists all outbound SIP trunks on the LiveKit project."""
-        client = self._get_client()
-        try:
-            result = await client.sip.list_sip_outbound_trunk(api.ListSIPOutboundTrunkRequest())
-            return [
-                {
-                    "trunk_id": t.sip_trunk_id,
-                    "name": t.name,
-                    "address": t.address,
-                    "numbers": list(t.numbers),
-                }
-                for t in result.items
-            ]
-        except Exception as e:
-            logger.error(f"Failed to list outbound trunks: {e}")
-            return []
-        finally:
-            await client.aclose()
-
-    async def delete_trunk(self, trunk_id: str, trunk_type: str = "inbound") -> bool:
-        """Deletes a SIP trunk from LiveKit."""
-        client = self._get_client()
-        try:
-            if trunk_type == "inbound":
-                await client.sip.delete_sip_trunk(api.DeleteSIPTrunkRequest(sip_trunk_id=trunk_id))
-            else:
-                await client.sip.delete_sip_trunk(api.DeleteSIPTrunkRequest(sip_trunk_id=trunk_id))
-            logger.info(f"Deleted SIP trunk: {trunk_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete SIP trunk {trunk_id}: {e}")
-            return False
-        finally:
-            await client.aclose()
-
-    async def delete_dispatch_rule(self, rule_id: str) -> bool:
-        """Deletes a SIP dispatch rule from LiveKit."""
-        client = self._get_client()
-        try:
-            await client.sip.delete_sip_dispatch_rule(
-                api.DeleteSIPDispatchRuleRequest(sip_dispatch_rule_id=rule_id)
-            )
-            logger.info(f"Deleted dispatch rule: {rule_id}")
-            return True
-        except Exception as e:
-            logger.error(f"Failed to delete dispatch rule {rule_id}: {e}")
-            return False
-        finally:
-            await client.aclose()
+        return resp.json() if resp.text else {}
 
 
+# Singleton
 sip_trunk_service = SIPTrunkService()

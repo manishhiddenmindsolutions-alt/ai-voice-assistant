@@ -16,4 +16,4 @@ temp-elevenlabs-clone
 scratch
 *.pyc
 *.pyo
-.env.local
+.env

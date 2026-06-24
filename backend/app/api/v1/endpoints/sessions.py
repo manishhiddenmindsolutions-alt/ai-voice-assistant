@@ -198,7 +198,7 @@ async def start_session(
                 if "tts_key" in db_agent.secrets:
                     metadata.setdefault("tts", {})["apiKey"] = vault.decrypt(db_agent.secrets["tts_key"])
 
-            # 3. Dynamic Ultimate Fallback to backend .env.local system environment keys
+            # 3. Dynamic Ultimate Fallback to backend .env system environment keys
             if "apiKey" not in metadata.get("llm", {}):
                 env_val = os.getenv(f"{llm_provider.upper()}_API_KEY") or os.getenv("OPENROUTER_API_KEY")
                 if env_val:

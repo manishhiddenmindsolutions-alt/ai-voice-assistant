@@ -27,7 +27,7 @@ from factory import create_components, create_vad
 # --- CONFIG ---
 _AGENT_DIR = pathlib.Path(__file__).parent
 _ROOT = _AGENT_DIR.parent
-dotenv_path = _ROOT / ".env.local"
+dotenv_path = _ROOT / ".env"
 load_dotenv(dotenv_path if dotenv_path.exists() else None)
 
 # --- LOGGING ---

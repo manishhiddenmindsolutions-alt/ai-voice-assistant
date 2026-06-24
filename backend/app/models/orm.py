@@ -34,6 +34,7 @@ class UserORM(Base):
     tools: Mapped[list["ToolORM"]] = relationship(back_populates="user")
     phone_numbers: Mapped[list["PhoneNumberORM"]] = relationship(back_populates="user")
     integrations: Mapped[list["IntegrationORM"]] = relationship(back_populates="user")
+    sip_trunks: Mapped[list["SIPTrunkORM"]] = relationship(back_populates="user")
 
 class AgentORM(Base):
     __tablename__ = "agents"
@@ -120,8 +121,10 @@ class SIPTrunkORM(Base):
     __tablename__ = "sip_trunks"
 
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id: Mapped[str] = mapped_column(String, nullable=True)
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), index=True)
     livekit_trunk_id: Mapped[str] = mapped_column(String, index=True) # LiveKit's assigned trunk ID
+    provider: Mapped[str] = mapped_column(String, nullable=True, default="twilio")
     trunk_type: Mapped[str] = mapped_column(String) # "inbound" or "outbound"
     name: Mapped[str] = mapped_column(String, default="")
     
@@ -137,6 +140,9 @@ class SIPTrunkORM(Base):
     status: Mapped[str] = mapped_column(String, default="active") # active, inactive, error
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    # Relationships
+    user: Mapped["UserORM"] = relationship(back_populates="sip_trunks")
+
 
 class PhoneNumberORM(Base):
     __tablename__ = "phone_numbers"
@@ -147,7 +153,7 @@ class PhoneNumberORM(Base):
     provider: Mapped[str] = mapped_column(String) # e.g., 'twilio', 'telnyx'
     provider_sid: Mapped[str] = mapped_column(String, nullable=True)
     agent_id: Mapped[str] = mapped_column(String, nullable=True)
-    sip_trunk_id: Mapped[str] = mapped_column(String, nullable=True) # FK to sip_trunks.id
+    sip_trunk_id: Mapped[str] = mapped_column(String, ForeignKey("sip_trunks.id", ondelete="SET NULL"), nullable=True) # FK to sip_trunks.id
     
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
@@ -177,9 +183,11 @@ class CallORM(Base):
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     ended_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
 
+    call_meta: Mapped[dict] = mapped_column("metadata", JSONB, default=dict)
+
     # Relationships
     agent: Mapped["AgentORM"] = relationship(back_populates="calls")
-    transcriptions: Mapped[list["TranscriptORM"]] = relationship(back_populates="call")
+    transcripts: Mapped[list["TranscriptORM"]] = relationship(back_populates="call")
 
 class TranscriptORM(Base):
     __tablename__ = "transcripts"
@@ -191,7 +199,7 @@ class TranscriptORM(Base):
     timestamp: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
-    call: Mapped["CallORM"] = relationship(back_populates="transcriptions")
+    call: Mapped["CallORM"] = relationship(back_populates="transcripts")
 
 class UsageORM(Base):
     """Legacy usage logs table for backward compatibility or general tracking."""
