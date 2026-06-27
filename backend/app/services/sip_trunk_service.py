@@ -59,7 +59,17 @@ class SIPTrunkService:
             body["trunk"]["auth_password"] = auth_password
 
         resp = await self._post("/twirp/livekit.SIP/CreateSIPInboundTrunk", body)
-        trunk_id = resp.get("sipTrunk", {}).get("sipTrunkId") or resp.get("trunk_id", "")
+        trunk_id = (
+            resp.get("sipTrunk", {}).get("sipTrunkId")
+            or resp.get("sip_trunk_id")
+            or resp.get("trunk_id", "")
+        )
+
+        if not trunk_id:
+            raise RuntimeError(
+                f"LiveKit returned no inbound trunk ID. Full response: {resp}"
+            )
+
         logger.info(f"[SIP] Inbound trunk created: {trunk_id}")
         return {"trunk_id": trunk_id, "name": name, "raw": resp}
 
@@ -106,7 +116,16 @@ class SIPTrunkService:
             body["trunk"]["auth_password"] = auth_password
 
         resp = await self._post("/twirp/livekit.SIP/CreateSIPOutboundTrunk", body)
-        trunk_id = resp.get("sipTrunk", {}).get("sipTrunkId") or resp.get("trunk_id", "")
+        trunk_id = (
+            resp.get("sipTrunk", {}).get("sipTrunkId")
+            or resp.get("sip_trunk_id")
+            or resp.get("trunk_id", "")
+        )
+        if not trunk_id:
+            raise RuntimeError(
+                f"LiveKit returned no outbound trunk ID. Full response: {resp}"
+            )
+
         logger.info(f"[SIP] Outbound trunk created: {trunk_id}")
         return {"trunk_id": trunk_id, "name": name, "raw": resp}
 
@@ -170,6 +189,7 @@ class SIPTrunkService:
         resp = await self._post("/twirp/livekit.SIP/CreateSIPDispatchRule", rule)
         rule_id = (
             resp.get("sipDispatchRule", {}).get("sipDispatchRuleId")
+            or resp.get("sip_dispatch_rule_id")
             or resp.get("dispatch_rule_id", "")
         )
         logger.info(f"[SIP] Dispatch rule created: {rule_id}")

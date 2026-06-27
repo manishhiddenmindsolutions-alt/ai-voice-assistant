@@ -9,6 +9,7 @@ This is the canonical (preferred) outbound path. The Twilio REST fallback
 in twilio.py should only be used for trial accounts that cannot receive SIP.
 """
 
+import asyncio
 import logging
 import uuid
 import httpx
@@ -21,9 +22,14 @@ logger = logging.getLogger("sip_service")
 
 _LK_BASE = settings.LIVEKIT_URL.replace("wss://", "https://").replace("ws://", "http://")
 
-
 class SIPService:
     """Manages native LiveKit SIP outbound calls."""
+
+    _http = httpx.AsyncClient(
+        http2=True,
+        timeout=httpx.Timeout(8.0, connect=3.0),
+        limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
+    )
 
     async def create_outbound_call(
         self,
@@ -44,22 +50,21 @@ class SIPService:
         """
         room_name = f"{room_prefix}{uuid.uuid4().hex[:10]}"
 
-        # Step 1 — Dispatch agent
-        await self._dispatch_agent(
-            room_name=room_name,
-            agent_name=agent_name,
-            metadata=agent_metadata,
+        # Steps 1 & 2 — Dispatch agent and dial customer concurrently
+        _, sip_participant = await asyncio.gather(
+            self._dispatch_agent(
+                room_name=room_name,
+                agent_name=agent_name,
+                metadata=agent_metadata,
+            ),
+            self._create_sip_participant(
+                room_name=room_name,
+                to_number=to_number,
+                from_number=from_number,
+                trunk_id=outbound_trunk_id,
+            ),
         )
-        logger.info(f"[SIP] Agent dispatched to room {room_name}")
-
-        # Step 2 — Dial customer
-        sip_participant = await self._create_sip_participant(
-            room_name=room_name,
-            to_number=to_number,
-            from_number=from_number,
-            trunk_id=outbound_trunk_id,
-        )
-        logger.info(f"[SIP] Outbound SIP participant created for {to_number}")
+        logger.info(f"[SIP] Agent dispatched and SIP participant created for {to_number}")
 
         return {
             "room_name": room_name,
@@ -87,14 +92,19 @@ class SIPService:
         }
         headers = make_livekit_headers()
 
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.post(url, json=body, headers=headers)
+        resp = await self._http.post(url, json=body, headers=headers)
 
         if resp.status_code not in (200, 201):
             raise RuntimeError(
                 f"Agent dispatch failed [{resp.status_code}]: {resp.text}"
             )
-        return resp.json() if resp.text else {}
+        data = {}
+        if resp.text and resp.text.strip():
+            try:
+                data = resp.json()
+            except Exception:
+                data = {}
+        return data
 
     # ─── SIP Participant ────────────────────────────────────────────────────
 
@@ -121,16 +131,21 @@ class SIPService:
         }
         headers = make_livekit_headers()
 
-        async with httpx.AsyncClient(timeout=20.0) as client:
-            resp = await client.post(url, json=body, headers=headers)
+        resp = await self._http.post(url, json=body, headers=headers)
 
         if resp.status_code not in (200, 201):
             raise RuntimeError(
                 f"SIP participant creation failed [{resp.status_code}]: {resp.text}"
             )
-        data = resp.json() if resp.text else {}
+        data = {}
+        if resp.text and resp.text.strip():
+            try:
+                data = resp.json()
+            except Exception:
+                data = {}
+
         return {
-            "participant_id": data.get("participantIdentity", ""),
+            "participant_id": data.get("participantIdentity", "") or data.get("participant_identity", ""),
             "raw": data,
         }
 

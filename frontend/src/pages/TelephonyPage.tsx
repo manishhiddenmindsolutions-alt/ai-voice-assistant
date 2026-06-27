@@ -121,9 +121,10 @@ const TelephonyPage: React.FC = () => {
     try {
       // Strip empty strings so we don't overwrite existing vault secrets with blanks
       const payload: Record<string, string> = {};
-      if (twilioKeys.twilio_account_sid.trim()) payload.twilio_account_sid = twilioKeys.twilio_account_sid.trim();
-      if (twilioKeys.twilio_auth_token.trim()) payload.twilio_auth_token = twilioKeys.twilio_auth_token.trim();
-      if (twilioKeys.twilio_phone_number.trim()) payload.twilio_phone_number = twilioKeys.twilio_phone_number.trim();
+      const isMasked = (value: string) => value.includes('*') || value.includes('...');
+      if (twilioKeys.twilio_account_sid.trim() && !isMasked(twilioKeys.twilio_account_sid)) payload.twilio_account_sid = twilioKeys.twilio_account_sid.trim();
+      if (twilioKeys.twilio_auth_token.trim() && !isMasked(twilioKeys.twilio_auth_token)) payload.twilio_auth_token = twilioKeys.twilio_auth_token.trim();
+      if (twilioKeys.twilio_phone_number.trim() && !isMasked(twilioKeys.twilio_phone_number)) payload.twilio_phone_number = twilioKeys.twilio_phone_number.trim();
       if (Object.keys(payload).length === 0) { toast.error('No credentials to save'); setSavingKeys(false); return; }
       await settingsApi.saveSecrets(payload);
       toast.success('Credentials saved to vault');
@@ -145,8 +146,8 @@ const TelephonyPage: React.FC = () => {
         termination_uri: sipConfig.termination_uri, auth_username: sipConfig.auth_username,
         auth_password: sipConfig.auth_password, phone_numbers: phoneNumbers,
         trunk_name: sipConfig.trunk_name || undefined, agent_id: sipConfig.agent_id || undefined,
-        twilio_account_sid: twilioKeys.twilio_account_sid || undefined,
-        twilio_auth_token: twilioKeys.twilio_auth_token || undefined,
+        twilio_account_sid: twilioKeys.twilio_account_sid.includes('*') || twilioKeys.twilio_account_sid.includes('...') ? undefined : twilioKeys.twilio_account_sid || undefined,
+        twilio_auth_token: twilioKeys.twilio_auth_token.includes('*') || twilioKeys.twilio_auth_token.includes('...') ? undefined : twilioKeys.twilio_auth_token || undefined,
       });
       setProvisionResult(resp.data);
       toast.success('SIP trunks provisioned!');

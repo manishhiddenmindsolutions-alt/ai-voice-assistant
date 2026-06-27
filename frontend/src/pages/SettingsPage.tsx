@@ -77,12 +77,36 @@ const SettingsPage = () => {
   const handleSaveTelephony = async () => {
     setSavingTelephony(true);
     try {
-      await settingsApi.updateTelephony({
-        twilio_account_sid: telephony.twilio_account_sid,
-        twilio_auth_token: telephony.twilio_auth_token,
-        twilio_phone_number: telephony.twilio_phone_number,
+      // isMasked: the backend returns "****abcd" for existing values.
+      // We only skip sending if the value is masked (already saved).
+      // If empty → the user cleared it; skip to avoid overwriting with blank.
+      // If changed (no asterisks, non-empty) → send it.
+      const isMasked = (value?: string) =>
+        !!value && value.includes('*');
+
+      const payload: any = {
         default_agent_id: telephony.default_agent_id || null,
-      });
+      };
+
+      const sid = telephony.twilio_account_sid.trim();
+      if (sid && !isMasked(sid)) {
+        payload.twilio_account_sid = sid;
+      }
+
+      const token = telephony.twilio_auth_token.trim();
+      if (token && !isMasked(token)) {
+        payload.twilio_auth_token = token;
+      }
+
+      const phone = telephony.twilio_phone_number.trim();
+      if (phone && !isMasked(phone)) {
+        payload.twilio_phone_number = phone;
+      }
+
+      await settingsApi.updateTelephony(payload);
+      // Re-fetch so masked values reload correctly
+      const refreshed = await settingsApi.getTelephony();
+      setTelephony(refreshed.data);
       toast.success('Telephony settings saved.');
     } catch (err) {
       toast.error('Failed to save telephony settings.');

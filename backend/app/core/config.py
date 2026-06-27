@@ -37,12 +37,25 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = os.getenv("GOOGLE_CLIENT_SECRET", "")
     GOOGLE_OAUTH_REDIRECT_URI: str = os.getenv("GOOGLE_OAUTH_REDIRECT_URI", "http://localhost:8000/api/v1/integrations/google/callback")
     
-    # Qdrant Cloud
+    # Qdrant Cloud (global fallback — agents can override via RAGConfigORM)
     QDRANT_URL: str = os.getenv("QDRANT_URL", "")
     QDRANT_API_KEY: str = os.getenv("QDRANT_API_KEY", "")
 
-    # Gemini Embedding Key
+    # Gemini Embedding Key (global fallback — agents can override via RAGConfigORM)
     GEMINI_EMBEDDING_KEY: str = os.getenv("GEMINI_EMBEDDING_KEY", "")
+
+    # ── Optional global fallback keys for other RAG providers ────────────────
+    # These are used only if the agent has no per-agent key configured.
+    OPENAI_EMBEDDING_KEY: str = os.getenv("OPENAI_EMBEDDING_KEY", "")
+    COHERE_API_KEY: str = os.getenv("COHERE_API_KEY", "")
+    VOYAGE_API_KEY: str = os.getenv("VOYAGE_API_KEY", "")
+    PINECONE_API_KEY: str = os.getenv("PINECONE_API_KEY", "")
+    WEAVIATE_URL: str = os.getenv("WEAVIATE_URL", "")
+    WEAVIATE_API_KEY: str = os.getenv("WEAVIATE_API_KEY", "")
+    CHROMA_URL: str = os.getenv("CHROMA_URL", "http://localhost:8080")
+
+    # Backend base URL
+    BACKEND_BASE_URL: str = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")
 
     class Config:
         case_sensitive = True

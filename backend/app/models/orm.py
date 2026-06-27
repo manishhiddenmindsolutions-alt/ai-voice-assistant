@@ -1,9 +1,10 @@
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy import String, Float, DateTime, ForeignKey, Text, Enum, Table, Column
+from sqlalchemy import String, Float, DateTime, ForeignKey, Text, Enum, Table, Column, Integer
 import uuid
 from datetime import datetime
 import enum
+from typing import Optional
 
 class Base(DeclarativeBase):
     pass
@@ -27,7 +28,7 @@ class UserORM(Base):
     is_active: Mapped[bool] = mapped_column(default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     
-    secrets: Mapped[dict] = mapped_column(JSONB, default=dict) # Encrypted global model keys (LLM/TTS/STT)
+    secrets: Mapped[dict] = mapped_column(JSONB, default=dict, server_default='{}', nullable=False) # Encrypted global model keys (LLM/TTS/STT)
     
     # Relationships
     agents: Mapped[list["AgentORM"]] = relationship(back_populates="user")
@@ -63,6 +64,7 @@ class AgentORM(Base):
     tools: Mapped[list["ToolORM"]] = relationship(secondary=agent_tools, back_populates="agents")
     calls: Mapped[list["CallORM"]] = relationship(back_populates="agent")
     documents: Mapped[list["DocumentORM"]] = relationship(back_populates="agent", cascade="all, delete-orphan")
+    rag_config: Mapped[Optional["RAGConfigORM"]] = relationship(back_populates="agent", uselist=False, cascade="all, delete-orphan")
 
 class ToolORM(Base):
     __tablename__ = "tools"
@@ -253,10 +255,61 @@ class DocumentORM(Base):
     user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True)
     agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), index=True)
     filename: Mapped[str] = mapped_column(String)
-    file_type: Mapped[str] = mapped_column(String) # "pdf" or "txt"
+    file_type: Mapped[str] = mapped_column(String)           # "pdf" or "txt"
     file_size: Mapped[int] = mapped_column(default=0)
+    chunk_count: Mapped[int] = mapped_column(default=0)      # Number of vector chunks indexed
+    # index_status: "indexed" | "reindexing" | "failed"
+    index_status: Mapped[str] = mapped_column(String, default="indexed")
+    # Which embedding model was used — so re-index knows when the model changed
+    embedding_model_used: Mapped[str] = mapped_column(String, default="")
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     # Relationships
     agent: Mapped["AgentORM"] = relationship(back_populates="documents")
 
+
+class RAGConfigORM(Base):
+    """
+    Stores per-agent RAG configuration: which embedding model and vector database
+    to use, with all credentials encrypted via NeuralVault.
+
+    Embedding providers supported: openai, gemini, cohere, voyage
+    Vector DB providers supported: qdrant, pinecone, weaviate, chroma
+    """
+    __tablename__ = "rag_configs"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id: Mapped[str] = mapped_column(String, ForeignKey("agents.id", ondelete="CASCADE"), unique=True, index=True)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id", ondelete="CASCADE"), index=True)
+
+    # ── Embedding provider ────────────────────────────────────────────────────
+    embedding_provider: Mapped[str] = mapped_column(String, default="gemini")
+    # openai  → text-embedding-3-small | text-embedding-3-large
+    # gemini  → gemini-embedding-2
+    # cohere  → embed-english-v3.0 | embed-multilingual-v3.0
+    # voyage  → voyage-3 | voyage-3-lite
+    embedding_model: Mapped[str] = mapped_column(String, default="gemini-embedding-2")
+    embedding_dim: Mapped[int] = mapped_column(default=768)
+    embedding_api_key: Mapped[str] = mapped_column(Text, nullable=True)  # Encrypted
+
+    # ── Vector database ───────────────────────────────────────────────────────
+    vector_db_provider: Mapped[str] = mapped_column(String, default="qdrant")
+    # qdrant   → url + api_key
+    # pinecone → api_key + index_name
+    # weaviate → url + api_key
+    # chroma   → url (no key)
+    vector_db_api_key: Mapped[str] = mapped_column(Text, nullable=True)   # Encrypted
+    vector_db_url: Mapped[str] = mapped_column(Text, nullable=True)        # Qdrant / Weaviate / Chroma URL
+    vector_db_index: Mapped[str] = mapped_column(Text, nullable=True)      # Pinecone index name
+
+    # ── Chunking tuning ───────────────────────────────────────────────────────
+    # chunk_strategy: "fixed" | "sentence" | "paragraph"
+    chunk_strategy: Mapped[str] = mapped_column(String, default="fixed")
+    chunk_size: Mapped[int] = mapped_column(default=600)
+    chunk_overlap: Mapped[int] = mapped_column(default=150)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationships
+    agent: Mapped["AgentORM"] = relationship(back_populates="rag_config")

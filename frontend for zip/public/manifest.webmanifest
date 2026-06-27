@@ -1,9 +1,0 @@
-{
-  "short_name": "VoiceForge",
-  "name": "Neural Voice Agent",
-  "icons": [],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
-}

@@ -189,12 +189,7 @@ async def provision_sip_trunks(
             auth_password=payload.auth_password,
         )
 
-        agent_metadata: Optional[str] = None
-        if payload.agent_id:          # ← if no agent_id was passed at provision time
-            agent_metadata = await build_agent_metadata(agent, db)
-
         dispatch_result = await sip_trunk_service.create_dispatch_rule(
-            metadata=agent_metadata,
             trunk_ids=[inbound_result["trunk_id"]],
             agent_name=_AGENT_WORKER_NAME,
             room_prefix=f"call-{current_user.id[:6]}-",
@@ -466,12 +461,12 @@ async def trigger_outbound_call(
         )
         outbound_trunk = trunk_result.scalar_one_or_none()
         if not outbound_trunk:
+            raise HTTPException(status_code=400, detail="No active outbound SIP trunk found.")
+
+        if not outbound_trunk.livekit_trunk_id:
             raise HTTPException(
                 status_code=400,
-                detail=(
-                    "No active outbound SIP trunk found. "
-                    "Provision one first via POST /telephony/trunks."
-                ),
+                detail="Outbound trunk has no LiveKit trunk ID. Delete and re-provision via POST /telephony/trunks."
             )
 
         # ── 4. Verify agent ───────────────────────────────────────────────────

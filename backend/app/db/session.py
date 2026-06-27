@@ -34,6 +34,31 @@ async def init_db():
         except Exception as e:
             print(f"⚠️ [MIGRATION] ALTER TABLE phone_numbers failed: {e}")
 
+        # RAG migrations — add chunk_count to documents if upgrading from old schema
+        try:
+            await conn.execute(text("ALTER TABLE documents ADD COLUMN IF NOT EXISTS chunk_count INTEGER DEFAULT 0"))
+            print("✅ [MIGRATION] documents.chunk_count ensured")
+        except Exception as e:
+            print(f"⚠️ [MIGRATION] ALTER TABLE documents (chunk_count) failed: {e}")
+
+        try:
+            await conn.execute(text("ALTER TABLE documents ADD COLUMN IF NOT EXISTS index_status VARCHAR DEFAULT 'indexed'"))
+            print("✅ [MIGRATION] documents.index_status ensured")
+        except Exception as e:
+            print(f"⚠️ [MIGRATION] ALTER TABLE documents (index_status) failed: {e}")
+
+        try:
+            await conn.execute(text("ALTER TABLE documents ADD COLUMN IF NOT EXISTS embedding_model_used VARCHAR DEFAULT ''"))
+            print("✅ [MIGRATION] documents.embedding_model_used ensured")
+        except Exception as e:
+            print(f"⚠️ [MIGRATION] ALTER TABLE documents (embedding_model_used) failed: {e}")
+
+        try:
+            await conn.execute(text("ALTER TABLE rag_configs ADD COLUMN IF NOT EXISTS chunk_strategy VARCHAR DEFAULT 'fixed'"))
+            print("✅ [MIGRATION] rag_configs.chunk_strategy ensured")
+        except Exception as e:
+            print(f"⚠️ [MIGRATION] ALTER TABLE rag_configs (chunk_strategy) failed: {e}")
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for providing a database session for FastAPI."""
     async with AsyncSessionLocal() as session:

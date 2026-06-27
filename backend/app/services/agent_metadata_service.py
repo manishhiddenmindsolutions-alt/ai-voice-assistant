@@ -22,6 +22,7 @@ from sqlalchemy import select
 
 from app.models.orm import AgentORM, ProviderConnectionORM, IntegrationORM
 from app.core.security import vault
+from app.core.config import settings
 
 logger = logging.getLogger("agent_metadata")
 
@@ -104,6 +105,9 @@ async def build_agent_metadata(agent: AgentORM, db: AsyncSession) -> str:
                 }
             )
 
+    backend_base_url = settings.BACKEND_BASE_URL.rstrip("/") if hasattr(settings, "BACKEND_BASE_URL") else ""
+    knowledge_base_url = f"{backend_base_url}{settings.API_V1_STR}/knowledge/search" if backend_base_url else ""
+
     return json.dumps(
         {
             "agentId": agent.id,
@@ -114,6 +118,7 @@ async def build_agent_metadata(agent: AgentORM, db: AsyncSession) -> str:
             "tts": tts_config,
             "stt": stt_config,
             "tools": tools_list,
+            "knowledge_base_url": knowledge_base_url,  # ← NEW
         }
     )
 

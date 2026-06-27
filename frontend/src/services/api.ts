@@ -120,7 +120,7 @@ export const telephonyApi = {
 
   // Outbound Calls — native LiveKit SIP path
   outbound: (data: { to_number: string; agent_id: string; use_twilio_fallback?: boolean }) =>
-    api.post('/telephony/outbound', data),
+    api.post('/telephony/outbound', { ...data, use_twilio_fallback: true }),
 
   // Status & Diagnostics
   status: () => api.get('/telephony/status'),

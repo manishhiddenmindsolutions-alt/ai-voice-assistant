@@ -3,26 +3,30 @@ Twilio Telephony Endpoints — Inbound Call Routing & Outbound Fallback.
 
 This module handles the Twilio REST → TwiML → LiveKit call path:
 
-  POST /telephony/twilio/inbound    — Twilio webhook for inbound calls
-  GET  /telephony/twilio/inbound    — Same (Twilio can use GET or POST)
-  POST /telephony/twilio/flow       — TwiML for outbound (Twilio fallback only)
+  POST /telephony/twilio/inbound     — Twilio webhook for inbound calls
+  GET  /telephony/twilio/inbound     — Same (Twilio can use GET or POST)
+  POST /telephony/twilio/outbound    — Trigger outbound call (trial accounts)
+  POST /telephony/twilio/flow        — TwiML callback when called party answers
   POST /telephony/twilio/flow-bridge — Bridges caller into LiveKit SIP room
 
-Architecture note:
-  This is the SECONDARY (fallback) path. The primary outbound path is
-  POST /telephony/outbound using native LiveKit SIP (no Twilio REST API).
-  Use this path only when:
-    - The user has a Twilio trial account (cannot receive raw SIP)
-    - The native SIP path fails
+Architecture note (IMPORTANT):
+  For the Twilio trial outbound path, the flow is:
+    1. Backend calls Twilio REST API → Twilio dials customer
+    2. Customer answers → Twilio calls /flow (our webhook)
+    3. /flow returns TwiML with <Dial><Sip> pointing to LiveKit SIP gateway
+    4. LiveKit SIP gateway receives the SIP call → matches inbound dispatch rule
+    5. LiveKit dispatch rule auto-spawns the agent into a fresh room
 
-  Inbound calls always come through this path because Twilio's webhook
-  system is how numbers receive calls.
+  DO NOT pre-dispatch agents in this path. LiveKit's dispatch rule handles
+  agent spawning automatically when the SIP leg arrives. Pre-dispatching
+  creates orphaned agents waiting in rooms that the SIP call never joins.
 
 Security:
   - Twilio webhook signature verification (X-Twilio-Signature header)
   - All credential access from encrypted user secrets
 """
 
+import asyncio
 import os
 import uuid
 import hmac
@@ -47,6 +51,7 @@ logger = logging.getLogger("twilio")
 router = APIRouter()
 
 _AGENT_WORKER_NAME = os.getenv("LIVEKIT_AGENT_NAME", "voice-forge-agent-v5")
+_TWILIO_TRIAL = os.getenv("TWILIO_TRIAL_ACCOUNT", "false").lower() == "true"
 
 
 # ─── TWILIO SIGNATURE VERIFICATION ───────────────────────────────────────────
@@ -61,7 +66,6 @@ def _verify_twilio_signature(
     Verifies Twilio's HMAC-SHA1 request signature.
     https://www.twilio.com/docs/usage/webhooks/webhooks-security
     """
-    # Build the validation string: url + sorted POST params
     s = url
     for key in sorted(post_params.keys()):
         s += key + (post_params[key] or "")
@@ -91,57 +95,42 @@ async def _process_inbound_call(
       3. Return TwiML that dials into LiveKit SIP.
 
     The LiveKit SIP gateway receives the call, matches the inbound trunk
-    dispatch rule, and dispatches the agent into a fresh room.
+    dispatch rule, and dispatches the agent into a fresh room automatically.
     """
     caller = From.strip()
-    # Normalize dialed number: strip leading + for DB lookup
     dialed_raw = To.strip()
     dialed_clean = dialed_raw.lstrip("+").replace(" ", "")
 
     logger.info(f"[Inbound] Twilio call: From={caller} To={dialed_raw}")
 
-    # Verify Twilio webhook signature when header is present.
-    # We look up the auth_token from the phone number's owning user.
-    twilio_sig = request.headers.get("X-Twilio-Signature", "")
-    if twilio_sig:
-        # We need to find the user's auth_token — attempt a quick lookup
-        # using the dialed number. This runs before the full phone number
-        # query below, but we accept a second query for security correctness.
-        from app.models.orm import UserORM as _UserORM
-        from app.core.security import vault as _vault
-        _dialed_clean_v = To.strip().lstrip("+").replace(" ", "")
-        _num_stmt = select(PhoneNumberORM).where(
-            (PhoneNumberORM.number == To.strip()) |
-            (PhoneNumberORM.number == _dialed_clean_v) |
-            (PhoneNumberORM.number == f"+{_dialed_clean_v}")
+    # ── 1. Find phone number record ──────────────────────────────────────────
+    stmt = (
+        select(PhoneNumberORM)
+        .options(selectinload(PhoneNumberORM.user))
+        .where(
+            (PhoneNumberORM.number == dialed_raw) |
+            (PhoneNumberORM.number == dialed_clean) |
+            (PhoneNumberORM.number == f"+{dialed_clean}")
         )
-        _num_result = await db.execute(_num_stmt)
-        _db_num = _num_result.scalar_one_or_none()
-        if _db_num:
-            _user_result = await db.execute(select(_UserORM).where(_UserORM.id == _db_num.user_id))
-            _user = _user_result.scalar_one_or_none()
-            if _user and _user.secrets and _user.secrets.get("twilio_auth_token"):
-                try:
-                    _auth_token = _vault.decrypt(_user.secrets["twilio_auth_token"])
-                    _url = str(request.url)
-                    _post_params = form_params or {}
-                    if not _verify_twilio_signature(_auth_token, _url, _post_params, twilio_sig):
-                        logger.warning(f"[Inbound] Twilio signature verification FAILED for {To.strip()}")
-                        return Response(
-                            content=_twiml_hangup("Authentication failed."),
-                            media_type="application/xml",
-                        )
-                except Exception as sig_exc:
-                    logger.warning(f"[Inbound] Could not verify Twilio signature: {sig_exc}")
-
-    # ── 1. Find phone number record ─────────────────────────────────────────
-    stmt = select(PhoneNumberORM).where(
-        (PhoneNumberORM.number == dialed_raw) |
-        (PhoneNumberORM.number == dialed_clean) |
-        (PhoneNumberORM.number == f"+{dialed_clean}")
     )
     result = await db.execute(stmt)
     db_number = result.scalar_one_or_none()
+
+    # ── 2. Verify Twilio webhook signature ───────────────────────────────────
+    twilio_sig = request.headers.get("X-Twilio-Signature", "")
+    if twilio_sig and db_number:
+        user = db_number.user
+        if user and user.secrets and user.secrets.get("twilio_auth_token"):
+            try:
+                auth_token = vault.decrypt(user.secrets["twilio_auth_token"])
+                if not _verify_twilio_signature(auth_token, str(request.url), form_params or {}, twilio_sig):
+                    logger.warning(f"[Inbound] Twilio signature verification FAILED for {dialed_raw}")
+                    return Response(
+                        content=_twiml_hangup("Authentication failed."),
+                        media_type="application/xml",
+                    )
+            except Exception as sig_exc:
+                logger.warning(f"[Inbound] Could not verify Twilio signature: {sig_exc}")
 
     if not db_number or not db_number.agent_id:
         logger.warning(f"[Inbound] No agent mapped to number: {dialed_raw}")
@@ -150,9 +139,11 @@ async def _process_inbound_call(
             media_type="application/xml",
         )
 
-    # ── 2. Fetch agent ───────────────────────────────────────────────────────
+    # ── 3. Fetch agent ───────────────────────────────────────────────────────
     agent_result = await db.execute(
-        select(AgentORM).where(AgentORM.id == db_number.agent_id)
+        select(AgentORM)
+        .options(selectinload(AgentORM.tools))
+        .where(AgentORM.id == db_number.agent_id)
     )
     agent = agent_result.scalar_one_or_none()
     if not agent:
@@ -162,7 +153,7 @@ async def _process_inbound_call(
             media_type="application/xml",
         )
 
-    # ── 3. Log call ──────────────────────────────────────────────────────────
+    # ── 4. Log call ──────────────────────────────────────────────────────────
     db_call = CallORM(
         id=str(uuid.uuid4()),
         user_id=db_number.user_id,
@@ -176,22 +167,23 @@ async def _process_inbound_call(
     db.add(db_call)
     await db.commit()
 
-    # ── 4. Build TwiML to dial into LiveKit SIP ──────────────────────────────
+    # ── 5. Build TwiML to dial into LiveKit SIP ──────────────────────────────
     from app.core.config import settings
     lk_sip_domain = settings.LIVEKIT_SIP_DOMAIN
+    # Use the dialed number so LiveKit's inbound trunk matches it
     sip_number = dialed_raw if dialed_raw.startswith("+") else f"+{dialed_clean}"
 
-    # LiveKit SIP credentials (optional — set if your trunk requires auth)
     lk_sip_username = os.getenv("LIVEKIT_SIP_USERNAME", "")
     lk_sip_password = os.getenv("LIVEKIT_SIP_PASSWORD", "")
     auth_attr = ""
     if lk_sip_username and lk_sip_password:
         auth_attr = f' username="{lk_sip_username}" password="{lk_sip_password}"'
 
+    # Use TLS on port 5061 — required for LiveKit Cloud SIP
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Dial>
-        <Sip{auth_attr}>sip:{sip_number}@{lk_sip_domain}:5061;transport=tls</Sip>
+        <Sip{auth_attr}>sip:{sip_number}@{lk_sip_domain};transport=tcp</Sip>
     </Dial>
 </Response>"""
 
@@ -208,8 +200,6 @@ async def handle_twilio_inbound_post(
     db: AsyncSession = Depends(get_db),
 ):
     """Twilio POST webhook for inbound calls."""
-    # Pass form params explicitly so _process_inbound_call can verify signature
-    # without re-consuming the request body.
     form_params = {"From": From, "To": To}
     if CallSid:
         form_params["CallSid"] = CallSid
@@ -223,8 +213,7 @@ async def handle_twilio_inbound_get(
     To: str,
     db: AsyncSession = Depends(get_db),
 ):
-    """Twilio GET webhook for inbound calls (some regions use GET)."""
-    # GET requests carry params in the query string — no body to re-parse
+    """Twilio GET webhook for inbound calls."""
     return await _process_inbound_call(From=From, To=To, request=request, db=db, form_params={"From": From, "To": To})
 
 
@@ -242,11 +231,17 @@ async def _trigger_twilio_outbound_internal(
 
     Steps:
       1. Decrypt Twilio credentials from user secrets.
-      2. Dispatch agent into a named room.
+      2. Verify agent exists.
       3. Log CallORM with status='connecting'.
       4. POST to Twilio Calls API with a TwiML callback URL.
          Twilio dials the customer; when they answer, Twilio fetches
-         our /flow endpoint which returns TwiML to bridge into LiveKit.
+         /flow which returns TwiML to bridge the call into LiveKit SIP.
+         LiveKit's inbound dispatch rule then auto-spawns the agent.
+
+    NOTE: We do NOT pre-dispatch the agent here. LiveKit's SIP dispatch rule
+    handles agent spawning automatically when Twilio's SIP leg arrives.
+    Pre-dispatching would create an orphaned agent in a room that the SIP
+    call never joins (LiveKit creates its own room name for inbound SIP).
     """
     secrets = current_user.secrets or {}
 
@@ -279,21 +274,13 @@ async def _trigger_twilio_outbound_internal(
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found.")
 
-    # ── 3. Pre-dispatch agent ────────────────────────────────────────────────
-    room_name = f"twilio-{uuid.uuid4().hex[:10]}"
-    try:
-        from app.services.sip_service import sip_service
-        agent_metadata = await build_agent_metadata(agent, db)
-        await sip_service._dispatch_agent(
-            room_name=room_name,
-            agent_name=_AGENT_WORKER_NAME,
-            metadata=agent_metadata,
-        )
-        logger.info(f"[Twilio Fallback] Agent dispatched to room {room_name}")
-    except Exception as exc:
-        logger.warning(f"[Twilio Fallback] Agent pre-dispatch failed (non-fatal): {exc}")
+    # ── 3. Create a unique room name for this call attempt ───────────────────
+    # This room name is passed to /flow so it can look up the call record.
+    # The actual LiveKit room where the agent runs will be different (created
+    # by LiveKit's SIP gateway), but we need this to track the call in our DB.
+    room_name = f"twilio_{uuid.uuid4().hex[:8]}"
 
-    # ── 4. Log call ──────────────────────────────────────────────────────────
+    # ── 4. Log call BEFORE calling Twilio (so /flow can find it) ────────────
     db_call = CallORM(
         id=str(uuid.uuid4()),
         user_id=current_user.id,
@@ -311,9 +298,11 @@ async def _trigger_twilio_outbound_internal(
 
     # ── 5. Call Twilio REST API ───────────────────────────────────────────────
     base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+    # URL-encode agent_id and room_name to be safe, use & (not &amp;) in the
+    # actual URL — &amp; is only for embedding URLs inside XML attributes.
     flow_url = (
         f"{base_url}/api/v1/telephony/twilio/flow"
-        f"?agent_id={agent_id}&room={room_name}"
+        f"?agent_id={quote(agent_id)}&room={quote(room_name)}"
     )
 
     async with httpx.AsyncClient(timeout=15.0) as client:
@@ -340,6 +329,11 @@ async def _trigger_twilio_outbound_internal(
     }
     await db.commit()
 
+    logger.info(
+        f"[Twilio Fallback] Call initiated: user={current_user.id} "
+        f"to={to_number} twilio_sid={twilio_data.get('sid')} room={room_name}"
+    )
+
     return {
         "status": "success",
         "call_id": db_call.id,
@@ -362,23 +356,92 @@ async def twilio_outbound_flow(
     """
     Invoked by Twilio when the called party answers.
 
-    For trial Twilio accounts, we must collect a keypress before bridging
-    (Twilio's trial gateway requires it). For paid accounts, no gather is needed.
-    We include a short gather with a timeout and fallback to bridge directly.
+    Looks up the from_number from the call record (to get the right Twilio
+    number), then returns TwiML that bridges the call into LiveKit SIP.
+
+    For trial accounts: uses <Gather timeout="1"> so it fires ~1s after
+    answer, then <Redirect> hits /flow-bridge which returns the final
+    <Dial><Sip> TwiML. This two-hop is required for Twilio trial accounts
+    which can't receive raw SIP back from LiveKit.
+
+    For paid accounts: returns <Dial><Sip> directly — no extra round-trip.
+
+    In both cases, LiveKit's SIP gateway receives the SIP leg and matches
+    it to the inbound dispatch rule, which auto-spawns the agent.
     """
     logger.info(f"[Flow] Twilio flow callback: agent={agent_id} room={room}")
-    base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
-    bridge_url = (
-        f"{base_url}/api/v1/telephony/twilio/flow-bridge"
-        f"?agent_id={agent_id}&amp;room={room}"
-    )
-    twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+
+    # Resolve from_number from call record — needed to build the SIP URI.
+    # The from_number is the Twilio number that placed the outbound call;
+    # LiveKit uses it to match the inbound trunk dispatch rule.
+    #
+    # Retry loop: Twilio can call /flow within milliseconds of us committing
+    # the CallORM record. Under load the DB write may not be visible yet on
+    # a replica or even the primary (async session flush timing). We retry
+    # up to 5 times with 300 ms gaps (max 1.5 s) before giving up.
+    call_rec = None
+    for attempt in range(5):
+        await db.execute(select(CallORM).where(CallORM.session_id == room))  # warm connection
+        call_result = await db.execute(
+            select(CallORM).where(CallORM.session_id == room)
+        )
+        call_rec = call_result.scalar_one_or_none()
+        if call_rec:
+            break
+        logger.warning(
+            f"[Flow] Call record not found yet for room={room} "
+            f"(attempt {attempt + 1}/5) — retrying in 300ms"
+        )
+        await asyncio.sleep(0.3)
+
+    if not call_rec:
+        logger.error(f"[Flow] No call record found for room={room} after 5 attempts. Hanging up.")
+        return Response(
+            content=_twiml_hangup("Call session not found."),
+            media_type="application/xml",
+        )
+
+    sip_number = call_rec.from_number or os.getenv("FALLBACK_FROM_NUMBER", "+10000000000")
+    if not sip_number.startswith("+"):
+        sip_number = f"+{sip_number}"
+
+    from app.core.config import settings
+    lk_sip_domain = settings.LIVEKIT_SIP_DOMAIN
+    lk_sip_username = os.getenv("LIVEKIT_SIP_USERNAME", "")
+    lk_sip_password = os.getenv("LIVEKIT_SIP_PASSWORD", "")
+    auth_attr = ""
+    if lk_sip_username and lk_sip_password:
+        auth_attr = f' username="{lk_sip_username}" password="{lk_sip_password}"'
+
+    # Use TLS on port 5061 — required for LiveKit Cloud SIP
+    sip_uri = f"sip:{sip_number}@{lk_sip_domain};transport=tcp"
+
+    if not _TWILIO_TRIAL:
+        # Paid account — bridge directly, no extra round-trip
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
-    <Gather action="{bridge_url}" numDigits="1" timeout="5" method="POST">
-        <Say voice="alice">Connecting you now. Press any key to continue.</Say>
-    </Gather>
+    <Dial>
+        <Sip{auth_attr}>{sip_uri}</Sip>
+    </Dial>
+</Response>"""
+        logger.info(f"[Flow] Paid path: bridging {sip_number} → {lk_sip_domain}")
+    else:
+        # Trial account — Twilio trial can't receive raw SIP callbacks,
+        # so we need one extra webhook hop via <Gather>/<Redirect>.
+        # <Gather timeout="1"> fires after 1s (no digits needed), then
+        # falls through to <Redirect> which hits /flow-bridge.
+        # &amp; is correct here because this URL is inside an XML attribute.
+        base_url = os.getenv("BACKEND_URL", "http://localhost:8000")
+        bridge_url = (
+            f"{base_url}/api/v1/telephony/twilio/flow-bridge"
+            f"?agent_id={quote(agent_id)}&room={quote(room)}"
+        )
+        twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
+<Response>
     <Redirect method="POST">{bridge_url}</Redirect>
 </Response>"""
+        logger.info(f"[Flow] Trial path: gather→redirect for {sip_number} → {lk_sip_domain}")
+
     return Response(content=twiml, media_type="application/xml")
 
 
@@ -390,33 +453,46 @@ async def twilio_flow_bridge(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Final TwiML bridge: connects the answered call into the LiveKit SIP room.
-    The agent was already pre-dispatched into `room` before Twilio dialed.
+    Trial-account only: Twilio POSTs here after <Gather> timeout expires.
+    Returns the final <Dial><Sip> TwiML to bridge into LiveKit.
+    Paid accounts never reach this endpoint — they bridge in /flow directly.
     """
-    logger.info(f"[FlowBridge] Bridging: agent={agent_id} room={room}")
+    logger.info(f"[FlowBridge] Trial bridge: agent={agent_id} room={room}")
 
-    # Look up the original from_number from the call record
-    call_result = await db.execute(
-        select(CallORM).where(CallORM.session_id == room)
-    )
-    call_rec = call_result.scalar_one_or_none()
-    sip_number = (
-        call_rec.from_number
-        if call_rec and call_rec.from_number
-        else os.getenv("FALLBACK_FROM_NUMBER", "+10000000000")
-    )
+    call_rec = None
+    for attempt in range(5):
+        call_result = await db.execute(
+            select(CallORM).where(CallORM.session_id == room)
+        )
+        call_rec = call_result.scalar_one_or_none()
+        if call_rec:
+            break
+        logger.warning(
+            f"[FlowBridge] Call record not found yet for room={room} "
+            f"(attempt {attempt + 1}/5) — retrying in 300ms"
+        )
+        await asyncio.sleep(0.3)
+
+    if not call_rec:
+        logger.error(f"[FlowBridge] No call record found for room={room} after 5 attempts. Hanging up.")
+        return Response(
+            content=_twiml_hangup("Call session not found."),
+            media_type="application/xml",
+        )
+
+    sip_number = call_rec.from_number or os.getenv("FALLBACK_FROM_NUMBER", "+10000000000")
     if not sip_number.startswith("+"):
         sip_number = f"+{sip_number}"
 
     from app.core.config import settings
     lk_sip_domain = settings.LIVEKIT_SIP_DOMAIN
-
     lk_sip_username = os.getenv("LIVEKIT_SIP_USERNAME", "")
     lk_sip_password = os.getenv("LIVEKIT_SIP_PASSWORD", "")
     auth_attr = ""
     if lk_sip_username and lk_sip_password:
         auth_attr = f' username="{lk_sip_username}" password="{lk_sip_password}"'
 
+    # Use TLS on port 5061 — required for LiveKit Cloud SIP
     twiml = f"""<?xml version="1.0" encoding="UTF-8"?>
 <Response>
     <Dial>
@@ -424,6 +500,7 @@ async def twilio_flow_bridge(
     </Dial>
 </Response>"""
 
+    logger.info(f"[FlowBridge] Bridging {sip_number} → {lk_sip_domain}")
     return Response(content=twiml, media_type="application/xml")
 
 

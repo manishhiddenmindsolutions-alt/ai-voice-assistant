@@ -215,6 +215,11 @@ async def start_session(
             print(f"WARNING: db_agent with ID {config.id} was NOT found in the database for current user {getattr(current_user, 'email', None)} (ID: {getattr(current_user, 'id', None)}).")
 
 
+    # Inject RAG knowledge base URL so the agent worker can query it during calls
+    backend_base_url = settings.BACKEND_BASE_URL.rstrip("/") if hasattr(settings, "BACKEND_BASE_URL") else ""
+    if backend_base_url:
+        metadata["knowledge_base_url"] = f"{backend_base_url}{settings.API_V1_STR}/knowledge/search"
+
     # Standardizing dispatch to 'voice-forge-agent-v5' for reliability
     agent_dispatch_name = "voice-forge-agent-v5"
     

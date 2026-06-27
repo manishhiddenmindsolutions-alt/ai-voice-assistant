@@ -7,11 +7,8 @@ import {
   X,
   AlertCircle,
   CheckCircle2,
-  ToggleLeft,
-  ToggleRight,
-  Server,
 } from 'lucide-react';
-import { callsApi, agentApi, telephonyApi } from '../services/api';
+import { callsApi, agentApi, telephonyApi, settingsApi } from '../services/api';
 import { useAgentStore } from '../store/useAgentStore';
 import toast from 'react-hot-toast';
 
@@ -40,25 +37,32 @@ const OutboundPage: React.FC = () => {
   const [selectedAgentId, setSelectedAgentId] = useState('');
   const [destinationNumber, setDestinationNumber] = useState('');
   const [csvNumbers, setCsvNumbers] = useState('');
-  // Toggle: use native LiveKit SIP (default) or Twilio REST fallback (for trial accounts)
-  const [useTwilioFallback, setUseTwilioFallback] = useState(false);
 
-  // Trunk availability (needed for native SIP path)
-  const [hasSipTrunk, setHasSipTrunk] = useState(false);
+  // Always use Twilio REST fallback — no toggle needed
+  const useTwilioFallback = true;
+
+  // Trunk & credentials availability
+  const [hasTwilioCredentials, setHasTwilioCredentials] = useState(false);
 
   const { agents, setAgents } = useAgentStore();
 
   const fetchOutboundData = async () => {
     try {
-      const [callsResp, agentsResp, statusResp] = await Promise.all([
+      const [callsResp, agentsResp, settingsResp] = await Promise.all([
         callsApi.list({ direction: 'outbound', limit: 50 }),
         agentApi.list(),
-        telephonyApi.status().catch(() => ({ data: null })),
+        settingsApi.getTelephony().catch(() => ({ data: null })),
       ]);
+
       setCalls(callsResp.data?.calls || []);
       setAgents(agentsResp.data || []);
-      const status = statusResp.data;
-      setHasSipTrunk(!!(status?.outbound_active));
+
+      // Check if Twilio credentials are configured
+      // Backend returns masked values like "****1234" when set, or "" when not set
+      const creds = settingsResp?.data;
+      setHasTwilioCredentials(
+        !!(creds?.twilio_account_sid && creds?.twilio_auth_token && creds?.twilio_phone_number)
+      );
     } catch (err) {
       console.error('Failed to load outbound data:', err);
     } finally {
@@ -72,8 +76,14 @@ const OutboundPage: React.FC = () => {
 
   const handleCreateBatchCall = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedAgentId) {
       toast.error('Please select an active voice agent');
+      return;
+    }
+
+    if (!hasTwilioCredentials) {
+      toast.error('Twilio credentials not configured. Go to Settings → Telephony to add them.');
       return;
     }
 
@@ -83,14 +93,6 @@ const OutboundPage: React.FC = () => {
 
     if (numbersToDial.length === 0) {
       toast.error('Please specify at least one destination number');
-      return;
-    }
-
-    // Warn if native SIP path is chosen but no trunk exists
-    if (!useTwilioFallback && !hasSipTrunk) {
-      toast.error(
-        'No active outbound SIP trunk found. Provision one on the Telephony Hub page first, or enable the Twilio fallback toggle.'
-      );
       return;
     }
 
@@ -162,33 +164,35 @@ const OutboundPage: React.FC = () => {
         </button>
       </div>
 
-      {/* SIP Trunk status banner */}
-      <div className={`flex items-center gap-3 p-3 rounded-xl border text-xs ${
-        hasSipTrunk
-          ? 'bg-emerald-500/5 border-emerald-500/20'
-          : 'bg-amber-500/5 border-amber-500/20'
-      }`}>
-        {hasSipTrunk ? (
-          <>
-            <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
-            <div>
-              <p className="font-bold text-emerald-600 dark:text-emerald-400 text-[10px] uppercase tracking-wider">Native SIP Trunk Active</p>
-              <p className="text-[var(--text-muted)] text-[10px]">Outbound calls route through LiveKit SIP — highest reliability.</p>
-            </div>
-          </>
-        ) : (
-          <>
-            <AlertCircle size={15} className="text-amber-500 shrink-0" />
-            <div>
-              <p className="font-bold text-amber-600 dark:text-amber-400 text-[10px] uppercase tracking-wider">No SIP Trunk Provisioned</p>
-              <p className="text-[var(--text-muted)] text-[10px]">
-                Go to <strong>Telephony Hub</strong> to provision a SIP trunk, or use the Twilio REST fallback when dispatching.
-              </p>
-            </div>
-          </>
-        )}
-        <Server size={14} className="ml-auto shrink-0 text-[var(--text-muted)]" />
-      </div>
+      {/* Twilio Credentials Warning — only shown after loading completes */}
+      {!loading && !hasTwilioCredentials && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border bg-red-500/5 border-red-500/20">
+          <AlertCircle size={15} className="text-red-500 shrink-0" />
+          <div>
+            <p className="font-bold text-red-600 dark:text-red-400 text-[10px] uppercase tracking-wider">
+              Twilio Credentials Required
+            </p>
+            <p className="text-[var(--text-muted)] text-[10px]">
+              Go to <strong>Settings → Telephony</strong> and enter your Twilio Account SID, Auth Token, and Phone Number before making outbound calls.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Credentials OK banner */}
+      {!loading && hasTwilioCredentials && (
+        <div className="flex items-center gap-3 p-3 rounded-xl border bg-emerald-500/5 border-emerald-500/20">
+          <CheckCircle2 size={15} className="text-emerald-500 shrink-0" />
+          <div>
+            <p className="font-bold text-emerald-600 dark:text-emerald-400 text-[10px] uppercase tracking-wider">
+              Twilio Credentials Configured
+            </p>
+            <p className="text-[var(--text-muted)] text-[10px]">
+              Outbound calls are ready to dispatch via Twilio REST.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* SEARCH BAR */}
       <div className="relative max-w-full z-10">
@@ -313,6 +317,16 @@ const OutboundPage: React.FC = () => {
             {/* Drawer Form Body */}
             <form onSubmit={handleCreateBatchCall} className="flex-1 overflow-y-auto px-6 py-5 space-y-5 custom-scrollbar">
 
+              {/* Credentials warning inside drawer */}
+              {!hasTwilioCredentials && (
+                <div className="flex items-start gap-2.5 p-3 bg-red-500/5 border border-red-500/20 rounded-xl">
+                  <AlertCircle size={14} className="text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-[9px] text-red-600 dark:text-red-400 leading-relaxed">
+                    Twilio credentials not configured. Go to <strong>Settings → Telephony</strong> to add your Account SID, Auth Token, and Phone Number before dispatching calls.
+                  </p>
+                </div>
+              )}
+
               {/* Voice Agent Selector */}
               <div className="space-y-1">
                 <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider">
@@ -330,37 +344,6 @@ const OutboundPage: React.FC = () => {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              {/* Call Path Toggle */}
-              <div className="p-3 bg-[var(--surface-secondary)]/20 border border-[var(--border)] rounded-xl space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-bold text-[var(--text-primary)] uppercase tracking-wider">
-                      Twilio REST Fallback
-                    </p>
-                    <p className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                      Enable for trial Twilio accounts that can't receive native SIP.
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setUseTwilioFallback(v => !v)}
-                    className="text-[var(--primary)] cursor-pointer"
-                  >
-                    {useTwilioFallback
-                      ? <ToggleRight size={28} />
-                      : <ToggleLeft size={28} className="text-[var(--text-muted)]" />
-                    }
-                  </button>
-                </div>
-                <div className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-flex items-center gap-1 ${
-                  useTwilioFallback
-                    ? 'text-amber-600 dark:text-amber-400 bg-amber-500/10'
-                    : 'text-emerald-600 dark:text-emerald-400 bg-emerald-500/10'
-                }`}>
-                  {useTwilioFallback ? 'REST Path (trial mode)' : 'Native LiveKit SIP Path'}
-                </div>
               </div>
 
               {/* Single Destination Number */}
@@ -403,16 +386,6 @@ const OutboundPage: React.FC = () => {
                 </p>
               </div>
 
-              {/* Warning when no trunk + not fallback */}
-              {!hasSipTrunk && !useTwilioFallback && (
-                <div className="flex items-start gap-2.5 p-3 bg-amber-500/5 border border-amber-500/20 rounded-xl">
-                  <AlertCircle size={14} className="text-amber-500 shrink-0 mt-0.5" />
-                  <p className="text-[9px] text-amber-600 dark:text-amber-400 leading-relaxed">
-                    No active outbound SIP trunk detected. Provision one on the <strong>Telephony Hub</strong> page or enable the Twilio REST fallback above.
-                  </p>
-                </div>
-              )}
-
               {/* Info banner */}
               <div className="flex items-start gap-2.5 p-3.5 bg-[var(--surface-secondary)]/20 border border-[var(--border)] rounded-xl">
                 <AlertCircle size={14} className="text-[var(--primary)] shrink-0 mt-0.5" />
@@ -438,7 +411,7 @@ const OutboundPage: React.FC = () => {
               </button>
               <button
                 onClick={handleCreateBatchCall}
-                disabled={dispatching}
+                disabled={dispatching || !hasTwilioCredentials}
                 className="px-4 py-2 bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
               >
                 {dispatching ? <Loader2 className="animate-spin" size={12} /> : 'Dispatch Calls'}

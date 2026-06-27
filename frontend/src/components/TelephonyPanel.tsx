@@ -164,7 +164,22 @@ export const TelephonyPanel: React.FC = () => {
   const handleSaveTwilioKeys = async () => {
     setSavingKeys(true);
     try {
-      await api.post('/keys/', twilioKeys);
+      const isMasked = (value: string) => value.includes('*') || value.includes('...');
+      const payload: Record<string, string> = {};
+      if (twilioKeys.twilio_account_sid.trim() && !isMasked(twilioKeys.twilio_account_sid)) {
+        payload.twilio_account_sid = twilioKeys.twilio_account_sid.trim();
+      }
+      if (twilioKeys.twilio_auth_token.trim() && !isMasked(twilioKeys.twilio_auth_token)) {
+        payload.twilio_auth_token = twilioKeys.twilio_auth_token.trim();
+      }
+      if (twilioKeys.twilio_phone_number.trim() && !isMasked(twilioKeys.twilio_phone_number)) {
+        payload.twilio_phone_number = twilioKeys.twilio_phone_number.trim();
+      }
+      if (Object.keys(payload).length === 0) {
+        toast.error('No new Twilio credentials to save.');
+        return;
+      }
+      await api.post('/keys/', payload);
       toast.success('Twilio credentials successfully updated & vaulted.');
       fetchTwilioKeys();
     } catch (err) {
@@ -183,14 +198,17 @@ export const TelephonyPanel: React.FC = () => {
       toast.error('Target customer phone number required');
       return;
     }
+    if (!telephonyStatus?.outbound_active) {
+      toast.error('No active outbound SIP trunk found. Create the LiveKit SIP bridge first, or save Twilio credentials and use the Outbound trial fallback page.');
+      return;
+    }
     
     setLoading(true);
     try {
-      // Use native LiveKit SIP path; set use_twilio_fallback=true for trial accounts
       await telephonyApi.outbound({
         to_number: targetNumber,
         agent_id: selectedAgentId,
-        use_twilio_fallback: !telephonyStatus?.outbound_active,
+        use_twilio_fallback: false,
       });
       toast.success('Outbound call initiated via LiveKit SIP.');
       fetchTelephonyData();
