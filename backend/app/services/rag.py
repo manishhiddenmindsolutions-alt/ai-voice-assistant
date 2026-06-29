@@ -560,9 +560,13 @@ def build_vector_db_provider(cfg: RAGConfigORM) -> VectorDBProvider:
     api_key = vault.decrypt(cfg.vector_db_api_key) if cfg.vector_db_api_key else ""
 
     if cfg.vector_db_provider == "qdrant":
-        url = cfg.vector_db_url or settings.QDRANT_URL
-        key = api_key or settings.QDRANT_API_KEY
-        return QdrantVectorDBProvider(url=url, api_key=key)
+        url = cfg.vector_db_url
+        if not url:
+            raise ValueError(
+                "Qdrant requires a Cluster URL. "
+                "Please set it in the RAG Configuration panel."
+            )
+        return QdrantVectorDBProvider(url=url, api_key=api_key or None)
 
     if cfg.vector_db_provider == "pinecone":
         if not cfg.vector_db_index:
@@ -600,10 +604,10 @@ def _default_rag_config(agent_id: str, user_id: str) -> RAGConfigORM:
         embedding_provider="gemini",
         embedding_model="gemini-embedding-2",
         embedding_dim=768,
-        embedding_api_key=vault.encrypt(settings.GEMINI_EMBEDDING_KEY) if settings.GEMINI_EMBEDDING_KEY else None,
+        embedding_api_key=None,
         vector_db_provider="qdrant",
-        vector_db_url=settings.QDRANT_URL,
-        vector_db_api_key=vault.encrypt(settings.QDRANT_API_KEY) if settings.QDRANT_API_KEY else None,
+        vector_db_url=None,
+        vector_db_api_key=None,
         chunk_size=600,
         chunk_overlap=150,
     )
@@ -1161,33 +1165,21 @@ class RAGService:
             return []
 
         if db is None or user_id is None:
-            # Fallback: use global env-based Qdrant + Gemini (legacy compatibility)
-            from qdrant_client import QdrantClient
-            from qdrant_client.http import models as qm
-
-            gemini_key = settings.GEMINI_EMBEDDING_KEY
-            if not gemini_key:
-                logger.warning("[RAG] No Gemini key for legacy search fallback")
-                return []
-
-            tmp_ep = GeminiEmbeddingProvider(api_key=gemini_key, model="gemini-embedding-2", dim=768)
-            vecs = await tmp_ep.embed([query], is_query=True)
-
-            qc = QdrantClient(url=settings.QDRANT_URL, api_key=settings.QDRANT_API_KEY)
-            result = qc.query_points(
-                collection_name="agent_knowledge_base_gemini",
-                query=vecs[0],
-                query_filter=qm.Filter(
-                    must=[qm.FieldCondition(key="agent_id", match=qm.MatchValue(value=agent_id))]
-                ),
-                limit=limit,
+            logger.warning(
+                "[RAG] search_knowledge called without db/user_id — "
+                "cannot perform search without a RAG config. Returning empty."
             )
-            return [
-                {"text": p.payload.get("text", ""), "filename": p.payload.get("filename", ""), "score": p.score}
-                for p in result.points
-            ]
+            return []
 
         cfg = await cls.get_config(db, agent_id, user_id)
+
+        if not cfg.embedding_api_key:
+            logger.warning(f"[RAG] Agent {agent_id} has no embedding API key configured.")
+            return []
+        if not cfg.vector_db_api_key and cfg.vector_db_provider != "chroma":
+            logger.warning(f"[RAG] Agent {agent_id} has no vector DB credentials configured.")
+            return []
+
         ep = build_embedding_provider(cfg)
         vp = build_vector_db_provider(cfg)
         col = collection_name_for_agent(agent_id, cfg.embedding_model)

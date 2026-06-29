@@ -750,7 +750,7 @@ def create_components(config: Dict[str, Any]):
     # ------------------------------------------------------------------
     # 4.5. KNOWLEDGE BASE RAG SYSTEM
     # ------------------------------------------------------------------
-    agent_id = config.get("id")
+    agent_id = config.get("id") or config.get("agentId")
     if agent_id:
         backend_url = os.getenv("INTERNAL_BACKEND_URL", "http://localhost:8000")
 
@@ -859,6 +859,16 @@ def create_components(config: Dict[str, Any]):
             "answering. Do not speculate or guess if you do not know the answer—search the "
             "knowledge base first."
         )
+        base_instructions += (
+            "\nOnly call `rag_system` when the user asks a specific factual question "
+            "that would be answered by reference documents. Do NOT call it for general "
+            "conversation, greetings, or short unclear inputs."
+        )
+        base_instructions += (
+            "\nNEVER mention tool names, function names, or internal system details "
+            "in your spoken responses. Do not say 'rag_system', 'function=', or any "
+            "technical tool reference out loud to the user."
+        )
 
     if agent_tools:
         tool_names = []
@@ -890,7 +900,7 @@ def create_components(config: Dict[str, Any]):
         base_instructions += (
             "3. DATA RETRIEVAL: Use tools to fetch real-time info before answering. "
             "If a tool fails, explain why clearly but remain professional.\n"
-        )
+        )   
         base_instructions += (
             "4. CALENDAR FORMATTING: If scheduling an event, you MUST provide `start_time` "
             "in strict ISO 8601 format (e.g., '2026-05-18T14:30:00Z'). Calculate dates "

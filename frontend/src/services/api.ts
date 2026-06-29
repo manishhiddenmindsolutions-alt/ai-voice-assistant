@@ -162,12 +162,45 @@ export const freeswitchApi = {
 };
 
 export const knowledgeApi = {
+  // ── Documents ────────────────────────────────────────────────────────────
   list: (agentId: string) => api.get(`/knowledge/agent/${agentId}`),
   upload: (agentId: string, formData: FormData) =>
     api.post(`/knowledge/agent/${agentId}`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' }
+      headers: { 'Content-Type': 'multipart/form-data' },
     }),
   delete: (documentId: string) => api.delete(`/knowledge/${documentId}`),
+
+  // ── RAG Config ───────────────────────────────────────────────────────────
+  getConfig: (agentId: string) =>
+    api.get(`/knowledge/config/${agentId}`),
+
+  saveConfig: (
+    agentId: string,
+    data: {
+      embedding_provider: string;
+      embedding_model: string;
+      embedding_api_key?: string | null;
+      vector_db_provider: string;
+      vector_db_url?: string | null;
+      vector_db_api_key?: string | null;
+      vector_db_index?: string | null;
+      chunk_strategy: string;
+      chunk_size: number;
+      chunk_overlap: number;
+    }
+  ) => api.post(`/knowledge/config/${agentId}`, data),
+
+  testConnection: (data: {
+    embedding_provider: string;
+    embedding_model: string;
+    embedding_api_key?: string | null;
+    vector_db_provider: string;
+    vector_db_url?: string | null;
+    vector_db_api_key?: string | null;
+    vector_db_index?: string | null;
+  }) => api.post('/knowledge/config/test', data),
+
+  reindex: (agentId: string) => api.post(`/knowledge/reindex/${agentId}`),
 };
 
 export default api;

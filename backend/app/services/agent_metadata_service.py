@@ -110,7 +110,8 @@ async def build_agent_metadata(agent: AgentORM, db: AsyncSession) -> str:
 
     return json.dumps(
         {
-            "agentId": agent.id,
+            "id": agent.id,        # ← matches sessions.py and factory.py
+            "agentId": agent.id,   # ← keep for backward compatibility
             "agentName": agent.agent_name,
             "prompt": agent.prompt,
             "language": agent.language,

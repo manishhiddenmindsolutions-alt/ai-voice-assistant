@@ -139,6 +139,26 @@ async def _assert_agent_ownership(agent_id: str, user_id: str, db: AsyncSession)
 # RAG Config endpoints
 # ─────────────────────────────────────────────────────────────────────────────
 
+@router.post("/config/test")
+async def test_rag_connection(
+    payload: TestConnectionRequest,
+    current_user: UserORM = Depends(get_current_user),
+):
+    """
+    Test embedding + vector DB credentials without saving anything.
+    Returns {embedding_ok, vector_db_ok, errors}.
+    """
+    result = await RAGService.test_connection(
+        embedding_provider=payload.embedding_provider,
+        embedding_model=payload.embedding_model,
+        embedding_api_key=payload.embedding_api_key,
+        vector_db_provider=payload.vector_db_provider,
+        vector_db_url=payload.vector_db_url,
+        vector_db_api_key=payload.vector_db_api_key,
+        vector_db_index=payload.vector_db_index,
+    )
+    return result
+
 @router.get("/config/{agent_id}", response_model=RAGConfigResponse)
 async def get_rag_config(
     agent_id: str,
@@ -197,27 +217,6 @@ async def save_rag_config(
     return _serialize_config(cfg)
 
 
-@router.post("/config/test")
-async def test_rag_connection(
-    payload: TestConnectionRequest,
-    current_user: UserORM = Depends(get_current_user),
-):
-    """
-    Test embedding + vector DB credentials without saving anything.
-    Returns {embedding_ok, vector_db_ok, errors}.
-    """
-    result = await RAGService.test_connection(
-        embedding_provider=payload.embedding_provider,
-        embedding_model=payload.embedding_model,
-        embedding_api_key=payload.embedding_api_key,
-        vector_db_provider=payload.vector_db_provider,
-        vector_db_url=payload.vector_db_url,
-        vector_db_api_key=payload.vector_db_api_key,
-        vector_db_index=payload.vector_db_index,
-    )
-    return result
-
-
 @router.post("/reindex/{agent_id}")
 async def reindex_agent_documents(
     agent_id: str,
@@ -265,7 +264,20 @@ async def search_agent_knowledge(
     No auth required — this is an internal service endpoint.
     """
     try:
-        results = await RAGService.search_knowledge(agent_id=agent_id, query=query, limit=limit)
+        from sqlalchemy import select
+        from app.models.orm import AgentORM
+        stmt = select(AgentORM).where(AgentORM.id == agent_id)
+        res = await db.execute(stmt)
+        agent = res.scalar_one_or_none()
+        if not agent:
+            return []
+        results = await RAGService.search_knowledge(
+            agent_id=agent_id,
+            query=query,
+            limit=limit,
+            db=db,
+            user_id=agent.user_id,
+        )
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

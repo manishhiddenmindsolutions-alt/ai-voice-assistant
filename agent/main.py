@@ -105,7 +105,7 @@ class VoiceForgeAgent(Agent):
         else:
             # Fallback default keywords
             farewells = [
-                "bye", "goodbye", "thank you", "thank u", "thanks", "take care", 
+                "bye", "goodbye", "take care", 
                 "have a great", "have a nice", "see you", 
                 "dhanyawad", "shukriya", "alvida", "phir milenge"
             ]
