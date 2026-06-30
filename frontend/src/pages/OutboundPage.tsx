@@ -49,7 +49,7 @@ const OutboundPage: React.FC = () => {
   const fetchOutboundData = async () => {
     try {
       const [callsResp, agentsResp, settingsResp] = await Promise.all([
-        callsApi.list({ direction: 'outbound', limit: 50 }),
+        callsApi.list({ direction: 'outbound', limit: 50 }).catch(() => ({ data: { calls: [] } })),
         agentApi.list(),
         settingsApi.getTelephony().catch(() => ({ data: null })),
       ]);

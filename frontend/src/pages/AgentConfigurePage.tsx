@@ -447,24 +447,36 @@ const AgentConfigurePage = () => {
           <div className="card p-6 flex flex-col space-y-4">
             <div className="flex items-center gap-2 border-b border-[var(--border)] pb-3">
               <Globe size={16} className="text-sky-500" />
-              <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Language</h3>
+              <h3 className="text-xs font-bold text-[var(--text-primary)] uppercase tracking-wider">Language & Speech</h3>
             </div>
-            
-            <div className="space-y-1.5 flex-1 min-w-0">
-              <label className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Default Language</label>
-              <Select 
-                value={formData.language} 
-                onChange={(l: string) => setFormData({ ...formData, language: l, stt: { ...formData.stt, language: l } })}
-                options={[
-                  { value: 'hi-IN', label: 'Hindi (Indic Dialect)' },
-                  { value: 'en-US', label: 'English (Global Dialect)' }
-                ]}
-                className="w-full text-xs"
-              />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <label className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">STT Provider</label>
+                <Select
+                  value={formData.stt?.provider || 'sarvam'}
+                  onChange={(p: string) => setFormData({ ...formData, stt: { ...formData.stt, provider: p } })}
+                  options={[
+                    { value: 'sarvam', label: 'Sarvam Voice' },
+                    { value: 'deepgram', label: 'Deepgram Premium' },
+                  ]}
+                  className="w-full text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5 flex-1 min-w-0">
+                <label className="text-[9px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Default Language</label>
+                <Select
+                  value={formData.language}
+                  onChange={(l: string) => setFormData({ ...formData, language: l, stt: { ...formData.stt, language: l } })}
+                  options={[
+                    { value: 'hi-IN', label: 'Hindi (Indic Dialect)' },
+                    { value: 'en-US', label: 'English (Global Dialect)' }
+                  ]}
+                  className="w-full text-xs"
+                />
+              </div>
             </div>
-            <p className="text-[10px] text-[var(--text-muted)] italic font-semibold">
-              The agent automatically utilizes Sarvam speech-to-text / text-to-speech connections calibrated for the selected language.
-            </p>
           </div>
 
           {/* LLM POWERING ENGINE */}

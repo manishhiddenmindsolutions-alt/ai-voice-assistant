@@ -20,6 +20,7 @@ from livekit.agents import (
     cli, JobContext, WorkerOptions, AutoSubscribe, JobProcess,
     llm, RoomInputOptions,
 )
+from livekit.agents import StopResponse
 from livekit.agents.voice import Agent, AgentSession, UserInputTranscribedEvent, ConversationItemAddedEvent
 
 # Local Imports
@@ -73,16 +74,14 @@ async def log_transcript(session_id: str, role: str, content: str):
 
 def prewarm(proc: JobProcess):
     """
-    Preloads the VAD model into process memory.
+    Preloads the Silero VAD model into process memory.
 
-    In livekit-agents 1.6.x the bundled silero VAD is loaded via the
-    inference module rather than livekit-plugins-silero.  We store it in
-    proc.userdata so create_vad() can reuse it without re-loading.
+    FIX: Use silero.VAD.load() consistently so the prewarmed instance type
+    matches what create_vad() expects and passes to AgentSession.
     """
     logger.info("Prewarming Agent Process: Loading VAD model...")
-    from livekit.agents import inference
-    proc.userdata["vad"] = inference.VAD(
-        model="silero",
+    from livekit.plugins import silero
+    proc.userdata["vad"] = silero.VAD.load(
         min_speech_duration=0.3,
         min_silence_duration=0.8,
         activation_threshold=0.5,
@@ -96,7 +95,6 @@ class VoiceForgeAgent(Agent):
         self.termination_keywords = termination_keywords
 
     async def on_user_turn_completed(self, turn_ctx: llm.ChatContext, new_message: llm.ChatMessage) -> None:
-        from livekit.agents.llm.tool_context import StopResponse
         transcript = new_message.text_content.strip()
         # Filter out anything that contains no alphanumeric characters (to handle empty/noise turns)
         clean_transcript = "".join(c for c in transcript if c.isalnum())
@@ -206,14 +204,9 @@ async def entrypoint(ctx: JobContext):
                 logger.error(f"Error fetching dynamic inbound-config from backend: {e}")
 
     # ── BUILD COMPONENTS ──────────────────────────────────────────────────────
-    # create_agent() returns a fully configured livekit Agent.
-    # We subclass it into VoiceForgeAgent to attach farewell/termination logic,
-    # so we pull the constructor args from factory helpers and pass them through.
     prewarmed_vad = ctx.proc.userdata.get("vad")
     vad = create_vad(config, prewarmed_vad)
 
-    # Pull the components the factory would build so VoiceForgeAgent can be
-    # constructed with the same args — avoids building everything twice.
     from factory import _build_stt, _build_llm, _build_tts, _build_tools, _build_instructions
 
     stt_component = _build_stt(config)
@@ -283,7 +276,11 @@ async def entrypoint(ctx: JobContext):
 
     # --- Start Agent Session ---
     logger.info("Starting Agent Session...")
-    await session.start(agent, room=ctx.room, room_input_options=RoomInputOptions(close_on_disconnect=False))
+    await session.start(
+        agent,
+        room=ctx.room,
+        room_input_options=RoomInputOptions(close_on_disconnect=False),
+    )
 
     # Configurable greeting from agent config, with smart delay for outbound pickup
     is_outbound = ctx.room.name.startswith("outbound_") or "outbound" in ctx.room.name.lower() or "twilio" in ctx.room.name.lower()

@@ -1,10 +1,10 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, update, func, desc, case
+from sqlalchemy import select, update, func, desc
 from sqlalchemy.orm import selectinload
 from pydantic import BaseModel
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 # pyrefly: ignore [missing-import]
 from app.db.session import get_db
 # pyrefly: ignore [missing-import]
@@ -12,8 +12,6 @@ from app.models.orm import AgentORM, UserORM, TranscriptORM, CallORM, CallDirect
 # pyrefly: ignore [missing-import]
 from app.api.deps import get_current_user
 import uuid
-# pyrefly: ignore [missing-import]
-from app.db.session import get_db
 
 router = APIRouter()
 
@@ -22,7 +20,6 @@ class OutboundCallRequest(BaseModel):
     to_number: str = "+1234567890"
     from_number: Optional[str] = None
     agent_id: str
-    user_id: str = "default_user"
 
 class CallResponse(BaseModel):
     id: str
@@ -48,7 +45,11 @@ class TranscriptLogRequest(BaseModel):
 # --- ENDPOINTS ---
 
 @router.post("/outbound", response_model=CallResponse)
-async def trigger_outbound_call(request: OutboundCallRequest, db: AsyncSession = Depends(get_db)):
+async def trigger_outbound_call(
+    request: OutboundCallRequest,
+    current_user: UserORM = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Triggers an outbound mobile call.
     1. Fetch agent with preloaded tools.
@@ -57,31 +58,62 @@ async def trigger_outbound_call(request: OutboundCallRequest, db: AsyncSession =
     """
     # pyrefly: ignore [missing-import]
     from app.services.sip_service import sip_service
-    from sqlalchemy.orm import selectinload
+    from app.services.agent_metadata_service import build_agent_metadata
     
-    # 1. Verify Agent
+    # 1. Verify Agent belongs to current user
     result = await db.execute(
-        select(AgentORM).options(selectinload(AgentORM.tools)).where(AgentORM.id == request.agent_id)
+        select(AgentORM).options(selectinload(AgentORM.tools)).where(
+            AgentORM.id == request.agent_id,
+            AgentORM.user_id == current_user.id
+        )
     )
     agent = result.scalar_one_or_none()
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
 
-    # 2. Trigger SIP Call
+    # 2. Build proper agent metadata
     try:
+        agent_metadata = await build_agent_metadata(agent, db)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Agent configuration error: {exc}")
+
+    # 3. Find outbound trunk from DB (use first active outbound trunk for this user)
+    # pyrefly: ignore [missing-import]
+    from app.models.orm import SIPTrunkORM
+    trunk_result = await db.execute(
+        select(SIPTrunkORM).where(
+            SIPTrunkORM.user_id == current_user.id,
+            SIPTrunkORM.trunk_type == "outbound",
+            SIPTrunkORM.status == "active",
+        )
+    )
+    outbound_trunk = trunk_result.scalar_one_or_none()
+    if not outbound_trunk:
+        raise HTTPException(status_code=400, detail="No active outbound SIP trunk found. Please provision one via POST /telephony/trunks first.")
+
+    from_number = request.from_number or (
+        outbound_trunk.numbers[0] if outbound_trunk.numbers else "+10000000000"
+    )
+
+    # 4. Trigger SIP Call with correct args
+    try:
+        import os
+        agent_worker_name = os.getenv("LIVEKIT_AGENT_NAME", "voice-forge-agent-v5")
         sip_result = await sip_service.create_outbound_call(
             to_number=request.to_number,
-            agent=agent,
-            db=db,
-            from_number=request.from_number
+            from_number=from_number,
+            outbound_trunk_id=outbound_trunk.livekit_trunk_id,
+            agent_name=agent_worker_name,
+            agent_metadata=agent_metadata,
+            room_prefix=f"call-{current_user.id[:6]}-",
         )
         
-        # 3. Log Call
+        # 5. Log Call — use authenticated user id, not a hardcoded default
         db_call = CallORM(
-            user_id=request.user_id,
+            user_id=current_user.id,
             agent_id=request.agent_id,
             session_id=sip_result["room_name"],
-            from_number=request.from_number,
+            from_number=from_number,
             to_number=request.to_number,
             direction=CallDirection.OUTBOUND,
             status="initiated"
@@ -305,7 +337,7 @@ async def update_call_status(
     if duration is not None:
         call.duration_seconds = duration
     if status in ("completed", "failed", "ended"):
-        call.ended_at = datetime.utcnow()
+        call.ended_at = datetime.now(timezone.utc)
     
     await db.commit()
     return {"status": "ok", "call_id": call_id}

@@ -2,7 +2,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy import String, Float, DateTime, ForeignKey, Text, Enum, Table, Column, Integer
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 import enum
 from typing import Optional
 
@@ -109,11 +109,11 @@ class IntegrationORM(Base):
     # Encrypted credentials (managed by Vault) for OAUTH flow
     access_token: Mapped[str] = mapped_column(Text, nullable=True)
     refresh_token: Mapped[str] = mapped_column(Text, nullable=True)
-    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=True)
     
     scopes: Mapped[list[str]] = mapped_column(JSONB, default=list) # Authorized scopes
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
 
     # Relationships
     user: Mapped["UserORM"] = relationship(back_populates="integrations")

@@ -59,6 +59,23 @@ async def init_db():
         except Exception as e:
             print(f"⚠️ [MIGRATION] ALTER TABLE rag_configs (chunk_strategy) failed: {e}")
 
+        # Fix "can't subtract offset-naive and offset-aware datetimes" on Google OAuth callback —
+        # integrations timestamp columns were TIMESTAMP WITHOUT TIME ZONE but the app writes
+        # tz-aware UTC datetimes (datetime.now(timezone.utc)) into them.
+        try:
+            await conn.execute(text(
+                "ALTER TABLE integrations ALTER COLUMN expires_at TYPE TIMESTAMPTZ USING expires_at AT TIME ZONE 'UTC'"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE integrations ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'"
+            ))
+            await conn.execute(text(
+                "ALTER TABLE integrations ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'"
+            ))
+            print("✅ [MIGRATION] integrations timestamp columns converted to TIMESTAMPTZ")
+        except Exception as e:
+            print(f"⚠️ [MIGRATION] integrations TIMESTAMPTZ conversion failed: {e}")
+
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
     """Dependency for providing a database session for FastAPI."""
     async with AsyncSessionLocal() as session:

@@ -16,7 +16,7 @@ from app.models.orm import UserORM, IntegrationORM
 from app.core.config import settings
 # pyrefly: ignore [missing-import]
 from app.core.security import vault
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 
 router = APIRouter()
@@ -43,7 +43,10 @@ async def google_authorize(current_user: UserORM = Depends(get_current_user)):
     """Redirects user to Google OAuth 2.0 flow."""
     client_id = settings.GOOGLE_CLIENT_ID
     if not client_id:
-        raise HTTPException(status_code=500, detail="Google Client ID not configured")
+        raise HTTPException(
+            status_code=500,
+            detail="Google OAuth is not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables in your .env file."
+        )
         
     params = {
         "client_id": client_id,
@@ -65,8 +68,11 @@ async def google_callback(
     db: AsyncSession = Depends(get_db)
 ):
     """Handles the redirect from Google, exchanges code for tokens, and secures them."""
+    from app.core.config import settings as _s
+    _frontend = getattr(_s, "FRONTEND_URL", "http://localhost:5173")
+
     if not state:
-        return RedirectResponse(url="http://localhost:5173/integrations?status=error&detail=missing_state")
+        return RedirectResponse(url=f"{_frontend}/integrations?status=error&detail=missing_state")
 
     # Exchange code for token
     token_url = "https://oauth2.googleapis.com/token"
@@ -81,13 +87,13 @@ async def google_callback(
     async with httpx.AsyncClient() as client:
         resp = await client.post(token_url, data=data)
         if resp.status_code != 200:
-            return RedirectResponse(url="http://localhost:5173/integrations?status=error")
+            return RedirectResponse(url=f"{_frontend}/integrations?status=error")
         
         tokens = resp.json()
         access_token = tokens.get("access_token")
         refresh_token = tokens.get("refresh_token")
         expires_in = tokens.get("expires_in", 3600)
-        expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
         
         # 1. Encrypt and Save
         encrypted_access = vault.encrypt(access_token)
@@ -109,7 +115,7 @@ async def google_callback(
             if encrypted_refresh:
                 integration.refresh_token = encrypted_refresh
             integration.expires_at = expires_at
-            integration.updated_at = datetime.utcnow()
+            integration.updated_at = datetime.now(timezone.utc)
         else:
             # Create new
             integration = IntegrationORM(
@@ -125,7 +131,7 @@ async def google_callback(
         
         await db.commit()
         
-        return RedirectResponse(url="http://localhost:5173/integrations?status=success")
+        return RedirectResponse(url=f"{_frontend}/integrations?status=success")
 
 @router.post("/service-account", response_model=IntegrationResponse)
 async def create_service_account_integration(

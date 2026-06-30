@@ -40,6 +40,9 @@ class Settings(BaseSettings):
     # Backend base URL
     BACKEND_BASE_URL: str = os.getenv("BACKEND_BASE_URL", "http://localhost:8000")
 
+    # Frontend URL (used for OAuth redirects)
+    FRONTEND_URL: str = os.getenv("FRONTEND_URL", "http://localhost:5173")
+
     class Config:
         case_sensitive = True
 

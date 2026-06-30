@@ -18,8 +18,6 @@ from fastapi import APIRouter, HTTPException, Depends
 from app.api.deps import get_current_user
 # pyrefly: ignore [missing-import]
 from app.core.security import vault
-# pyrefly: ignore [missing-import]
-from app.models.orm import UserORM
 from google.oauth2 import service_account
 from google.auth.transport.requests import Request as GoogleRequest
 import os
@@ -74,7 +72,8 @@ async def start_session(
                                     integration.credentials, 
                                     scopes=scopes
                                 )
-                                credentials.refresh(GoogleRequest())
+                                import asyncio
+                                await asyncio.to_thread(credentials.refresh, GoogleRequest())
                                 final_token = credentials.token
                             except Exception as e:
                                 print(f"⚠️ [SYSTEM] Service Account Token Generation Failed: {e}")
