@@ -56,6 +56,49 @@ const TTS_VOICES = {
   ]
 };
 
+// Providers whose voice list is a fixed catalogue rather than something we
+// fetch per-key (sarvam/openai voices don't come back from /providers/).
+// Everything else (cartesia, elevenlabs) gets its voice list live from that
+// provider's key via GET /providers/ (see dynamicModels below) — same
+// pattern as AgentConfigurePage.tsx already uses.
+const STATIC_VOICE_PROVIDERS = new Set(['sarvam', 'openai']);
+
+// FIX: this file used to hardcode a single default `model` per STT/TTS
+// provider (e.g. groq -> 'whisper-large-v3', cartesia -> 'sonic-2') and
+// silently forced that value on every provider switch, with no dropdown for
+// the user to see or change it. That meant e.g. Groq's whisper-large-v3-turbo
+// or Cartesia's sonic-english were never selectable even though the backend
+// (GET /providers/) actually returns them. Model selection for STT/TTS now
+// works exactly like the LLM step: the model list is filtered out of
+// `dynamicModels[provider]` by capability type (see getSttModelOptions /
+// getTtsModelOptions below) and the first entry from that *live* list is
+// used as the default when a provider is chosen — never a hardcoded string.
+
+// Which of llm / stt / tts each provider can actually serve — mirrors what
+// agent/factory.py on the backend knows how to build. A provider only shows
+// up in a given dropdown if the user has connected it (i.e. saved a working
+// API key on the Providers page) AND it supports that capability.
+// FIX: the STT/TTS "Signal Provider" dropdowns below used to be hardcoded
+// (['sarvam','deepgram'] / ['sarvam','openai']) regardless of whether the
+// user had actually connected those providers with an API key. That let
+// people pick a provider with no key on file, which then failed at call
+// time. Now these lists are derived from GET /providers/, same as the LLM
+// step already did.
+const PROVIDER_CAPABILITIES: Record<string, Array<'llm' | 'stt' | 'tts'>> = {
+  groq: ['llm', 'stt'],
+  cerebras: ['llm'],
+  openai: ['llm', 'tts'],
+  openrouter: ['llm'],
+  anthropic: ['llm'],
+  gemini: ['llm'],
+  deepseek: ['llm'],
+  together_ai: ['llm'],
+  sarvam: ['stt', 'tts'],
+  deepgram: ['stt'],
+  cartesia: ['stt', 'tts'],
+  elevenlabs: ['tts'],
+};
+
 const BLUEPRINTS = [
   {
     name: "Real Estate Closer",
@@ -103,6 +146,13 @@ const CreateAgentPage = () => {
   const [dynamicModels, setDynamicModels] = useState<any>(LLM_MODELS);
   const [availableProviders, setAvailableProviders] = useState<string[]>(['groq', 'cerebras', 'openai', 'openrouter']);
   const [providerLabels, setProviderLabels] = useState<string[]>(['Groq Inference', 'Cerebras Speed', 'OpenAI Premium', 'OpenRouter Global']);
+  // Populated from GET /providers/ — only providers the user has actually
+  // connected (saved a valid API key for) show up here. Starts empty; the
+  // "no provider connected" hint renders until this is populated.
+  const [sttProviders, setSttProviders] = useState<string[]>([]);
+  const [sttProviderLabels, setSttProviderLabels] = useState<string[]>([]);
+  const [ttsProviders, setTtsProviders] = useState<string[]>([]);
+  const [ttsProviderLabels, setTtsProviderLabels] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<any>(editingAgent || {
     agentName: '',
@@ -125,50 +175,124 @@ const CreateAgentPage = () => {
       try {
         const res = await api.get('/providers/');
         const connections = res.data || [];
-        if (connections.length > 0) {
-          const mergedModels = { ...LLM_MODELS };
-          const pList = ['groq', 'cerebras', 'openai', 'openrouter'];
-          const pLabels = ['Groq Inference', 'Cerebras Speed', 'OpenAI Premium', 'OpenRouter Global'];
-          
-          const labelMapping: Record<string, string> = {
-            groq: 'Groq Inference',
-            cerebras: 'Cerebras Speed',
-            openai: 'OpenAI Premium',
-            openrouter: 'OpenRouter Global',
-            anthropic: 'Anthropic Claude',
-            gemini: 'Google Gemini',
-            deepseek: 'DeepSeek AI',
-            together_ai: 'Together AI',
-            sarvam: 'Sarvam AI',
-            deepgram: 'Deepgram Cloud',
-            elevenlabs: 'ElevenLabs Voices',
-            cartesia: 'Cartesia Sonic',
-            assemblyai: 'AssemblyAI'
-          };
 
-          connections.forEach((conn: any) => {
-            const pName = conn.provider.toLowerCase();
-            if (conn.models && conn.models.length > 0) {
-              const parsed = conn.models.map((m: any) => ({
-                id: m.model_id,
-                name: m.name || m.model_id
-              }));
-              
-              if (!pList.includes(pName)) {
-                pList.push(pName);
-                pLabels.push(labelMapping[pName] || conn.provider.toUpperCase());
-              }
-              // Merge/Override models lists
-              (mergedModels as any)[pName] = parsed;
+        const labelMapping: Record<string, string> = {
+          groq: 'Groq Inference',
+          cerebras: 'Cerebras Speed',
+          openai: 'OpenAI Premium',
+          openrouter: 'OpenRouter Global',
+          anthropic: 'Anthropic Claude',
+          gemini: 'Google Gemini',
+          deepseek: 'DeepSeek AI',
+          together_ai: 'Together AI',
+          sarvam: 'Sarvam AI',
+          deepgram: 'Deepgram Cloud',
+          elevenlabs: 'ElevenLabs Voices',
+          cartesia: 'Cartesia Sonic',
+          assemblyai: 'AssemblyAI'
+        };
+
+        const mergedModels = { ...LLM_MODELS };
+        const pList = ['groq', 'cerebras', 'openai', 'openrouter'];
+        const pLabels = ['Groq Inference', 'Cerebras Speed', 'OpenAI Premium', 'OpenRouter Global'];
+        const sttList: string[] = [];
+        const sttLabels: string[] = [];
+        const ttsList: string[] = [];
+        const ttsLabels: string[] = [];
+
+        connections.forEach((conn: any) => {
+          // Only trust connections the backend reports as actually connected
+          // — a saved-but-invalid key shouldn't be selectable either.
+          if (conn.status && conn.status !== 'connected') return;
+
+          const pName = conn.provider.toLowerCase();
+          const label = labelMapping[pName] || conn.provider.toUpperCase();
+          const caps = PROVIDER_CAPABILITIES[pName] || [];
+
+          if (conn.models && conn.models.length > 0) {
+            // FIX: capability `type` was previously dropped here, leaving
+            // only {id, name}. A provider like Groq returns BOTH chat
+            // models and Whisper STT models in one flat list, and Cartesia
+            // returns voice identities alongside its STT/TTS model names —
+            // without `type` surviving the mapping, there was no way to
+            // tell these apart later, so e.g. Groq's whisper models could
+            // leak into the LLM "Core Inference Model" dropdown. Keep
+            // `type` (from the backend's `capabilities.type`, defaulting to
+            // 'llm' when absent) so downstream filtering by capability is
+            // accurate for every provider.
+            const parsed = conn.models.map((m: any) => ({
+              id: m.model_id,
+              name: m.name || m.model_id,
+              type: m.capabilities?.type || 'llm'
+            }));
+
+            // FIX: this used to push *any* connected provider with a
+            // non-empty models list into the LLM dropdown, even ones that
+            // only support STT/TTS (e.g. connecting Cartesia — which
+            // returns voice entries here — was making "Cartesia" show up
+            // as a selectable Intelligence Provider). Only add it to the
+            // LLM list if it actually has that capability.
+            if (caps.includes('llm') && !pList.includes(pName)) {
+              pList.push(pName);
+              pLabels.push(label);
             }
-          });
+            // Merge/Override models lists — used for LLM models AND as the
+            // live per-account voice catalogue for non-static TTS providers.
+            (mergedModels as any)[pName] = parsed;
+          }
 
-          setDynamicModels(mergedModels);
-          setAvailableProviders(pList);
-          setProviderLabels(pLabels);
-        }
+          // FIX: previously STT/TTS providers were a hardcoded list here,
+          // so an agent could be configured with a provider that had no API
+          // key on file. Now: only a connected provider whose capabilities
+          // include stt/tts shows up in that dropdown.
+          if (caps.includes('stt') && !sttList.includes(pName)) {
+            sttList.push(pName);
+            sttLabels.push(label);
+          }
+          if (caps.includes('tts') && !ttsList.includes(pName)) {
+            ttsList.push(pName);
+            ttsLabels.push(label);
+          }
+        });
+
+        setDynamicModels(mergedModels);
+        setAvailableProviders(pList);
+        setProviderLabels(pLabels);
+        setSttProviders(sttList);
+        setSttProviderLabels(sttLabels);
+        setTtsProviders(ttsList);
+        setTtsProviderLabels(ttsLabels);
+
+        // If the form's current STT/TTS provider isn't actually connected
+        // (e.g. it's still sitting on the 'sarvam' default), snap it to the
+        // first connected option so the wizard never proposes launching an
+        // agent with an unconnected provider.
+        setFormData((prev: any) => {
+          let next = prev;
+          if (sttList.length > 0 && !sttList.includes(prev.stt.provider)) {
+            const p = sttList[0];
+            // FIX: model defaults to the first model the provider's own API
+            // actually returned for STT (mergedModels[p], type==='stt'),
+            // never a hardcoded string.
+            const sttModels = ((mergedModels as any)[p] || []).filter((m: any) => m.type === 'stt');
+            next = { ...next, stt: { ...next.stt, provider: p, model: sttModels[0]?.id || '' } };
+          }
+          if (ttsList.length > 0 && !ttsList.includes(prev.tts.provider)) {
+            const p = ttsList[0];
+            const voiceList = STATIC_VOICE_PROVIDERS.has(p)
+              ? (TTS_VOICES[p as keyof typeof TTS_VOICES] || [])
+              : ((mergedModels as any)[p] || []).filter((m: any) => m.type === 'voice');
+            const ttsModels = ((mergedModels as any)[p] || []).filter((m: any) => m.type === 'tts');
+            next = { ...next, tts: { ...next.tts, provider: p, model: ttsModels[0]?.id || '', voice: voiceList[0]?.id || next.tts.voice } };
+          }
+          return next;
+        });
       } catch (err) {
         console.error("Failed to load dynamic provider configurations", err);
+        setSttProviders([]);
+        setSttProviderLabels([]);
+        setTtsProviders([]);
+        setTtsProviderLabels([]);
       }
     };
 
@@ -327,7 +451,42 @@ const CreateAgentPage = () => {
   }
 
   const currentProvider = (formData.llm?.provider || 'groq') as keyof typeof LLM_MODELS;
-  const currentModels = dynamicModels[currentProvider] || LLM_MODELS.groq;
+  // FIX: dynamicModels[provider] can contain a mix of capability types (a
+  // connected Groq key returns chat models AND Whisper STT models in one
+  // list). Filter to type==='llm' so the Core Inference Model dropdown
+  // never offers an STT/TTS model as an LLM choice.
+  const currentModels = (dynamicModels[currentProvider] || LLM_MODELS.groq).filter(
+    (m: any) => !m.type || m.type === 'llm'
+  );
+
+  // STT model options for the selected STT provider — pulled live from
+  // whatever GET /providers/ returned for that provider's key (filtered to
+  // type==='stt'), never a hardcoded per-provider string.
+  const getSttModelOptions = (provider: string) => {
+    if (!sttProviders.includes(provider)) return [];
+    return (dynamicModels[provider] || []).filter((m: any) => m.type === 'stt');
+  };
+
+  // TTS model options for the selected TTS provider — same idea, filtered
+  // to type==='tts' (kept separate from the voice *identity* list below).
+  const getTtsModelOptions = (provider: string) => {
+    if (!ttsProviders.includes(provider)) return [];
+    return (dynamicModels[provider] || []).filter((m: any) => m.type === 'tts');
+  };
+
+  // Voice options for the selected TTS provider: sarvam/openai use a fixed
+  // named-voice catalogue (neither provider exposes a "list voices" API for
+  // these); cartesia/elevenlabs use the voice list actually fetched from
+  // that provider's key (dynamicModels, type==='voice'). If the provider
+  // isn't actually connected, this returns [] — the panel shows an empty
+  // state instead of a stale/unrelated voice list.
+  const getTtsVoiceOptions = (provider: string) => {
+    if (!ttsProviders.includes(provider)) return [];
+    if (STATIC_VOICE_PROVIDERS.has(provider)) {
+      return TTS_VOICES[provider as keyof typeof TTS_VOICES] || [];
+    }
+    return (dynamicModels[provider] || []).filter((m: any) => m.type === 'voice');
+  };
 
   if (wizardStage === 'select_path') {
     return (
@@ -686,13 +845,38 @@ const CreateAgentPage = () => {
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <ProPanel label="STT (The Ear)" icon={<Monitor size={14} />}>
+                  {sttProviders.length === 0 && (
+                    <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-600">
+                      No STT provider connected yet. Add an API key on the Providers page first.
+                    </div>
+                  )}
                   <ConfigGroup 
                     label="Signal Provider" 
                     value={formData.stt.provider} 
-                    options={['sarvam', 'deepgram']} 
-                    labels={['Sarvam Voice', 'Deepgram Premium']}
-                    onChange={(p: string) => setFormData({ ...formData, stt: { ...formData.stt, provider: p } })} 
+                    options={sttProviders} 
+                    labels={sttProviderLabels}
+                    onChange={(p: string) => {
+                      // FIX: previously only `provider` was updated here,
+                      // leaving `model` stuck on the old provider's model
+                      // name. Re-derive `model` from that provider's own
+                      // live model list (first entry) every time.
+                      const models = getSttModelOptions(p);
+                      setFormData({
+                        ...formData,
+                        stt: { ...formData.stt, provider: p, model: models[0]?.id || '' },
+                      });
+                    }} 
                   />
+                  <div className="space-y-1.5 flex-1 min-w-0">
+                    <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">STT Model</label>
+                    <Select
+                      value={formData.stt.model}
+                      onChange={(m: string) => setFormData({ ...formData, stt: { ...formData.stt, model: m } })}
+                      options={getSttModelOptions(formData.stt.provider).map((m: any) => ({ value: m.id, label: m.name }))}
+                      placeholder="No models available"
+                      className="w-full text-xs"
+                    />
+                  </div>
                   <ConfigGroup 
                     label="Primary Language" 
                     value={formData.language} 
@@ -703,23 +887,56 @@ const CreateAgentPage = () => {
                 </ProPanel>
 
                 <ProPanel label="TTS (The Mouth)" icon={<Volume2 size={14} />}>
+                  {ttsProviders.length === 0 && (
+                    <div className="mb-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-[11px] font-semibold text-amber-600">
+                      No TTS provider connected yet. Add an API key on the Providers page first.
+                    </div>
+                  )}
                   <ConfigGroup 
                     label="Signal Provider" 
                     value={formData.tts.provider} 
-                    options={['sarvam', 'openai']} 
-                    labels={['Sarvam TTS', 'OpenAI Premium']}
+                    options={ttsProviders} 
+                    labels={ttsProviderLabels}
                     onChange={(p: string) => {
-                      const list = TTS_VOICES[p as keyof typeof TTS_VOICES] || [];
+                      // FIX: previously only `voice` was reset here, leaving
+                      // `model` stuck on the old provider's model name (e.g.
+                      // Sarvam's 'bulbul:v3' surviving a switch to OpenAI).
+                      // Both `model` and `voice` now come from that
+                      // provider's own live list, never a hardcoded string.
+                      const voiceList = getTtsVoiceOptions(p);
+                      const modelList = getTtsModelOptions(p);
                       setFormData({ 
                         ...formData, 
-                        tts: { ...formData.tts, provider: p, voice: list[0]?.id || 'neha' } 
+                        tts: {
+                          ...formData.tts,
+                          provider: p,
+                          model: modelList[0]?.id || '',
+                          voice: voiceList[0]?.id || '',
+                        } 
                       });
                     }} 
                   />
+                  {getTtsModelOptions(formData.tts.provider).length > 0 && (
+                    <div className="space-y-1.5 mt-4">
+                      <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">TTS Model</label>
+                      <Select
+                        value={formData.tts.model}
+                        onChange={(m: string) => setFormData({ ...formData, tts: { ...formData.tts, model: m } })}
+                        options={getTtsModelOptions(formData.tts.provider).map((m: any) => ({ value: m.id, label: m.name }))}
+                        placeholder="No models available"
+                        className="w-full text-xs"
+                      />
+                    </div>
+                  )}
                   <div className="space-y-2 mt-4">
                     <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Voice Identity</label>
+                    {getTtsVoiceOptions(formData.tts.provider).length === 0 ? (
+                      <div className="rounded-lg border border-[var(--border)] bg-[var(--surface-secondary)] px-3 py-4 text-[11px] font-semibold text-[var(--text-secondary)] text-center">
+                        Select a connected TTS provider above to see its available voices.
+                      </div>
+                    ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar">
-                      {((TTS_VOICES[formData.tts.provider as keyof typeof TTS_VOICES] || [])).map((v: any) => {
+                      {getTtsVoiceOptions(formData.tts.provider).map((v: any) => {
                         const isSelected = formData.tts.voice === v.id;
                         const isMale = v.id === 'shubh' || v.id === 'aditya' || v.id === 'echo';
                         const isFemale = v.id === 'neha' || v.id === 'shreya' || v.id === 'ritu' || v.id === 'shimmer';
@@ -760,6 +977,7 @@ const CreateAgentPage = () => {
                         );
                       })}
                     </div>
+                    )}
                   </div>
                 </ProPanel>
               </div>

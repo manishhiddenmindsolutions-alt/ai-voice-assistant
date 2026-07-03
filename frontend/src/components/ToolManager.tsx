@@ -683,6 +683,19 @@ export const ToolManager: React.FC = () => {
                         />
                         <p className="text-[8px] text-[var(--text-muted)] ml-1 mt-0.5">Paste the full Google Sheet link — the spreadsheet ID will be extracted automatically.</p>
                       </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold text-[var(--text-secondary)] uppercase tracking-wider ml-1">Sheet Tab / Range (optional)</label>
+                        <input
+                          className="input-field font-mono"
+                          placeholder="Leave blank to auto-use the first tab"
+                          value={newTool.config?.range || ''}
+                          onChange={e => setNewTool({...newTool, config: {...newTool.config, range: e.target.value}})}
+                        />
+                        <p className="text-[8px] text-[var(--text-muted)] ml-1 mt-0.5">
+                          Only needed if you want the agent to write to a specific tab, e.g. <code>Leads!A1</code>. By default the agent writes to whichever tab is first in the spreadsheet — it no longer assumes a tab literally named "Sheet1".
+                        </p>
+                      </div>
                     </div>
                   )}
 

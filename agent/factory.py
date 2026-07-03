@@ -12,6 +12,16 @@ dispatched by the backend. The worker entrypoint should do:
         session = AgentSession(vad=create_vad(config))
         await session.start(ctx.room, agent=agent)
         await session.generate_reply()        # speaks first_message if set
+
+NOTE ON API KEYS:
+LLM / STT / TTS provider API keys are always BYOK (bring-your-own-key),
+configured by the user through the frontend UI and resolved server-side
+in `agent_metadata_service.py` before being placed on the dispatch
+metadata blob (`config["llm"]["apiKey"]`, `config["stt"]["apiKey"]`,
+`config["tts"]["apiKey"]`). This factory intentionally does NOT fall back
+to any `os.getenv(...)` value for these keys — if a key is missing from
+the config, provider init fails loudly instead of silently picking up a
+key from the worker process's environment.
 """
 
 import os
@@ -21,7 +31,7 @@ import logging
 import datetime
 import urllib.parse as urlparse
 from urllib.parse import urlencode
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any, Dict, List, Optional, Union
 
 import aiohttp
 from pydantic import Field
@@ -53,6 +63,27 @@ except ImportError:
     cartesia = None  # type: ignore
 
 logger = logging.getLogger("agent-factory")
+
+
+# ---------------------------------------------------------------------------
+# BYOK key enforcement
+# ---------------------------------------------------------------------------
+class MissingAPIKeyError(RuntimeError):
+    """Raised when a provider is selected but no BYOK key was supplied."""
+
+
+def _require_key(api_key: Optional[str], provider: str, kind: str) -> str:
+    """
+    Ensures a provider API key was actually supplied via the config blob
+    (i.e. set by the user in the frontend UI). We deliberately never fall
+    back to process environment variables for these — BYOK only.
+    """
+    if not api_key or not api_key.strip():
+        raise MissingAPIKeyError(
+            f"No {kind.upper()} API key configured for provider '{provider}'. "
+            f"Add one in the frontend under Settings → API Keys."
+        )
+    return api_key.strip()
 
 
 # ---------------------------------------------------------------------------
@@ -174,9 +205,9 @@ class NativeToolHandler:
 # Dynamic webhook caller
 # ---------------------------------------------------------------------------
 async def _call_webhook(tool_cfg: Dict[str, Any], query: str) -> str:
-    url = tool_cfg.get("url", "")
-    method = tool_cfg.get("method", "POST").upper()
-    config = tool_cfg.get("config", {})
+    url = tool_cfg.get("url") or ""
+    method = (tool_cfg.get("method") or "POST").upper()
+    config = tool_cfg.get("config") or {}
 
     # Build payload
     payload: Any = {"query": query, **config}
@@ -191,9 +222,9 @@ async def _call_webhook(tool_cfg: Dict[str, Any], query: str) -> str:
             logger.warning(f"Body template parse failed for {url}: {exc}")
 
     # Headers + auth
-    headers = {**tool_cfg.get("headers", {})}
+    headers = {**(tool_cfg.get("headers") or {})}
     api_key = tool_cfg.get("apiKey")
-    if api_key:
+    if api_key and isinstance(api_key, str):
         if api_key.startswith("Bearer ") or len(api_key) > 40:
             headers["Authorization"] = api_key if api_key.startswith("Bearer ") else f"Bearer {api_key}"
         else:
@@ -292,28 +323,52 @@ def _build_stt(config: Dict[str, Any]) -> agents_stt.STT:
     api_key  = config.get("stt", {}).get("apiKey") or ""
 
     logger.info(f"[STT] provider={provider} lang={lang}")
-    try:
-        if provider == "sarvam" and sarvam is not None:
-            norm = normalize_sarvam_lang(lang)
-            return sarvam.STT(
-                api_key=api_key or os.getenv("SARVAM_API_KEY"),
-                model="saaras:v3",
-                language=norm,
-            )
-        if provider == "deepgram":
-            return deepgram.STT(
-                api_key=api_key or os.getenv("DEEPGRAM_API_KEY"),
-                language=lang,
-            )
-        # default: groq
-        return groq.STT(
-            api_key=api_key or os.getenv("GROQ_API_KEY"),
-            model="whisper-large-v3",
+
+    if provider == "sarvam" and sarvam is not None:
+        key = _require_key(api_key, "sarvam", "stt")
+        norm = normalize_sarvam_lang(lang)
+        # FIX: previously hardcoded model="saaras:v3" regardless of what the
+        # frontend sent — the STT Model dropdown in the UI had no effect for
+        # Sarvam. Now honors config["stt"]["model"], falling back to the
+        # only model Sarvam actually offers today.
+        model = config.get("stt", {}).get("model") or "saaras:v3"
+        return sarvam.STT(
+            api_key=key,
+            model=model,
+            language=norm,
+        )
+    if provider == "deepgram":
+        key = _require_key(api_key, "deepgram", "stt")
+        # FIX: previously didn't pass `model` at all, so the plugin's own
+        # default was always used no matter what the user picked in the UI
+        # (nova-2, nova-3, etc. were all silently ignored).
+        model = config.get("stt", {}).get("model") or "nova-2"
+        return deepgram.STT(
+            api_key=key,
+            model=model,
             language=lang,
         )
-    except Exception as exc:
-        logger.error(f"[STT] init failed ({provider}): {exc} — falling back to groq")
-        return groq.STT()
+    if provider == "cartesia" and cartesia is not None:
+        key = _require_key(api_key, "cartesia", "stt")
+        # ink-2 only supports English; ink-whisper covers everything else.
+        model = config.get("stt", {}).get("model") or ("ink-2" if lang.startswith("en") else "ink-whisper")
+        return cartesia.STT(
+            api_key=key,
+            model=model,
+            language=lang,
+        )
+    if provider == "groq":
+        key = _require_key(api_key, "groq", "stt")
+        # FIX: previously hardcoded model="whisper-large-v3" regardless of
+        # what the user selected (e.g. whisper-large-v3-turbo).
+        model = config.get("stt", {}).get("model") or "whisper-large-v3"
+        return groq.STT(
+            api_key=key,
+            model=model,
+            language=lang,
+        )
+
+    raise MissingAPIKeyError(f"Unsupported or unavailable STT provider: '{provider}'")
 
 
 def _build_llm(config: Dict[str, Any]) -> llm.LLM:
@@ -323,71 +378,75 @@ def _build_llm(config: Dict[str, Any]) -> llm.LLM:
     api_key     = config.get("llm", {}).get("apiKey") or ""
 
     logger.info(f"[LLM] provider={provider} model={model}")
-    try:
-        if provider == "cerebras":
-            return openai.LLM(
-                api_key=api_key or os.getenv("CEREBRAS_API_KEY"),
-                base_url="https://api.cerebras.ai/v1",
-                model=model or "llama-3.3-70b",
-                temperature=temperature,
-            )
-        if provider == "openai":
-            return openai.LLM(
-                api_key=api_key or os.getenv("OPENAI_API_KEY"),
-                model=model or "gpt-4o-mini",
-                temperature=temperature,
-            )
-        if provider == "openrouter":
-            return OpenRouterLLM(
-                api_key=api_key or os.getenv("OPENROUTER_API_KEY"),
-                base_url="https://openrouter.ai/api/v1",
-                model=model or "meta-llama/llama-3.3-70b-instruct",
-                temperature=temperature,
-                extra_headers={
-                    "HTTP-Referer": "https://livekit.io",
-                    "X-Title": "LiveKit Voice Agent",
-                },
-            )
-        if provider == "gemini":
-            return openai.LLM(
-                api_key=api_key or os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY"),
-                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-                model=model or "gemini-2.5-flash",
-                temperature=temperature,
-            )
-        if provider in ("together_ai", "together"):
-            return openai.LLM(
-                api_key=api_key or os.getenv("TOGETHER_API_KEY") or os.getenv("TOGETHER_AI_KEY"),
-                base_url="https://api.together.xyz/v1",
-                model=model or "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
-                temperature=temperature,
-            )
-        if provider == "deepseek":
-            return openai.LLM(
-                api_key=api_key or os.getenv("DEEPSEEK_API_KEY"),
-                base_url="https://api.deepseek.com/v1",
-                model=model or "deepseek-chat",
-                temperature=temperature,
-            )
-        if provider == "anthropic":
-            try:
-                from livekit.plugins import anthropic as anthropic_plugin
-                return anthropic_plugin.LLM(
-                    api_key=api_key or os.getenv("ANTHROPIC_API_KEY"),
-                    model=model or "claude-3-5-sonnet-latest",
-                )
-            except Exception as exc:
-                logger.error(f"[LLM] Anthropic plugin failed: {exc}")
-                return groq.LLM()
-        # default: groq
+
+    if provider == "cerebras":
+        key = _require_key(api_key, "cerebras", "llm")
+        return openai.LLM(
+            api_key=key,
+            base_url="https://api.cerebras.ai/v1",
+            model=model or "llama-3.3-70b",
+            temperature=temperature,
+        )
+    if provider == "openai":
+        key = _require_key(api_key, "openai", "llm")
+        return openai.LLM(
+            api_key=key,
+            model=model or "gpt-4o-mini",
+            temperature=temperature,
+        )
+    if provider == "openrouter":
+        key = _require_key(api_key, "openrouter", "llm")
+        return OpenRouterLLM(
+            api_key=key,
+            base_url="https://openrouter.ai/api/v1",
+            model=model or "meta-llama/llama-3.3-70b-instruct",
+            temperature=temperature,
+            extra_headers={
+                "HTTP-Referer": "https://livekit.io",
+                "X-Title": "LiveKit Voice Agent",
+            },
+        )
+    if provider == "gemini":
+        key = _require_key(api_key, "gemini", "llm")
+        return openai.LLM(
+            api_key=key,
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            model=model or "gemini-2.5-flash",
+            temperature=temperature,
+        )
+    if provider in ("together_ai", "together"):
+        key = _require_key(api_key, "together_ai", "llm")
+        return openai.LLM(
+            api_key=key,
+            base_url="https://api.together.xyz/v1",
+            model=model or "meta-llama/Meta-Llama-3.1-8B-Instruct-Turbo",
+            temperature=temperature,
+        )
+    if provider == "deepseek":
+        key = _require_key(api_key, "deepseek", "llm")
+        return openai.LLM(
+            api_key=key,
+            base_url="https://api.deepseek.com/v1",
+            model=model or "deepseek-chat",
+            temperature=temperature,
+        )
+    if provider == "anthropic":
+        key = _require_key(api_key, "anthropic", "llm")
+        from livekit.plugins import anthropic as anthropic_plugin
+        return anthropic_plugin.LLM(
+            api_key=key,
+            model=model or "claude-3-5-sonnet-latest",
+            caching="ephemeral",
+        )
+    if provider == "groq":
+        key = _require_key(api_key, "groq", "llm")
         return groq.LLM(
-            api_key=api_key or os.getenv("GROQ_API_KEY"),
+            api_key=key,
             model=model or "llama-3.3-70b-versatile",
             temperature=temperature,
         )
-    except Exception as exc:
-        logger.error(f"[LLM] init failed ({provider}): {exc} — falling back to groq")
-        return groq.LLM()
+
+    raise MissingAPIKeyError(f"Unsupported LLM provider: '{provider}'")
 
 
 def _build_tts(config: Dict[str, Any], stt_lang: str) -> agents_tts.TTS:
@@ -397,35 +456,44 @@ def _build_tts(config: Dict[str, Any], stt_lang: str) -> agents_tts.TTS:
     api_key  = config.get("tts", {}).get("apiKey") or ""
 
     logger.info(f"[TTS] provider={provider}")
-    try:
-        if provider == "openai":
-            return openai.TTS(
-                api_key=api_key or os.getenv("OPENAI_API_KEY"),
-                model=model or "tts-1",
-                voice=voice or "alloy",
-            )
-        if provider == "elevenlabs" and elevenlabs is not None:
-            return elevenlabs.TTS(
-                api_key=api_key or os.getenv("ELEVENLABS_API_KEY"),
-                model=model or "eleven_monolingual_v1",
-                voice_id=voice or "21m00Tcm4TlvDq8ikWAM",
-            )
-        if provider == "cartesia" and cartesia is not None:
-            return cartesia.TTS(
-                api_key=api_key or os.getenv("CARTESIA_API_KEY"),
-                model=model or "sonic-english",
-                voice=voice or "pf_rachel",
-            )
-        # default: Sarvam Bulbul
+
+    if provider == "openai":
+        key = _require_key(api_key, "openai", "tts")
+        return openai.TTS(
+            api_key=key,
+            model=model or "tts-1",
+            voice=voice or "alloy",
+        )
+    if provider == "elevenlabs" and elevenlabs is not None:
+        key = _require_key(api_key, "elevenlabs", "tts")
+        return elevenlabs.TTS(
+            api_key=key,
+            model=model or "eleven_monolingual_v1",
+            voice_id=voice or "21m00Tcm4TlvDq8ikWAM",
+        )
+    if provider == "cartesia" and cartesia is not None:
+        key = _require_key(api_key, "cartesia", "tts")
+        return cartesia.TTS(
+            api_key=key,
+            model=model or "sonic-2",
+            voice=voice or "pf_rachel",
+        )
+    if provider == "sarvam":
         if sarvam is None:
             raise ImportError("livekit-plugins-sarvam not installed")
+        key = _require_key(api_key, "sarvam", "tts")
         norm_lang = normalize_sarvam_lang(stt_lang)
         logger.info(f"[TTS] Sarvam lang: '{stt_lang}' → '{norm_lang}'")
+        # FIX: previously hardcoded model="bulbul:v3" regardless of
+        # config["tts"]["model"] — the TTS Model dropdown had no effect
+        # for Sarvam. Now honors the configured value, falling back to the
+        # only model Sarvam actually offers today.
+        tts_model = model or "bulbul:v3"
         tts_instance = sarvam.TTS(
-            api_key=api_key or os.getenv("SARVAM_API_KEY"),
+            api_key=key,
             target_language_code=norm_lang,
             speaker=voice or "shubh",
-            model="bulbul:v3",
+            model=tts_model,
         )
         # Patch stale WebSocket connection pool
         try:
@@ -435,9 +503,8 @@ def _build_tts(config: Dict[str, Any], stt_lang: str) -> agents_tts.TTS:
         except Exception as patch_err:
             logger.warning(f"[TTS] Sarvam pool patch skipped: {patch_err}")
         return tts_instance
-    except Exception as exc:
-        logger.error(f"[TTS] init failed ({provider}): {exc} — falling back to openai tts-1")
-        return openai.TTS(model="tts-1", voice="alloy")
+
+    raise MissingAPIKeyError(f"Unsupported or unavailable TTS provider: '{provider}'")
 
 
 def _build_tools(config: Dict[str, Any]) -> list[llm.FunctionTool]:
@@ -450,26 +517,36 @@ def _build_tools(config: Dict[str, Any]) -> list[llm.FunctionTool]:
     agent_tools: list[llm.FunctionTool] = []
 
     # ── Dynamic tools from config ──────────────────────────────────────────
+    # NOTE: each tool is built inside its own try/except. A single
+    # misconfigured tool (bad/null config, missing field, etc.) must never
+    # take down the whole job — that would crash the entrypoint before the
+    # agent joins the room, leaving the caller stuck at "connecting" with
+    # no indication of why. We'd rather run the call with N-1 tools and log
+    # the failure loudly than fail the whole call silently.
     for t_cfg in tools_cfg:
         if not isinstance(t_cfg, dict):
             logger.warning(f"[Tools] Skipping non-dict tool config: {t_cfg}")
             continue
 
-        raw_type  = t_cfg.get("tool_type") or t_cfg.get("type", "WEBHOOK")
-        tool_type = raw_type.upper()
-        raw_name  = t_cfg.get("name", "unknown_tool")
-        name      = raw_name.lower().replace(" ", "_")
-        desc      = t_cfg.get("description", "").strip() or _default_desc(tool_type, name)
+        raw_name = t_cfg.get("name") or "unknown_tool"
+        try:
+            raw_type  = t_cfg.get("tool_type") or t_cfg.get("type") or "WEBHOOK"
+            tool_type = str(raw_type).upper()
+            name      = str(raw_name).lower().replace(" ", "_")
+            desc      = (t_cfg.get("description") or "").strip() or _default_desc(tool_type, name)
 
-        if tool_type == "CALENDAR":
-            tool = _make_calendar_tool(t_cfg, name, desc)
-        elif tool_type == "SHEETS":
-            tool = _make_sheets_tool(t_cfg, name, desc)
-        else:
-            # WEBHOOK / N8N / anything else
-            tool = _make_webhook_tool(t_cfg, name, desc)
+            if tool_type == "CALENDAR":
+                tool = _make_calendar_tool(t_cfg, name, desc)
+            elif tool_type == "SHEETS":
+                tool = _make_sheets_tool(t_cfg, name, desc)
+            else:
+                # WEBHOOK / N8N / anything else
+                tool = _make_webhook_tool(t_cfg, name, desc)
 
-        agent_tools.append(tool)
+            agent_tools.append(tool)
+        except Exception as exc:
+            # Log and skip — never let one bad tool break the whole session.
+            logger.error(f"[Tools] Failed to build tool '{raw_name}' (config={t_cfg}): {exc}")
 
     # ── RAG search tool ────────────────────────────────────────────────────
     agent_id = config.get("id") or config.get("agentId")
@@ -497,7 +574,12 @@ def _default_desc(tool_type: str, name: str) -> str:
 
 
 def _make_calendar_tool(t_cfg: Dict[str, Any], name: str, desc: str) -> llm.FunctionTool:
-    calendar_id = t_cfg.get("config", {}).get("calendarId", "primary")
+    # `.get("config", {})` only falls back when the key is *missing* — if a
+    # tool was ever saved with an explicit null config, `t_cfg["config"]` is
+    # `None` and `.get("config", {})` still returns `None`, crashing the
+    # next `.get()` call. `or {}` covers both cases.
+    cfg = t_cfg.get("config") or {}
+    calendar_id = cfg.get("calendarId") or "primary"
     token = t_cfg.get("apiKey", "")
 
     async def _fn(
@@ -527,16 +609,30 @@ def _make_calendar_tool(t_cfg: Dict[str, Any], name: str, desc: str) -> llm.Func
 
 
 def _make_sheets_tool(t_cfg: Dict[str, Any], name: str, desc: str) -> llm.FunctionTool:
-    raw_id = t_cfg.get("config", {}).get("spreadsheetId", "")
+    cfg = t_cfg.get("config") or {}
+    raw_id = (cfg.get("spreadsheetId") or "").strip()
     # Accept full URL or bare ID
     match = re.search(r"/spreadsheets/d/([a-zA-Z0-9\-_]+)", raw_id)
-    sheet_id = match.group(1) if match else raw_id.strip()
-    sheet_range = t_cfg.get("config", {}).get("range", "Sheet1!A1")
+    sheet_id = match.group(1) if match else raw_id
+    # A range with NO sheet-name prefix (e.g. "A1") targets the first
+    # visible tab automatically per the Sheets API. We only use an explicit
+    # "SheetName!A1"-style range if the user configured one — hardcoding
+    # "Sheet1!A1" broke for any spreadsheet whose first tab wasn't
+    # literally named "Sheet1" (renamed tabs, non-English locales, etc).
+    sheet_range = (cfg.get("range") or "").strip() or "A1"
     token = t_cfg.get("apiKey", "")
 
     async def _fn(
+        # Accept both array and plain-string payloads. Smaller/faster LLMs
+        # (e.g. llama-3.1-8b-instant) occasionally emit a bare string
+        # instead of a JSON array for this argument; a schema that only
+        # allows `array | null` causes a hard tool-call validation error
+        # from the inference API and kills the whole turn. Allowing
+        # `array | string | null` and normalizing below makes the tool
+        # tolerant of that without losing structure when the model gets it
+        # right.
         data_row: Annotated[
-            Optional[List[str]],
+            Union[List[str], str, None],
             Field(description="Values to append, e.g. ['John Doe', 'john@example.com', 'Interested']"),
         ] = None,
         **kwargs: Any,
@@ -544,12 +640,16 @@ def _make_sheets_tool(t_cfg: Dict[str, Any], name: str, desc: str) -> llm.Functi
         """Log information or lead details to a Google Sheets row."""
         logger.info(f"[SHEETS] tool={name} data_row={data_row} kwargs={kwargs}")
         values: List[Any] = []
-        if data_row:
-            values.extend(data_row if isinstance(data_row, list) else [data_row])
+        if isinstance(data_row, list):
+            values.extend(data_row)
+        elif isinstance(data_row, str) and data_row.strip():
+            values.append(data_row.strip())
         if kwargs:
             values.extend(kwargs.values())
         if not values:
             return "Failed: no data values provided."
+        if not sheet_id:
+            return "Failed: this Sheets tool has no spreadsheet configured."
         result = await NativeToolHandler.append_to_sheet(token, sheet_id, sheet_range, values)
         logger.info(f"[SHEETS] result={result}")
         return result

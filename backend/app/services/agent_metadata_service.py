@@ -77,9 +77,16 @@ async def build_agent_metadata(agent: AgentORM, db: AsyncSession) -> str:
     }
 
     # ── STT ──────────────────────────────────────────────────────────────────
+    # FIX: this block previously omitted "model" entirely (unlike llm_config
+    # and tts_config above), so whatever STT model the user picked in the
+    # frontend never made it into the dispatch metadata blob — factory.py's
+    # _build_stt() would then always fall back to its own hardcoded
+    # per-provider default (e.g. "whisper-large-v3"), silently ignoring the
+    # user's actual selection (e.g. "whisper-large-v3-turbo").
     stt_provider = agent_config.get("stt", {}).get("provider", "groq")
     stt_config = {
         "provider": stt_provider,
+        "model": agent_config.get("stt", {}).get("model", ""),
         "apiKey": (
             provider_keys.get(stt_provider)
             or agent_config.get("stt", {}).get("apiKey", "")

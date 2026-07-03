@@ -93,12 +93,28 @@ async def fetch_provider_models_api(provider: str, api_key: str) -> List[dict]:
                         data = await resp.json()
                         for m in data.get("data", []):
                             mid = m.get("id")
-                            models.append({
-                                "model_id": mid,
-                                "name": mid.replace("-", " ").title(),
-                                "context_window": 128000 if "70b" in mid or "llama-3.3" in mid else 8192,
-                                "capabilities": {"supports_vision": "vision" in mid, "supports_tools": True}
-                            })
+                            # Groq's /models endpoint returns BOTH chat models
+                            # (llama-3.x, mixtral, ...) and its hosted Whisper
+                            # STT models (whisper-large-v3, distil-whisper-*)
+                            # in one flat list. Previously every entry was
+                            # tagged as a plain LLM model, so the frontend had
+                            # no way to tell them apart and Groq never showed
+                            # up as a real, model-aware STT option — it just
+                            # fell back to whatever was hardcoded.
+                            if "whisper" in mid.lower():
+                                models.append({
+                                    "model_id": mid,
+                                    "name": mid.replace("-", " ").title(),
+                                    "context_window": 0,
+                                    "capabilities": {"type": "stt"}
+                                })
+                            else:
+                                models.append({
+                                    "model_id": mid,
+                                    "name": mid.replace("-", " ").title(),
+                                    "context_window": 128000 if "70b" in mid or "llama-3.3" in mid else 8192,
+                                    "capabilities": {"supports_vision": "vision" in mid, "supports_tools": True}
+                                })
         except Exception as e:
             logger.warning(f"Error fetching Groq models: {e}")
 
@@ -163,6 +179,33 @@ async def fetch_provider_models_api(provider: str, api_key: str) -> List[dict]:
         except Exception as e:
             logger.warning(f"Error fetching Gemini models: {e}")
 
+    # 5.6 ANTHROPIC
+    # FIX: this provider previously had NO live branch at all — it only
+    # ever returned the hand-maintained "Rich Static Fallbacks" entries
+    # below, so a connected Anthropic key never actually reflected which
+    # Claude models the account could see. Anthropic exposes a real
+    # GET /v1/models endpoint; use it like every other LLM provider here.
+    elif provider == "anthropic":
+        try:
+            headers = {
+                "x-api-key": api_key,
+                "anthropic-version": "2023-06-01",
+            }
+            async with aiohttp.ClientSession() as session:
+                async with session.get("https://api.anthropic.com/v1/models", headers=headers, timeout=5) as resp:
+                    if resp.status == 200:
+                        data = await resp.json()
+                        for m in data.get("data", []):
+                            mid = m.get("id")
+                            models.append({
+                                "model_id": mid,
+                                "name": m.get("display_name", mid),
+                                "context_window": 200000,
+                                "capabilities": {"supports_vision": True, "supports_tools": True}
+                            })
+        except Exception as e:
+            logger.warning(f"Error fetching Anthropic models: {e}")
+
     # 6. ELEVENLABS
     elif provider == "elevenlabs":
         try:
@@ -198,6 +241,15 @@ async def fetch_provider_models_api(provider: str, api_key: str) -> List[dict]:
                             })
         except Exception as e:
             logger.warning(f"Error fetching Cartesia voices: {e}")
+
+        # Cartesia's /voices endpoint only returns TTS voice identities
+        # (used for the `voice` field), not the model catalogue itself.
+        # Without these, the STT/TTS *Model* dropdowns had nothing to
+        # populate for Cartesia and the UI silently fell back to a
+        # hardcoded default the user could never actually change.
+        models.append({"model_id": "ink-whisper", "name": "Ink Whisper (Multilingual STT)", "context_window": 0, "capabilities": {"type": "stt"}})
+        models.append({"model_id": "sonic-2", "name": "Sonic 2 (Multilingual TTS)", "context_window": 0, "capabilities": {"type": "tts"}})
+        models.append({"model_id": "sonic-english", "name": "Sonic English (TTS)", "context_window": 0, "capabilities": {"type": "tts"}})
 
     # 8. SARVAM
     elif provider == "sarvam":

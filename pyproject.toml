@@ -18,6 +18,7 @@ dependencies = [
     "livekit-plugins-noise-cancellation~=0.2",
     "livekit-plugins-openai>=1.5.1",
     "livekit-plugins-sarvam",
+    "livekit-plugins-cartesia",
     "livekit-plugins-silero>=1.5.1",
     "livekit-plugins-turn-detector",
     "numpy>=1.24",

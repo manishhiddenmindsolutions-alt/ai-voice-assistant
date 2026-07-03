@@ -212,7 +212,19 @@ async def entrypoint(ctx: JobContext):
     stt_component = _build_stt(config)
     llm_component = _build_llm(config)
     tts_component = _build_tts(config, config.get("language") or "en")
-    tools         = _build_tools(config)
+
+    # _build_tools() already isolates failures per-tool, but we keep this
+    # outer guard too: if something upstream of that (e.g. a totally
+    # malformed `tools` list) still raises, we'd rather join the call with
+    # zero tools than crash the job before the agent ever connects — which
+    # from the caller's side looks like "stuck at connecting" forever with
+    # no diagnostic.
+    try:
+        tools = _build_tools(config)
+    except Exception as exc:
+        logger.error(f"--- [TOOLS] _build_tools() failed entirely, continuing with no tools: {exc} ---")
+        tools = []
+
     instructions  = _build_instructions(config, tools)
 
     def handle_farewell():

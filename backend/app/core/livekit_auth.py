@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import time
 import logging
+import base64
 from typing import Optional
 
 from jose import jwt as jose_jwt
@@ -117,7 +118,7 @@ def verify_livekit_webhook(
         raise ValueError("Webhook JWT missing sha256 claim")
 
     # Compute SHA-256 of the raw request body
-    actual_hash = hashlib.sha256(body).hexdigest()
+    actual_hash = base64.b64encode(hashlib.sha256(body).digest()).decode()
     if not hmac.compare_digest(expected_hash, actual_hash):
         raise ValueError("Webhook body hash mismatch — possible replay attack")
 

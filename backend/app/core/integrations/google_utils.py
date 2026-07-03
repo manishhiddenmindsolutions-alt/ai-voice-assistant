@@ -1,5 +1,5 @@
 import httpx
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 import logging
 # pyrefly: ignore [missing-import]
@@ -34,7 +34,10 @@ class GoogleManager:
         # 2. Check Expiration (with 5-minute buffer)
         is_expired = False
         if integration.expires_at:
-            is_expired = datetime.utcnow() + timedelta(minutes=5) >= integration.expires_at
+            expires_at = integration.expires_at
+            if expires_at.tzinfo is None:
+                expires_at = expires_at.replace(tzinfo=timezone.utc)
+            is_expired = datetime.now(timezone.utc) + timedelta(minutes=5) >= expires_at
         else:
             is_expired = True # Assume expired if no date
             
@@ -65,7 +68,7 @@ class GoogleManager:
                 
                 # 4. Update Database
                 integration.access_token = vault.encrypt(new_access)
-                integration.expires_at = datetime.utcnow() + timedelta(seconds=expires_in)
+                integration.expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
                 
                 # If a new refresh token is provided (rotating), update it too
                 if "refresh_token" in new_tokens:
