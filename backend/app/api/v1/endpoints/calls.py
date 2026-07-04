@@ -15,6 +15,30 @@ import uuid
 
 router = APIRouter()
 
+
+def _iso_utc(dt: Optional[datetime]) -> Optional[str]:
+    """Serializes a datetime as an unambiguous UTC ISO-8601 string.
+
+    Timestamps in this codebase are stored as naive UTC (DateTime columns
+    without tzinfo, populated via datetime.utcnow()). Calling plain
+    .isoformat() on a naive datetime produces a string with NO timezone
+    marker (e.g. "2026-07-04T08:57:20"). The frontend then does
+    `new Date(started_at)` — and per the JS spec, a date-time string with
+    no offset is parsed as LOCAL time, not UTC. Since the value is
+    actually UTC, every displayed call time silently shifts by the
+    viewer's UTC offset (e.g. 5:30h off for an IST user).
+
+    Appending "Z" for naive datetimes (already UTC by convention here) and
+    normalizing any tz-aware datetime to UTC keeps both cases correct, and
+    lets the frontend's existing `new Date(...).toLocaleString()` render
+    the right local time automatically for any viewer, anywhere.
+    """
+    if dt is None:
+        return None
+    if dt.tzinfo is None:
+        return dt.isoformat() + "Z"
+    return dt.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+
 # --- SCHEMAS ---
 class OutboundCallRequest(BaseModel):
     to_number: str = "+1234567890"
@@ -206,8 +230,8 @@ async def list_calls(
                 "status": c.status,
                 "duration_seconds": c.duration_seconds or 0,
                 "tokens_used": c.tokens_used or 0,
-                "started_at": c.started_at.isoformat() if c.started_at else None,
-                "ended_at": c.ended_at.isoformat() if c.ended_at else None,
+                "started_at": _iso_utc(c.started_at),
+                "ended_at": _iso_utc(c.ended_at),
                 "transcript_count": transcript_counts.get(c.id, 0),
             }
             for c in calls
@@ -264,13 +288,13 @@ async def get_call_detail(
         "status": call.status,
         "duration_seconds": call.duration_seconds or 0,
         "tokens_used": call.tokens_used or 0,
-        "started_at": call.started_at.isoformat() if call.started_at else None,
-        "ended_at": call.ended_at.isoformat() if call.ended_at else None,
+        "started_at": _iso_utc(call.started_at),
+        "ended_at": _iso_utc(call.ended_at),
         "transcripts": [
             {
                 "role": t.role,
                 "content": t.content,
-                "timestamp": t.timestamp.isoformat() if t.timestamp else None,
+                "timestamp": _iso_utc(t.timestamp),
             }
             for t in transcripts
         ],

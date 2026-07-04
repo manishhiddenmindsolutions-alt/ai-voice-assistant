@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -8,7 +8,7 @@ import {
 } from 'react-router-dom';
 
 import { Toaster } from 'react-hot-toast';
-import { Menu, Sun, Moon, Bell } from 'lucide-react';
+import { Menu, Sun, Moon, Bell, LogOut, User as UserIcon, ChevronDown } from 'lucide-react';
 
 import { useAgentStore } from './store/useAgentStore';
 import { useAuthStore } from './store/useAuthStore';
@@ -116,6 +116,7 @@ const AppLayout = () => {
     useAgentStore();
 
   const user = useAuthStore((state) => state.user);
+  const logout = useAuthStore((state) => state.logout);
 
   const { theme, toggleTheme } = useThemeStore();
 
@@ -123,6 +124,25 @@ const AppLayout = () => {
 
   const [isSidebarOpen, setIsSidebarOpen] =
     useState(false);
+
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = () => {
+    setIsUserMenuOpen(false);
+    logout();
+    navigate('/login');
+  };
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -220,43 +240,101 @@ const AppLayout = () => {
                 )}
               </button>
 
-              {/* USER AVATAR */}
-              <button
-                onClick={() => navigate('/profile')}
-                className="flex items-center gap-2.5 ml-1 group"
-              >
-                <div 
-                  className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center text-xs font-semibold transition-all duration-200"
-                  style={{ 
-                    border: '1px solid var(--border)',
-                    backgroundColor: 'var(--surface)',
-                    color: 'var(--text-primary)' 
-                  }}
+              {/* USER MENU */}
+              <div className="relative ml-1" ref={userMenuRef}>
+                <button
+                  onClick={() => setIsUserMenuOpen((open) => !open)}
+                  className="flex items-center gap-2.5 group"
                 >
-                  {user?.avatar_url ? (
-                    <img
-                      src={user.avatar_url}
-                      alt="avatar"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    user?.full_name
-                      ?.split(' ')
-                      .map((n) => n[0])
-                      .join('') || 'U'
-                  )}
-                </div>
+                  <div 
+                    className="w-9 h-9 rounded-lg overflow-hidden flex items-center justify-center text-xs font-semibold transition-all duration-200"
+                    style={{ 
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--surface)',
+                      color: 'var(--text-primary)' 
+                    }}
+                  >
+                    {user?.avatar_url ? (
+                      <img
+                        src={user.avatar_url}
+                        alt="avatar"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      user?.full_name
+                        ?.split(' ')
+                        .map((n) => n[0])
+                        .join('') || 'U'
+                    )}
+                  </div>
 
-                {/* NAME (hidden on small screens) */}
-                <div className="hidden sm:flex flex-col items-start min-w-0">
-                  <span className="text-sm font-medium truncate max-w-[160px]" style={{ color: 'var(--text-primary)' }}>
-                    {user?.full_name || 'User'}
-                  </span>
-                  <span className="text-xs truncate max-w-[160px]" style={{ color: 'var(--text-muted)' }}>
-                    {user?.email}
-                  </span>
-                </div>
-              </button>
+                  {/* NAME (hidden on small screens) */}
+                  <div className="hidden sm:flex flex-col items-start min-w-0">
+                    <span className="text-sm font-medium truncate max-w-[160px]" style={{ color: 'var(--text-primary)' }}>
+                      {user?.full_name || 'User'}
+                    </span>
+                    <span className="text-xs truncate max-w-[160px]" style={{ color: 'var(--text-muted)' }}>
+                      {user?.email}
+                    </span>
+                  </div>
+
+                  <ChevronDown
+                    size={14}
+                    className="hidden sm:block shrink-0 transition-transform duration-200"
+                    style={{
+                      color: 'var(--text-muted)',
+                      transform: isUserMenuOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                    }}
+                  />
+                </button>
+
+                {/* DROPDOWN */}
+                {isUserMenuOpen && (
+                  <div
+                    className="absolute right-0 mt-2 w-48 rounded-lg overflow-hidden z-[110] py-1"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border)',
+                      boxShadow: '0 8px 24px -4px rgba(0, 0, 0, 0.12)',
+                    }}
+                  >
+                    {/* sm:hidden identity block, shown when name/email are hidden in the header */}
+                    <div className="sm:hidden px-3 py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+                      <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>
+                        {user?.full_name || 'User'}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: 'var(--text-muted)' }}>
+                        {user?.email}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setIsUserMenuOpen(false);
+                        navigate('/profile');
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm transition-colors duration-150"
+                      style={{ color: 'var(--text-secondary)' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'var(--surface-secondary)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <UserIcon size={15} />
+                      Profile
+                    </button>
+
+                    <button
+                      onClick={handleLogout}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 text-sm font-medium transition-colors duration-150"
+                      style={{ color: '#EF4444' }}
+                      onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.08)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                    >
+                      <LogOut size={15} />
+                      Log out
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </header>

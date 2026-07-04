@@ -33,6 +33,7 @@ import hmac
 import hashlib
 import base64
 import logging
+from datetime import datetime, timezone
 from urllib.parse import urlencode, quote
 
 import httpx
@@ -46,6 +47,7 @@ from app.models.orm import UserORM, AgentORM, CallORM, CallDirection, PhoneNumbe
 from app.api.deps import get_current_user
 from app.core.security import vault
 from app.services.agent_metadata_service import build_agent_metadata
+from app.services.idempotency import idempotency_store
 
 logger = logging.getLogger("twilio")
 router = APIRouter()
@@ -304,12 +306,51 @@ async def _trigger_twilio_outbound_internal(
         f"{base_url}/api/v1/telephony/twilio/flow"
         f"?agent_id={quote(agent_id)}&room={quote(room_name)}"
     )
+    # StatusCallback: Twilio is the ONLY reliable source of real-time call
+    # status/duration for this path. LiveKit's own SIP gateway creates its
+    # own room name for the bridged leg (unrelated to `room_name` above), so
+    # the LiveKit room_finished webhook can never find this CallORM row by
+    # session_id — that was the actual cause of duration_seconds staying 0.
+    # Twilio, on the other hand, always knows this call by its CallSid and
+    # will push us `completed` with the real CallDuration regardless of what
+    # LiveKit does on its side.
+    status_callback_url = f"{base_url}/api/v1/telephony/twilio/status-callback"
+
+    # NOTE: Twilio's Calls API requires StatusCallbackEvent to be sent as
+    # MULTIPLE repeated form fields (one per event), not a single
+    # space-joined string. Sending it as one string trips Twilio warning
+    # 21626 ("invalid statusCallbackEvents ...") and Twilio silently drops
+    # the whole subscription — /status-callback then never fires and
+    # duration_seconds stays 0 forever, even though the call completes fine.
+    #
+    # httpx's `data=` param only form-encodes a plain dict (one value per
+    # key), so a dict can't express repeated keys. A list of tuples also
+    # doesn't work here because httpx routes list/tuple `data` through its
+    # streaming `content` path, and a plain list is a sync iterable —
+    # that trips httpx's async/sync transport check with:
+    #   RuntimeError: Attempted to send a sync request with an AsyncClient.
+    # So we urlencode it ourselves and send as raw `content` with the
+    # correct content-type header instead.
+    body_params = [
+        ("To", to_number),
+        ("From", twilio_number),
+        ("Url", flow_url),
+        ("StatusCallback", status_callback_url),
+        ("StatusCallbackMethod", "POST"),
+        # queued/initiated are pre-connect noise; ringing/answered/
+        # completed are the transitions we actually care about.
+        ("StatusCallbackEvent", "initiated"),
+        ("StatusCallbackEvent", "ringing"),
+        ("StatusCallbackEvent", "answered"),
+        ("StatusCallbackEvent", "completed"),
+    ]
 
     async with httpx.AsyncClient(timeout=15.0) as client:
         resp = await client.post(
             f"https://api.twilio.com/2010-04-01/Accounts/{twilio_sid}/Calls.json",
             auth=(twilio_sid, twilio_token),
-            data={"To": to_number, "From": twilio_number, "Url": flow_url},
+            content=urlencode(body_params),
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
         )
 
     if resp.status_code not in (200, 201):
@@ -322,10 +363,12 @@ async def _trigger_twilio_outbound_internal(
         )
 
     twilio_data = resp.json()
+    twilio_call_sid = twilio_data.get("sid", "")
     db_call.status = "initiated"
+    db_call.twilio_call_sid = twilio_call_sid
     db_call.call_meta = {
         **(db_call.call_meta or {}),
-        "twilio_call_sid": twilio_data.get("sid", ""),
+        "twilio_call_sid": twilio_call_sid,
     }
     await db.commit()
 
@@ -502,6 +545,112 @@ async def twilio_flow_bridge(
 
     logger.info(f"[FlowBridge] Bridging {sip_number} → {lk_sip_domain}")
     return Response(content=twiml, media_type="application/xml")
+
+
+# ─── STATUS CALLBACK (REAL-TIME CALL STATUS / DURATION FROM TWILIO) ─────────
+
+# Maps Twilio's CallStatus values to our internal call.status vocabulary.
+_TWILIO_STATUS_MAP = {
+    "queued": "connecting",
+    "initiated": "connecting",
+    "ringing": "ringing",
+    "in-progress": "active",
+    "completed": "completed",
+    "busy": "no_answer",
+    "no-answer": "no_answer",
+    "failed": "failed",
+    "canceled": "failed",
+}
+
+# Terminal statuses — once we land here for a call, stop accepting updates.
+_TERMINAL_STATUSES = {"completed", "no_answer", "failed"}
+
+
+@router.post("/status-callback")
+async def twilio_status_callback(
+    request: Request,
+    CallSid: str = Form(...),
+    CallStatus: str = Form(...),
+    CallDuration: str = Form(default=""),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Twilio's native StatusCallback webhook — the authoritative, real-time
+    source of call status and duration for the Twilio REST fallback path.
+
+    Why this exists (and why LiveKit's own webhook isn't enough here):
+    For the trial/fallback outbound path, LiveKit's SIP gateway creates its
+    OWN room when Twilio bridges the call in (a name we never chose and
+    can't predict), so LiveKit's `room_finished` webhook can't be matched
+    back to our CallORM row by session_id — that mismatch is why
+    duration_seconds/status were staying at their initial 0/"initiated"
+    values forever. Twilio, by contrast, always identifies the call by its
+    CallSid, which we captured at call-creation time — so it's a reliable
+    correlation key regardless of what LiveKit does internally.
+
+    Twilio sends this on every status transition we subscribed to
+    (initiated, ringing, answered, completed) — `CallDuration` (seconds) is
+    only populated once the call has actually ended, on the `completed`
+    (and busy/no-answer/failed/canceled) events.
+    """
+    # ── 1. Idempotency — Twilio retries webhooks that don't respond fast/2xx ──
+    # Keyed by (CallSid, CallStatus) since the SAME CallSid legitimately fires
+    # multiple different statuses over the life of one call.
+    idem_key = f"{CallSid}:{CallStatus}"
+    if await idempotency_store.is_seen("twilio_status", idem_key):
+        return Response(status_code=200)
+    await idempotency_store.mark_seen("twilio_status", idem_key)
+
+    # ── 2. Look up the call by CallSid (NOT session_id — see docstring) ──────
+    result = await db.execute(select(CallORM).where(CallORM.twilio_call_sid == CallSid))
+    call = result.scalar_one_or_none()
+    if not call:
+        logger.warning(f"[StatusCallback] No call found for CallSid={CallSid} (status={CallStatus})")
+        return Response(status_code=200)  # 200 so Twilio doesn't retry forever
+
+    if call.status in _TERMINAL_STATUSES:
+        return Response(status_code=200)  # already finalized, ignore late/dup events
+
+    # ── 3. Verify signature using the owning user's Twilio auth token ───────
+    twilio_sig = request.headers.get("X-Twilio-Signature", "")
+    if twilio_sig:
+        user_result = await db.execute(select(UserORM).where(UserORM.id == call.user_id))
+        user = user_result.scalar_one_or_none()
+        if user and user.secrets and user.secrets.get("twilio_auth_token"):
+            try:
+                auth_token = vault.decrypt(user.secrets["twilio_auth_token"])
+                form_params = dict((await request.form()))
+                if not _verify_twilio_signature(auth_token, str(request.url), form_params, twilio_sig):
+                    logger.warning(f"[StatusCallback] Signature verification FAILED for CallSid={CallSid}")
+                    return Response(status_code=403)
+            except Exception as sig_exc:
+                logger.warning(f"[StatusCallback] Could not verify signature: {sig_exc}")
+
+    # ── 4. Apply the update ──────────────────────────────────────────────────
+    new_status = _TWILIO_STATUS_MAP.get(CallStatus, call.status)
+    call.status = new_status
+
+    if new_status in _TERMINAL_STATUSES:
+        # NOTE: calls.ended_at is TIMESTAMP WITHOUT TIME ZONE (naive), same
+        # as started_at (set via datetime.utcnow() at call creation). Writing
+        # a timezone-aware datetime.now(timezone.utc) here makes asyncpg
+        # raise "can't subtract offset-naive and offset-aware datetimes" on
+        # commit — which meant the call would get stuck one event short of
+        # "completed"/duration_seconds ever being saved. Use a naive UTC
+        # timestamp to match the column type.
+        call.ended_at = datetime.utcnow()
+        if CallDuration:
+            try:
+                call.duration_seconds = float(CallDuration)
+            except ValueError:
+                logger.warning(f"[StatusCallback] Non-numeric CallDuration={CallDuration!r} for CallSid={CallSid}")
+
+    await db.commit()
+    logger.info(
+        f"[StatusCallback] call_id={call.id} CallSid={CallSid} "
+        f"TwilioStatus={CallStatus} → status={new_status} duration={call.duration_seconds}s"
+    )
+    return Response(status_code=200)
 
 
 # ─── HELPERS ─────────────────────────────────────────────────────────────────

@@ -59,6 +59,16 @@ async def init_db():
         except Exception as e:
             print(f"⚠️ [MIGRATION] ALTER TABLE rag_configs (chunk_strategy) failed: {e}")
 
+        # Twilio-fallback outbound calls need a stable correlation key for the
+        # status-callback webhook (LiveKit's own SIP room name is NOT usable —
+        # see comment on CallORM.twilio_call_sid).
+        try:
+            await conn.execute(text("ALTER TABLE calls ADD COLUMN IF NOT EXISTS twilio_call_sid VARCHAR"))
+            await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_calls_twilio_call_sid ON calls (twilio_call_sid)"))
+            print("✅ [MIGRATION] calls.twilio_call_sid ensured")
+        except Exception as e:
+            print(f"⚠️ [MIGRATION] ALTER TABLE calls (twilio_call_sid) failed: {e}")
+
         # Fix "can't subtract offset-naive and offset-aware datetimes" on Google OAuth callback —
         # integrations timestamp columns were TIMESTAMP WITHOUT TIME ZONE but the app writes
         # tz-aware UTC datetimes (datetime.now(timezone.utc)) into them.

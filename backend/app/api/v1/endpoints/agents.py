@@ -1,7 +1,9 @@
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete
+from sqlalchemy.orm import selectinload
 from typing import List
+import json
 # pyrefly: ignore [missing-import]
 from app.models.agent import AgentConfig
 # pyrefly: ignore [missing-import]
@@ -14,8 +16,34 @@ from app.api.deps import get_current_user
 from app.core.security import vault
 # pyrefly: ignore [missing-import]
 from app.models.orm import UserORM
+# pyrefly: ignore [missing-import]
+from app.services.agent_metadata_service import build_agent_metadata
 
 router = APIRouter()
+
+
+@router.get("/{agent_id}/live-config")
+async def get_live_agent_config(agent_id: str, db: AsyncSession = Depends(get_db)):
+    """
+    Internal endpoint — called by the LiveKit agent worker at the start of
+    EVERY call (inbound and outbound, including the Twilio-fallback path)
+    to fetch this agent's CURRENT prompt/LLM/tools, instead of trusting
+    whatever metadata was baked into a dispatch rule at trunk-provisioning
+    time (which goes stale the moment the agent's tools are edited).
+
+    No user auth: this is only reachable on the internal Docker network by
+    the agent worker process, the same trust boundary already used by
+    GET /numbers/inbound-config.
+    """
+    result = await db.execute(
+        select(AgentORM).options(selectinload(AgentORM.tools)).where(AgentORM.id == agent_id)
+    )
+    agent = result.scalar_one_or_none()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found.")
+
+    metadata_json = await build_agent_metadata(agent, db)
+    return json.loads(metadata_json)
 
 @router.get("", response_model=List[AgentConfig])
 async def list_agents(

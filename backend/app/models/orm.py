@@ -181,6 +181,14 @@ class CallORM(Base):
     status: Mapped[str] = mapped_column(String, default="initiated")
     duration_seconds: Mapped[float] = mapped_column(Float, default=0.0)
     tokens_used: Mapped[int] = mapped_column(default=0)
+
+    # Twilio's own Call SID — the authoritative correlation key for the
+    # Twilio REST fallback outbound path. LiveKit auto-generates its OWN
+    # room name for the SIP leg once Twilio bridges into it (different from
+    # the room_name we picked when creating this row), so session_id can't
+    # be trusted to match on room_finished for that path. CallSid never
+    # changes, so Twilio's status-callback webhook can always find this row.
+    twilio_call_sid: Mapped[str] = mapped_column(String, nullable=True, index=True)
     
     started_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     ended_at: Mapped[datetime] = mapped_column(DateTime, nullable=True)

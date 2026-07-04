@@ -203,6 +203,41 @@ async def entrypoint(ctx: JobContext):
             except Exception as e:
                 logger.error(f"Error fetching dynamic inbound-config from backend: {e}")
 
+    # ── PRIORITY 3: Always refresh from the backend using whatever agent_id
+    # we now have (from static dispatch metadata OR the dynamic SIP lookup
+    # above). This is the fix for tools going stale: dispatch-rule metadata
+    # is baked in once at trunk-provisioning time and never updated again,
+    # so a Twilio-fallback outbound call (which relies on the *inbound*
+    # dispatch rule's static metadata) could carry a tools list from months
+    # ago even though the agent's tools were edited since. Re-fetching by
+    # agent_id here guarantees inbound, native-SIP outbound, and
+    # Twilio-fallback outbound calls all see the agent's CURRENT tools.
+    # If the refresh fails (network blip, backend restart), we keep
+    # whatever config we already resolved above rather than failing the call.
+    resolved_agent_id = config.get("id") or config.get("agentId")
+    if resolved_agent_id:
+        try:
+            url = f"{INTERNAL_BACKEND_URL}/api/v1/agents/{resolved_agent_id}/live-config"
+            async with aiohttp.ClientSession() as session:
+                async with session.get(url) as resp:
+                    if resp.status == 200:
+                        fresh_config = await resp.json()
+                        logger.info(
+                            f"--- [HMS CONFIG] Refreshed live config for agent_id={resolved_agent_id}: "
+                            f"{len(fresh_config.get('tools', []))} tool(s) ---"
+                        )
+                        config = fresh_config
+                    else:
+                        logger.warning(
+                            f"--- [HMS CONFIG] live-config refresh returned {resp.status} for "
+                            f"agent_id={resolved_agent_id}; keeping previously resolved config ---"
+                        )
+        except Exception as e:
+            logger.error(
+                f"--- [HMS CONFIG] live-config refresh failed for agent_id={resolved_agent_id}: {e} "
+                f"— keeping previously resolved config ---"
+            )
+
     # ── BUILD COMPONENTS ──────────────────────────────────────────────────────
     prewarmed_vad = ctx.proc.userdata.get("vad")
     vad = create_vad(config, prewarmed_vad)
